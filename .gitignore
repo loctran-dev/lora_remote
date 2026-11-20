@@ -1,0 +1,7 @@
+# Local runtime caches; keep source, build outputs, firmware backups and test images.
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Temporary browser profile used to preview the history UI. May contain session data.
+/output/visualizations/history-browser-profile/

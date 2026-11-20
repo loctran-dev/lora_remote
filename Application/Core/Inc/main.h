@@ -1,0 +1,122 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.h
+  * @brief          : Header for main.c file.
+  *                   This file contains the common defines of the application.
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __MAIN_H
+#define __MAIN_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Includes ------------------------------------------------------------------*/
+#include "stm32f1xx_hal.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+#include "define.h"
+/* USER CODE END Includes */
+
+/* Exported types ------------------------------------------------------------*/
+/* USER CODE BEGIN ET */
+
+/* USER CODE END ET */
+
+/* Exported constants --------------------------------------------------------*/
+/* USER CODE BEGIN EC */
+
+/* USER CODE END EC */
+
+/* Exported macro ------------------------------------------------------------*/
+/* USER CODE BEGIN EM */
+
+/* USER CODE END EM */
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
+/* Exported functions prototypes ---------------------------------------------*/
+void Error_Handler(void);
+
+/* USER CODE BEGIN EFP */
+void Main_SetBuzzerMode(BuzzerMode_t mode);
+uint32_t Main_GetSystemCountMs(void);
+void Main_SetMotorPower(uint8_t motorPower);
+void Main_UpdateStatusPeriod(void);
+void Main_SetScheduleTimeToCurrentModule(int32_t time);
+void Main_ScanNewDevice(void);
+void Main_ConnectToDevice(void);
+void Main_SetRtcAlarmRelative(uint32_t seconds);
+uint8_t Main_GetNotUsedNodeId(void);
+/* USER CODE END EFP */
+
+/* Private defines -----------------------------------------------------------*/
+#define LORA_RST_Pin GPIO_PIN_2
+#define LORA_RST_GPIO_Port GPIOC
+#define LORA_DIO_Pin GPIO_PIN_3
+#define LORA_DIO_GPIO_Port GPIOC
+#define LORA_DIO_EXTI_IRQn EXTI3_IRQn
+#define BAT_CTRL_Pin GPIO_PIN_1
+#define BAT_CTRL_GPIO_Port GPIOA
+#define BAT_MONITOR_Pin GPIO_PIN_2
+#define BAT_MONITOR_GPIO_Port GPIOA
+#define LORA_NSS_Pin GPIO_PIN_4
+#define LORA_NSS_GPIO_Port GPIOA
+#define LED1_Pin GPIO_PIN_4
+#define LED1_GPIO_Port GPIOC
+#define LED2_Pin GPIO_PIN_5
+#define LED2_GPIO_Port GPIOC
+#define BUZZER_PWM_Pin GPIO_PIN_0
+#define BUZZER_PWM_GPIO_Port GPIOB
+#define SPI2_CS_Pin GPIO_PIN_12
+#define SPI2_CS_GPIO_Port GPIOB
+#define LCD_BLK_Pin GPIO_PIN_6
+#define LCD_BLK_GPIO_Port GPIOC
+#define BTN5_Pin GPIO_PIN_7
+#define BTN5_GPIO_Port GPIOC
+#define BTN4_Pin GPIO_PIN_8
+#define BTN4_GPIO_Port GPIOC
+#define BTN4_EXTI_IRQn EXTI9_5_IRQn
+#define BTN3_Pin GPIO_PIN_9
+#define BTN3_GPIO_Port GPIOC
+#define BTN2_Pin GPIO_PIN_8
+#define BTN2_GPIO_Port GPIOA
+#define BTN1_Pin GPIO_PIN_9
+#define BTN1_GPIO_Port GPIOA
+#define BTN1_EXTI_IRQn EXTI9_5_IRQn
+#define USB_CTRL_Pin GPIO_PIN_10
+#define USB_CTRL_GPIO_Port GPIOA
+#define BAT_STDBY_Pin GPIO_PIN_10
+#define BAT_STDBY_GPIO_Port GPIOC
+#define BAT_CHARGING_Pin GPIO_PIN_11
+#define BAT_CHARGING_GPIO_Port GPIOC
+#define LCD_RST_Pin GPIO_PIN_4
+#define LCD_RST_GPIO_Port GPIOB
+#define LCD_CFG_Pin GPIO_PIN_5
+#define LCD_CFG_GPIO_Port GPIOB
+
+/* USER CODE BEGIN Private defines */
+
+/* USER CODE END Private defines */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __MAIN_H */

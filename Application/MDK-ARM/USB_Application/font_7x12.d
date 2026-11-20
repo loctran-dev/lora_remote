@@ -1,0 +1,16 @@
+usb_application\font_7x12.o: ..\Library\UGUI\Fonts\font_7x12.c
+usb_application\font_7x12.o: ../Library/UGUI/ugui.h
+usb_application\font_7x12.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_config.h
+usb_application\font_7x12.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_colors.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_theme.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_button.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_checkbox.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_fonts.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_image.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_progress.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_textbox.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_gif.h
+usb_application\font_7x12.o: ../Library/UGUI/ugui_real_edit.h

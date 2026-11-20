@@ -1,0 +1,148 @@
+<div id="slave-history-proposal">
+  <style>
+    #slave-history-proposal { --history-ink:light-dark(#223047,#e1e8f1); --history-secondary:light-dark(#57647a,#aebbd0); color:var(--history-ink); }
+    #slave-history-proposal .journey { display:grid; grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr) 26px minmax(0,1fr); align-items:start; padding-top:24px; }
+    #slave-history-proposal .stage { min-width:0; }
+    #slave-history-proposal .caption { display:grid; gap:4px; margin-top:12px; }
+    #slave-history-proposal .caption strong { font-weight:500; }
+    #slave-history-proposal .cue { color:var(--history-secondary); }
+    #slave-history-proposal .connector { width:100%; height:20px; margin-top:128px; color:var(--history-secondary); }
+    #slave-history-proposal .connector .vertical { display:none; }
+    #slave-history-proposal .lcd { --lcd-bg:#06090c; --lcd-text:#eef5fa; --lcd-muted:#a0aab4; --lcd-title:#25294c; --lcd-cyan:#5de1ee; --lcd-select:#303a40; background:var(--lcd-bg); color:var(--lcd-text); font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; line-height:1.3; aspect-ratio:128/160; width:100%; display:flex; flex-direction:column; box-sizing:border-box; overflow:hidden; }
+    #slave-history-proposal .lcd * { box-sizing:border-box; }
+    #slave-history-proposal .lcd button { font:inherit; cursor:inherit; color:inherit; border:0; border-radius:0; box-shadow:none; margin:0; }
+    #slave-history-proposal .lcd button:focus-visible { outline:2px solid #fff09a; outline-offset:-2px; }
+    #slave-history-proposal .status { display:flex; justify-content:space-between; color:var(--lcd-muted); padding:5px 6px; min-height:24px; }
+    #slave-history-proposal .title { display:flex; justify-content:space-between; align-items:center; background:var(--lcd-title); padding:5px 7px; min-height:28px; }
+    #slave-history-proposal .content { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:4px 5px; }
+    #slave-history-proposal .menu-row { padding:7px 6px; background:transparent; text-align:left; width:100%; }
+    #slave-history-proposal .menu-row.active { background:var(--lcd-select); color:var(--lcd-cyan); }
+    #slave-history-proposal .history-row { display:flex; flex-direction:column; justify-content:center; width:100%; min-height:40px; flex:1; padding:4px 6px; text-align:left; background:transparent; gap:3px; }
+    #slave-history-proposal .history-row.active { background:var(--lcd-select); }
+    #slave-history-proposal .event-heading { display:flex; justify-content:space-between; gap:4px; }
+    #slave-history-proposal .event-subtitle { color:var(--lcd-muted); }
+    #slave-history-proposal .history-row.active .event-subtitle { color:var(--lcd-cyan); }
+    #slave-history-proposal .event-kind { font-weight:500; }
+    #slave-history-proposal .event-kind[data-kind="ON"] { color:#74e5a0; }
+    #slave-history-proposal .event-kind[data-kind="OFF"] { color:#ff9c95; }
+    #slave-history-proposal .event-kind[data-kind="ALARM"] { color:#ffc46b; }
+    #slave-history-proposal .help { padding:3px 5px; text-align:center; color:var(--lcd-muted); font-size:11px; min-height:20px; }
+    #slave-history-proposal .footer { display:grid; grid-template-columns:1fr 1.45fr 1fr; background:var(--lcd-title); min-height:29px; }
+    #slave-history-proposal .footer button { background:transparent; padding:6px 1px; }
+    #slave-history-proposal .footer button:nth-child(2) { background:#12505b; }
+    #slave-history-proposal .footer button:disabled { color:#667785; }
+    #slave-history-proposal .detail-content { padding:7px; gap:7px; justify-content:center; }
+    #slave-history-proposal .detail-time { color:var(--lcd-muted); margin-bottom:2px; }
+    #slave-history-proposal .field { display:flex; align-items:baseline; justify-content:space-between; gap:4px; }
+    #slave-history-proposal .field-label { color:var(--lcd-muted); }
+    #slave-history-proposal .field-value { color:var(--lcd-cyan); }
+    #slave-history-proposal .field-value.fault { color:#ffc46b; }
+    #slave-history-proposal .mock-meta { color:var(--history-secondary); font-size:12px; margin-top:14px; }
+    @media (max-width:660px) {
+      #slave-history-proposal .journey { grid-template-columns:1fr; justify-items:center; gap:0; }
+      #slave-history-proposal .stage { width:min(100%,238px); }
+      #slave-history-proposal .connector { width:24px; height:40px; margin:10px 0; }
+      #slave-history-proposal .connector .horizontal { display:none; }
+      #slave-history-proposal .connector .vertical { display:block; }
+      #slave-history-proposal .caption { margin-top:8px; }
+    }
+  </style>
+  <div class="journey viz-dotted-background" aria-label="Phác thảo hành trình mở lịch sử slave: menu, danh sách, chi tiết">
+    <section class="stage" aria-label="Menu mở lịch sử">
+      <div class="lcd">
+        <div class="status"><span>09:45</span><span>99%</span></div>
+        <div class="title"><span>Menu</span><span>5/5</span></div>
+        <div class="content">
+          <div class="menu-row">Device manager</div>
+          <div class="menu-row">Device control</div>
+          <div class="menu-row">General setting</div>
+          <div class="menu-row">Pairing</div>
+          <button type="button" class="menu-row active cursor-interaction" data-history-open>History</button>
+        </div>
+        <div class="help">Hold RIGHT: Back</div>
+        <div class="footer"><button type="button" disabled>Up</button><button type="button" class="cursor-interaction" data-history-open>Open</button><button type="button" disabled>Down</button></div>
+      </div>
+      <div class="caption"><strong>Menu → History</strong><span class="cue">Chọn slave, ví dụ M11</span></div>
+    </section>
+    <svg class="connector" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><defs><marker id="slave-history-arrow" orient="auto" markerUnits="userSpaceOnUse" refX="7" refY="4" markerWidth="9" markerHeight="8"><path d="M1 1L7 4 1 7" fill="none" /></marker></defs><line class="horizontal" x1="4" y1="10" x2="22" y2="10" marker-end="url(#slave-history-arrow)"/><line class="vertical" x1="12" y1="3" x2="12" y2="36" marker-end="url(#slave-history-arrow)"/></svg>
+    <section class="stage" aria-label="Danh sách lịch sử M11">
+      <div class="lcd">
+        <div class="status"><span>18/11/26</span><span>99%</span></div>
+        <div class="title"><span>M11 History</span><span>1/1</span></div>
+        <div class="content" id="slave-history-rows">
+          <button type="button" class="history-row active cursor-interaction" data-event="0" aria-pressed="true"><span class="event-heading"><span>09:42:18</span><span class="event-kind" data-kind="OFF">OFF</span></span><span class="event-subtitle">IO1 · ON &gt; OFF</span></button>
+          <button type="button" class="history-row cursor-interaction" data-event="1" aria-pressed="false"><span class="event-heading"><span>09:18:04</span><span class="event-kind" data-kind="ALARM">ALARM</span></span><span class="event-subtitle">Slave · ON &gt; ON</span></button>
+          <button type="button" class="history-row cursor-interaction" data-event="2" aria-pressed="false"><span class="event-heading"><span>09:00:00</span><span class="event-kind" data-kind="ON">ON</span></span><span class="event-subtitle">Remote · OFF &gt; ON</span></button>
+          <button type="button" class="history-row cursor-interaction" data-event="3" aria-pressed="false"><span class="event-heading"><span>08:30:00</span><span class="event-kind" data-kind="OFF">OFF</span></span><span class="event-subtitle">Timer · ON &gt; OFF</span></button>
+        </div>
+        <div class="help">Hold RIGHT: Back</div>
+        <div class="footer"><button type="button" class="cursor-interaction" data-step="-1" aria-label="Chọn sự kiện trước">Up</button><button type="button" class="cursor-interaction" id="slave-history-detail-open">Detail</button><button type="button" class="cursor-interaction" data-step="1" aria-label="Chọn sự kiện sau">Down</button></div>
+      </div>
+      <div class="caption"><strong>Danh sách mới nhất trước</strong><span class="cue">Chọn một dòng để xem chi tiết</span></div>
+    </section>
+    <svg class="connector" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><line class="horizontal" x1="4" y1="10" x2="22" y2="10" marker-end="url(#slave-history-arrow)"/><line class="vertical" x1="12" y1="3" x2="12" y2="36" marker-end="url(#slave-history-arrow)"/></svg>
+    <section class="stage" aria-label="Chi tiết bản ghi lịch sử">
+      <div class="lcd" id="slave-history-detail" aria-live="polite">
+        <div class="status"><span>18/11/26</span><span>99%</span></div>
+        <div class="title"><span>M11 Event</span><span id="slave-history-position">1/4</span></div>
+        <div class="content detail-content">
+          <div class="detail-time" id="slave-history-time">18/11/26 09:42:18</div>
+          <div class="field"><span class="field-label">Action</span><span class="field-value" id="slave-history-action">OFF</span></div>
+          <div class="field"><span class="field-label">Source</span><span class="field-value" id="slave-history-source">Slave IO1</span></div>
+          <div class="field"><span class="field-label">Before</span><span id="slave-history-before">ON</span></div>
+          <div class="field"><span class="field-label">After</span><span id="slave-history-after">OFF</span></div>
+          <div class="field"><span class="field-label">Result</span><span id="slave-history-result">Applied</span></div>
+          <div class="field"><span class="field-label">Error</span><span class="field-value" id="slave-history-error">None</span></div>
+        </div>
+        <div class="help">Hold RIGHT: Back</div>
+        <div class="footer"><button type="button" class="cursor-interaction" data-step="-1" aria-label="Xem bản ghi trước">Prev</button><button type="button" class="cursor-interaction" id="slave-history-list-open">List</button><button type="button" class="cursor-interaction" data-step="1" aria-label="Xem bản ghi sau">Next</button></div>
+      </div>
+      <div class="caption"><strong>Chi tiết một sự kiện</strong><span class="cue">Nguồn, trước/sau và thông tin lỗi</span></div>
+    </section>
+  </div>
+  <div class="mock-meta">MINH HỌA · LCD 128 × 160 · Dữ liệu giả lập · Không điều khiển thiết bị</div>
+  <script>
+    (() => {
+      const root = document.getElementById('slave-history-proposal');
+      const events = [
+        {time:'09:42:18', action:'OFF', source:'Slave IO1', before:'ON', after:'OFF', result:'Applied', error:'None'},
+        {time:'09:18:04', action:'Alarm', source:'Slave', before:'ON', after:'ON', result:'Warning', error:'Low current'},
+        {time:'09:00:00', action:'ON', source:'Remote', before:'OFF', after:'ON', result:'Applied', error:'None'},
+        {time:'08:30:00', action:'OFF', source:'Timer', before:'ON', after:'OFF', result:'Applied', error:'None'}
+      ];
+      let index = 0;
+      const rows = [...root.querySelectorAll('[data-event]')];
+      const detail = root.querySelector('#slave-history-detail');
+      function render() {
+        const event = events[index];
+        rows.forEach((row, i) => { row.classList.toggle('active', i === index); row.setAttribute('aria-pressed', String(i === index)); });
+        root.querySelector('#slave-history-position').textContent = `${index + 1}/${events.length}`;
+        root.querySelector('#slave-history-time').textContent = `18/11/26 ${event.time}`;
+        ['action','source','before','after','result','error'].forEach(key => {
+          const element = root.querySelector(`#slave-history-${key}`);
+          element.textContent = event[key];
+          if (key === 'error') element.classList.toggle('fault', event.error !== 'None');
+        });
+        root.querySelectorAll('[data-step="-1"]').forEach(button => { button.disabled = index === 0; });
+        root.querySelectorAll('[data-step="1"]').forEach(button => { button.disabled = index === events.length - 1; });
+      }
+      function applySaved(snapshot) {
+        const value = snapshot?.privateContent?.selectedEvent;
+        if (Number.isInteger(value) && value >= 0 && value < events.length) index = value;
+        render();
+      }
+      function select(value) {
+        index = Math.max(0, Math.min(events.length - 1, value));
+        render();
+        if (window.openai?.setWidgetState) Promise.resolve(window.openai.setWidgetState({modelContent:{device:'M11', selectedEvent:events[index]}, privateContent:{selectedEvent:index}})).catch(() => {});
+      }
+      rows.forEach((row, i) => row.addEventListener('click', () => select(i)));
+      root.querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => select(index + Number(button.dataset.step))));
+      root.querySelectorAll('[data-history-open]').forEach(button => button.addEventListener('click', () => { select(0); rows[0].focus(); }));
+      root.querySelector('#slave-history-detail-open').addEventListener('click', () => detail.querySelector('[data-step="1"]:not(:disabled), button:not(:disabled)').focus());
+      root.querySelector('#slave-history-list-open').addEventListener('click', () => rows[index].focus());
+      applySaved(window.openai?.widgetState);
+      window.addEventListener('openai:set_globals', event => { if (event.detail?.globals?.widgetState) applySaved(event.detail.globals.widgetState); });
+    })();
+  </script>
+</div>

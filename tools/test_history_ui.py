@@ -1,0 +1,67 @@
+"""Native ARM history navigation with LCD primitives mocked; never connects a board."""
+import struct
+import unittest
+import test_history as h
+from unicorn import UC_HOOK_CODE
+from unicorn.arm_const import UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3,UC_ARM_REG_SP,UC_ARM_REG_PC,UC_ARM_REG_LR
+
+class HistoryUiTests(unittest.TestCase):
+    def setUp(self):
+        self.hw=h.JournalTests();self.hw.setUp();self.cpu=self.hw.cpu;self.call=self.hw.call
+        self.hw.globals_for_sync()
+        self.text={};self.bg={};self.visible={}
+        self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("MMS_Init")|1,h.symbol("MMS_Render")|1))
+        names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
+               "UG_WindowSetBackColor","UG_WindowSetXStart","UG_WindowSetXEnd","UG_WindowSetYStart","UG_WindowSetYEnd",
+               "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",
+               "UG_TextboxSetForeColor","UG_TextboxSetAlignment","UG_TextboxSetScrollEnabled","UG_TextboxCheckVisible",
+               "UG_TextboxShow","UG_TextboxHide","UG_Update","MMS_Init","MMS_Render",
+               "Screen_StatusBarCreate","Screen_StatusBarUpdate"]
+        hooks={h.symbol(n)&~1:n for n in names}
+        def intercept(cpu,address,size,data):
+            if address not in hooks:return
+            n=hooks[address];a=[cpu.reg_read(r) for r in [UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3]];result=0
+            if n=="UG_TextboxSetText":self.text[a[1]]=bytes(cpu.mem_read(a[2],80)).split(b"\0")[0].decode()
+            if n=="UG_TextboxSetBackColor":self.bg[a[1]]=a[2]
+            if n=="UG_TextboxCheckVisible":result=int(self.visible.get(a[1],True))
+            if n=="UG_TextboxShow":self.visible[a[1]]=True
+            if n=="UG_TextboxHide":self.visible[a[1]]=False
+            cpu.reg_write(UC_ARM_REG_R0,result);cpu.reg_write(UC_ARM_REG_PC,cpu.reg_read(UC_ARM_REG_LR))
+        self.cpu.hook_add(UC_HOOK_CODE,intercept)
+    def open_list(self):
+        self.call("Screen_OpenHistory");self.call("HS_Center")
+    def test_menu_picker_list_details_and_back_preserve_selection(self):
+        for i in range(3):self.hw.append()
+        self.open_list()
+        self.assertEqual(self.text[6],"1/1")
+        self.call("HS_Right")
+        self.assertNotEqual(self.bg[9],self.bg[7])
+        self.call("HS_Center")
+        self.assertEqual(self.text[6],"2/3")
+        self.assertEqual(self.text[8],"Action: ON")
+        self.assertEqual(self.text[9],"Source: Remote")
+        self.assertEqual(self.text[10],"Before: OFF")
+        self.assertEqual(self.text[11],"After: ON")
+        self.call("HS_Back");self.call("HS_Center")
+        self.assertEqual(self.text[6],"2/3")
+    def test_empty_history_does_not_open_bogus_detail(self):
+        self.open_list();self.assertEqual(self.text[7],"No history yet")
+        self.call("HS_Center")
+        self.assertEqual(self.cpu.mem_read(h.symbol("historyScreenMode"),1),b"\x01")
+    def test_hidden_device_is_still_selectable(self):
+        self.cpu.mem_write(h.symbol("deviceBuff")+36+69,b"\x01")
+        self.call("Screen_OpenHistory")
+        self.assertIn("[Hidden]",self.text[7])
+        self.call("HS_Center");self.assertEqual(self.text[7],"No history yet")
+    def test_new_records_do_not_move_frozen_selection_until_refresh(self):
+        self.hw.append();self.open_list()
+        self.hw.append()
+        self.call("HS_Render")
+        self.assertEqual(self.text[6],"1/1")
+        self.call("HS_Refresh");self.call("HS_Center")
+        self.assertEqual(self.text[6],"2/2")  # Refresh keeps the formerly selected event.
+    def test_unknown_time_is_labeled_instead_of_fabricated_date(self):
+        self.hw.append(flags=1);self.open_list();self.call("HS_Center")
+        self.assertEqual(self.text[7],"Time not synced")
+
+if __name__=="__main__":unittest.main(verbosity=2)

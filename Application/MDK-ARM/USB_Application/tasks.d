@@ -1,0 +1,16 @@
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/tasks.c
+usb_application\tasks.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
+usb_application\tasks.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\string.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+usb_application\tasks.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+usb_application\tasks.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
+usb_application\tasks.o: ../Core/Inc/FreeRTOSConfig.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3/portmacro.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h
+usb_application\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/stack_macros.h

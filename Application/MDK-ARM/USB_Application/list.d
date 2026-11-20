@@ -1,0 +1,12 @@
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/list.c
+usb_application\list.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+usb_application\list.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+usb_application\list.o: C:\Users\Admin\AppData\Local\Keil_v5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
+usb_application\list.o: ../Core/Inc/FreeRTOSConfig.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3/portmacro.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+usb_application\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
