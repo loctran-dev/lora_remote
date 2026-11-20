@@ -980,7 +980,7 @@ void Main_SetMotorPower(uint8_t motorPower)
 	}
 	if (deviceBuff[systemInfo.currentDeviceId].isDelete == FALSE) {
 		Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
-		LoraPackage_t packageOut = createPackageRequestControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, systemInfo.currentModuleId, motorPower);
+		LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, systemInfo.currentModuleId, motorPower);
 		osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
 	} 
 }
@@ -1004,7 +1004,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
 	{
 		payload.scheduleTime = systemInfo.currentTime + time;
 	}
-	LoraPackage_t packageOut = createPackageRequestSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
+	LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
 	Schedule_Track(&packageOut, &payload);
 	if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
         Schedule_QueueFailed();
@@ -1026,7 +1026,7 @@ void Main_ScanNewDevice(void)
 	LoRa_startReceiving(&sLoRaCtrl);
 	osMutexRelease(radioMutex);
 	
-	LoraPackage_t packageOut = createPackageRequestGetFactoryInfo(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT);
+	LoraPackage_t packageOut = Comm_CreateReqGetFactoryInfo(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT);
 	osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
 }
 void Main_ConnectToDevice(void)
@@ -1043,7 +1043,7 @@ void Main_ConnectToDevice(void)
 	payload.frequency = systemInfo.frequencyConfig;
 	payload.sf = systemInfo.sfConfig;
 
-	LoraPackage_t packageOut = createPackageRequestConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
+	LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
 	osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));	
 }
 void Main_SetRtcAlarmRelative(uint32_t seconds) {
@@ -1539,7 +1539,7 @@ void StartLoraReceiveTask(void *argument)
 		{
 			osMutexAcquire(radioMutex, osWaitForever);
 			uint8_t rxLength = LoRa_receive(&sLoRaCtrl, rxBuffer, 128);
-			processRxData(rxBuffer, rxLength);
+			Comm_ProcessRxData(rxBuffer, rxLength);
 			Power_RxProcessed();
 			osMutexRelease(radioMutex);
 		}

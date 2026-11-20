@@ -141,25 +141,23 @@ typedef struct PayloadResponseConfigConnection_t {
 #pragma pack()
 // Payload for CMD_ALARM_MESSAGE
 
-LoraPackage_t createNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, uint8_t type, uint8_t *payload, int16_t payloadLength, uint32_t timeout);
-void updatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t payloadLength);
-LoraPackage_t createPackageRequestGetStatus(uint8_t netId, uint8_t nodeId, PayloadRequestGetStatus_t payload);
-LoraPackage_t createPackageRequestControlPower(uint8_t netId, uint8_t nodeId, uint8_t moduleIndex, uint8_t powerState);
-LoraPackage_t createPackageRequestSetSchedule(uint8_t netId, uint8_t nodeId, PayloadRequestSetSchedule_t payload);
-LoraPackage_t createPackageRequestSyncTime(uint8_t netId, uint8_t nodeId, PayloadRequestSyncTime_t payload);
-LoraPackage_t createPackageRequestConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload);
-LoraPackage_t createPackageRequestGetFactoryInfo(uint8_t netId, uint8_t nodeId);
-LoraPackage_t createPackageRequestConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload);
+LoraPackage_t Comm_CreateNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, uint8_t type, uint8_t *payload, int16_t payloadLength, uint32_t timeout);
+void Comm_UpdatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t payloadLength);
+LoraPackage_t Comm_CreateReqGetStatus(uint8_t netId, uint8_t nodeId, PayloadRequestGetStatus_t payload);
+LoraPackage_t Comm_CreateReqControlPower(uint8_t netId, uint8_t nodeId, uint8_t moduleIndex, uint8_t powerState);
+LoraPackage_t Comm_CreateReqSetSchedule(uint8_t netId, uint8_t nodeId, PayloadRequestSetSchedule_t payload);
+LoraPackage_t Comm_CreateReqSyncTime(uint8_t netId, uint8_t nodeId, PayloadRequestSyncTime_t payload);
+LoraPackage_t Comm_CreateReqConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload);
+LoraPackage_t Comm_CreateReqGetFactoryInfo(uint8_t netId, uint8_t nodeId);
 
-void processRxData(uint8_t *buffer, uint32_t length); 
+void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
 void handleValidPackageForNode(LoraPackage_t fwPackage);
-uint8_t parsePayloadReqCtrlPwr (LoraPackage_t fwPackage, PayloadRequestCtrlPower_t *payload);
-uint8_t parsePayloadReqSetSchedule (LoraPackage_t package, PayloadRequestSetSchedule_t *payload);
-uint8_t parsePayloadReqSyncTime (LoraPackage_t package, PayloadRequestSyncTime_t *payload);
-uint8_t parsePayloadReqConfigConnection (LoraPackage_t package, PayloadRequestConfigConnection_t *payload);
-uint8_t parsePayloadReqAlarm (LoraPackage_t package, PayloadRequestAlarm_t *payload);
-uint8_t parsePayloadResGetStatus (LoraPackage_t package, PayloadResponseGetStatus_t *payload);
-uint8_t parsePayloadResGetFactoryInfo (LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload);
-uint8_t parsePayloadResConfigConnection (LoraPackage_t package, PayloadResponseConfigConnection_t *payload);
-void Comm_ExecuteCommand(LoraPackage_t package);
+uint8_t Comm_ParsePayloadReqCtrlPwr(LoraPackage_t fwPackage, PayloadRequestCtrlPower_t *payload);
+uint8_t Comm_ParsePayloadReqSetSchedule(LoraPackage_t package, PayloadRequestSetSchedule_t *payload);
+uint8_t Comm_ParsePayloadReqSyncTime(LoraPackage_t package, PayloadRequestSyncTime_t *payload);
+uint8_t Comm_ParsePayloadReqConfigConnection(LoraPackage_t package, PayloadRequestConfigConnection_t *payload);
+uint8_t Comm_ParsePayloadReqAlarm(LoraPackage_t package, PayloadRequestAlarm_t *payload);
+uint8_t Comm_ParsePayloadResGetStatus(LoraPackage_t package, PayloadResponseGetStatus_t *payload);
+uint8_t Comm_ParsePayloadResGetFactoryInfo(LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload);
+uint8_t Comm_ParsePayloadResConfigConnection(LoraPackage_t package, PayloadResponseConfigConnection_t *payload);
 #endif

@@ -90,7 +90,7 @@ void Schedule_Tick(void)
     payload.moduleIndex = scheduleRequest.module;
     payload.syncTime = scheduleRequest.syncTime;
     payload.scheduleTime = scheduleRequest.deadline;
-    LoraPackage_t packet = createPackageRequestSetSchedule(scheduleRequest.net, scheduleRequest.node, payload);
+    LoraPackage_t packet = Comm_CreateReqSetSchedule(scheduleRequest.net, scheduleRequest.node, payload);
     /* Retransmit the SAME transaction and absolute deadline: never extend a timer. */
     packet.transactionID = scheduleRequest.transaction;
     memcpy(packet.rawData + 6, &packet.transactionID, sizeof(packet.transactionID));
@@ -103,22 +103,21 @@ void Schedule_Tick(void)
 
 uint8_t sendCurrentModuleConfig(void)
 {
-    DeviceInfo_t *device = &deviceBuff[systemInfo.currentDeviceId];
-    MotorData_t *module = &device->motorData[systemInfo.currentModuleId];
-    PayloadRequestSetConfig_t config;
-    LoraPackage_t packet;
-    if (device->isDelete || !(module->alarmThreshold >= 0 &&
-        module->alarmThreshold <= 99.99f) || module->alarmDelayTime > 9999)
-        return FALSE;
-    config.moduleIndex = systemInfo.currentModuleId;
-    config.alarmThresholdCentiAmp = (uint16_t)(module->alarmThreshold * 100.0f + 0.5f);
-    config.alarmDelaySeconds = module->alarmDelayTime;
-    config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.currentDeviceId);
-    packet = createNewPackage(systemInfo.netId, device->nodeId, CMD_SET_CONFIG,
-        LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);
-    configTransaction = packet.transactionID;
-    configNode = device->nodeId;
-    return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
+	DeviceInfo_t *device = &deviceBuff[systemInfo.currentDeviceId];
+	MotorData_t *module = &device->motorData[systemInfo.currentModuleId];
+	PayloadRequestSetConfig_t config;
+	LoraPackage_t packet;
+	if (device->isDelete || !(module->alarmThreshold >= 0 && module->alarmThreshold <= 99.99f) || module->alarmDelayTime > 9999)
+		return FALSE;
+	config.moduleIndex = systemInfo.currentModuleId;
+	config.alarmThresholdCentiAmp = (uint16_t)(module->alarmThreshold * 100.0f + 0.5f);
+	config.alarmDelaySeconds = module->alarmDelayTime;
+	config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.currentDeviceId);
+	packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeId, CMD_SET_CONFIG,
+								   LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);
+	configTransaction = packet.transactionID;
+	configNode = device->nodeId;
+	return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
 }
 
 void handleSetConfig(LoraPackage_t packet)
@@ -143,7 +142,7 @@ void handleGetStatus(LoraPackage_t fwPackage) {
 	}
 	PayloadResponseGetStatus_t payloadResponse;
 	if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE) return;
-	if (parsePayloadResGetStatus(fwPackage, &payloadResponse) == FALSE) {
+	if (Comm_ParsePayloadResGetStatus(fwPackage, &payloadResponse) == FALSE) {
 		return;
 	}
 	if (payloadResponse.result != 1 || payloadResponse.moduleIndex != 0) return;
@@ -249,7 +248,7 @@ void handleGetFactoryInfo(LoraPackage_t fwPackage){
 		return;
 	}
 	PayloadResponseGetFactoryInfo_t payloadResponse;
-	if (parsePayloadResGetFactoryInfo(fwPackage, &payloadResponse) == FALSE) 
+	if (Comm_ParsePayloadResGetFactoryInfo(fwPackage, &payloadResponse) == FALSE)
 		return;
 	
 	if (systemInfo.findDeviceStep == STEP_PROCESSING) {
@@ -273,7 +272,7 @@ void handleConfigConnection(LoraPackage_t fwPackage) {
 		return;
 	}
 	PayloadResponseConfigConnection_t payloadResponse;
-	if (parsePayloadResConfigConnection(fwPackage, &payloadResponse) == FALSE) 
+	if (Comm_ParsePayloadResConfigConnection(fwPackage, &payloadResponse) == FALSE)
 		return;
 	
 	if (systemInfo.configDeviceStep == STEP_PROCESSING) {
@@ -299,7 +298,7 @@ void handleAlarmMessage(LoraPackage_t fwPackage)
 		return;
 	}
 	PayloadRequestAlarm_t payloadRequest;
-	if (parsePayloadReqAlarm(fwPackage, &payloadRequest) == FALSE) 
+	if (Comm_ParsePayloadReqAlarm(fwPackage, &payloadRequest) == FALSE)
 		return;
 	if (fwPackage.type != LORA_PACKAGE_TYPE_REQUEST || payloadRequest.moduleIndex != 0) return;
 	Link_RecordNodePacket(fwPackage.nodeId, 0);

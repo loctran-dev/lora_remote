@@ -7,14 +7,23 @@
 uint8_t nodeid = 0x01;
 
 uint16_t currentTransactionID = 0;
-uint16_t generateTransactionID()
+static uint16_t generateTransactionID(void)
 {
     currentTransactionID++;
     if (!currentTransactionID) currentTransactionID++; /* Zero is unsolicited STATUS. */
     return currentTransactionID;
 }
 
-void updatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t payloadLength)
+static void executeCommand(LoraPackage_t package) {
+    for (int i = 0; cmdTable[i].handler != NULL; i++) {
+        if (cmdTable[i].cmdCode == package.code) {
+            cmdTable[i].handler(package);
+            return;
+        }
+    }
+}
+
+void Comm_UpdatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t payloadLength)
 {
 	LoraPackage_t packageIn = *packageOut;
 	packageIn.length = LORA_PACKAGE_HEADER_SIZE - sizeof(packageOut->signature) + payloadLength;
@@ -26,7 +35,7 @@ void updatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t p
 	memcpy(&packageOut->rawData[packageOut->byteCount - 1], &packageOut->checkSum, sizeof(packageOut->checkSum));
 }
 
-LoraPackage_t createNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, uint8_t type, uint8_t *payload, int16_t payloadLength, uint32_t timeout)
+LoraPackage_t Comm_CreateNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, uint8_t type, uint8_t *payload, int16_t payloadLength, uint32_t timeout)
 {
 	LoraPackage_t packageOut;
 	memset(packageOut.rawData, 0x00, LORA_PACKAGE_RAW_DATA_SIZE);
@@ -49,38 +58,38 @@ LoraPackage_t createNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, ui
 	return packageOut;
 }
 
-LoraPackage_t createPackageRequestGetStatus(uint8_t netId, uint8_t nodeId, PayloadRequestGetStatus_t payload)
+LoraPackage_t Comm_CreateReqGetStatus(uint8_t netId, uint8_t nodeId, PayloadRequestGetStatus_t payload)
 {
-	return createNewPackage(netId, nodeId, CMD_GET_STATUS, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
+	return Comm_CreateNewPackage(netId, nodeId, CMD_GET_STATUS, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
 }
 
-LoraPackage_t createPackageRequestControlPower(uint8_t netId, uint8_t nodeId, uint8_t moduleIndex, uint8_t powerState)
+LoraPackage_t Comm_CreateReqControlPower(uint8_t netId, uint8_t nodeId, uint8_t moduleIndex, uint8_t powerState)
 {
 	uint8_t payload[2];
 	payload[0] = moduleIndex;
 	payload[1] = powerState;
-	return createNewPackage(netId, nodeId, CMD_CONTROL_POWER, LORA_PACKAGE_TYPE_REQUEST, payload, sizeof(payload), 0);
+	return Comm_CreateNewPackage(netId, nodeId, CMD_CONTROL_POWER, LORA_PACKAGE_TYPE_REQUEST, payload, sizeof(payload), 0);
 }
-LoraPackage_t createPackageRequestSetSchedule(uint8_t netId, uint8_t nodeId, PayloadRequestSetSchedule_t payload)
+LoraPackage_t Comm_CreateReqSetSchedule(uint8_t netId, uint8_t nodeId, PayloadRequestSetSchedule_t payload)
 {
-	return createNewPackage(netId, nodeId, CMD_SET_SCHEDULE, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
+	return Comm_CreateNewPackage(netId, nodeId, CMD_SET_SCHEDULE, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
 }
-LoraPackage_t createPackageRequestSyncTime(uint8_t netId, uint8_t nodeId, PayloadRequestSyncTime_t payload)
+LoraPackage_t Comm_CreateReqSyncTime(uint8_t netId, uint8_t nodeId, PayloadRequestSyncTime_t payload)
 {
-	return createNewPackage(netId, nodeId, CMD_SYNC_TIME, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
+	return Comm_CreateNewPackage(netId, nodeId, CMD_SYNC_TIME, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
 }
-LoraPackage_t createPackageRequestGetFactoryInfo(uint8_t netId, uint8_t nodeId) 
+LoraPackage_t Comm_CreateReqGetFactoryInfo(uint8_t netId, uint8_t nodeId)
 {
 	 uint8_t payload[1];
-   return createNewPackage(netId, nodeId, CMD_GET_FACTORY_INFO, LORA_PACKAGE_TYPE_REQUEST, payload, 0, 0);
+   return Comm_CreateNewPackage(netId, nodeId, CMD_GET_FACTORY_INFO, LORA_PACKAGE_TYPE_REQUEST, payload, 0, 0);
 }
 
-LoraPackage_t createPackageRequestConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload)
+LoraPackage_t Comm_CreateReqConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload)
 {
-	return createNewPackage(netId, nodeId, CMD_CONFIG_CONNECTION, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
+	return Comm_CreateNewPackage(netId, nodeId, CMD_CONFIG_CONNECTION, LORA_PACKAGE_TYPE_REQUEST, (uint8_t*)&payload, sizeof(payload), 0);
 }
 
-void processRxData( uint8_t *buffer, uint32_t length) 
+void Comm_ProcessRxData(uint8_t *buffer, uint32_t length)
 {
 		if (length < 3) return;
 
@@ -116,7 +125,7 @@ void processRxData( uint8_t *buffer, uint32_t length)
 				}
 				isFrameValid = TRUE;
 				
-				Comm_ExecuteCommand(fwPackage);
+				executeCommand(fwPackage);
     } 
 		else 
 		{
@@ -128,7 +137,7 @@ void processRxData( uint8_t *buffer, uint32_t length)
 		}
 }
 
-uint8_t parsePayloadReqCtrlPwr (LoraPackage_t package, PayloadRequestCtrlPower_t *payload) 
+uint8_t Comm_ParsePayloadReqCtrlPwr(LoraPackage_t package, PayloadRequestCtrlPower_t *payload)
 {	
 	int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_CONTROL_POWER) {
@@ -141,8 +150,7 @@ uint8_t parsePayloadReqCtrlPwr (LoraPackage_t package, PayloadRequestCtrlPower_t
 	memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
 	return TRUE;
 }
-
-uint8_t parsePayloadReqSetSchedule (LoraPackage_t package, PayloadRequestSetSchedule_t *payload) 
+uint8_t Comm_ParsePayloadReqSetSchedule(LoraPackage_t package, PayloadRequestSetSchedule_t *payload)
 {
 	int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_SET_SCHEDULE) {
@@ -155,8 +163,7 @@ uint8_t parsePayloadReqSetSchedule (LoraPackage_t package, PayloadRequestSetSche
 	memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
 	return TRUE;
 }
-
-uint8_t parsePayloadReqSyncTime (LoraPackage_t package, PayloadRequestSyncTime_t *payload)
+uint8_t Comm_ParsePayloadReqSyncTime(LoraPackage_t package, PayloadRequestSyncTime_t *payload)
 {
 	int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_SYNC_TIME) {
@@ -169,7 +176,7 @@ uint8_t parsePayloadReqSyncTime (LoraPackage_t package, PayloadRequestSyncTime_t
 	memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
 	return TRUE;
 }
-uint8_t parsePayloadReqConfigConnection (LoraPackage_t package, PayloadRequestConfigConnection_t *payload)
+uint8_t Comm_ParsePayloadReqConfigConnection(LoraPackage_t package, PayloadRequestConfigConnection_t *payload)
 {
 	int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_CONFIG_CONNECTION) {
@@ -182,7 +189,7 @@ uint8_t parsePayloadReqConfigConnection (LoraPackage_t package, PayloadRequestCo
 	memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
 	return TRUE;
 }
-uint8_t parsePayloadReqAlarm (LoraPackage_t package, PayloadRequestAlarm_t *payload)
+uint8_t Comm_ParsePayloadReqAlarm(LoraPackage_t package, PayloadRequestAlarm_t *payload)
 {
 	int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_ALARM_MESSAGE) {
@@ -196,7 +203,7 @@ uint8_t parsePayloadReqAlarm (LoraPackage_t package, PayloadRequestAlarm_t *payl
 	return TRUE;
 }
 
-uint8_t parsePayloadResGetStatus (LoraPackage_t package, PayloadResponseGetStatus_t *payload) 
+uint8_t Comm_ParsePayloadResGetStatus(LoraPackage_t package, PayloadResponseGetStatus_t *payload)
 {
 		int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_GET_STATUS) {
@@ -210,7 +217,7 @@ uint8_t parsePayloadResGetStatus (LoraPackage_t package, PayloadResponseGetStatu
 	return TRUE;
 }
 
-uint8_t parsePayloadResGetFactoryInfo (LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload) 
+uint8_t Comm_ParsePayloadResGetFactoryInfo(LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload)
 {
 		int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_GET_FACTORY_INFO) {
@@ -224,7 +231,7 @@ uint8_t parsePayloadResGetFactoryInfo (LoraPackage_t package, PayloadResponseGet
 	return TRUE;
 }
 
-uint8_t parsePayloadResConfigConnection (LoraPackage_t package, PayloadResponseConfigConnection_t *payload) 
+uint8_t Comm_ParsePayloadResConfigConnection(LoraPackage_t package, PayloadResponseConfigConnection_t *payload)
 {
 		int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
 	if(package.code != CMD_CONFIG_CONNECTION) {
@@ -236,14 +243,4 @@ uint8_t parsePayloadResConfigConnection (LoraPackage_t package, PayloadResponseC
 	memset(payload, 0x00, sizeof(PayloadResponseConfigConnection_t));
 	memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
 	return TRUE;
-}
-
-
-void Comm_ExecuteCommand(LoraPackage_t package) {
-    for (int i = 0; cmdTable[i].handler != NULL; i++) {
-        if (cmdTable[i].cmdCode == package.code) {
-            cmdTable[i].handler(package); 
-            return;
-        }
-    }
 }

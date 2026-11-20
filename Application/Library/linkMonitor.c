@@ -159,7 +159,7 @@ static void sendProbe(void)
     payload.moduleIndex = 0;
     /* Never overwrite a slave's valid clock with the default January 2000 RTC. */
     payload.syncTime = systemInfo.currentTime>=1704067200u ? systemInfo.currentTime : 0;
-    LoraPackage_t packet = createPackageRequestGetStatus(systemInfo.netId, deviceBuff[id].nodeId, payload);
+    LoraPackage_t packet = Comm_CreateReqGetStatus(systemInfo.netId, deviceBuff[id].nodeId, payload);
     /* Publish before queueing: the higher-priority sender can run immediately. */
     linkProbe.transaction = packet.transactionID;
     linkProbe.state = 1;
