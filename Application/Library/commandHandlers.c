@@ -13,8 +13,21 @@ extern osMessageQueueId_t txMsgQueueHandle;
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 extern LoRa sLoRaCtrl;
+
+/* Private handlers are dispatched only through cmdTable. */
+static void handleHistory(LoraPackage_t packet);
+static void handleSetConfig(LoraPackage_t packet);
+static void handleGetStatus(LoraPackage_t packet);
+static void handleControlPower(LoraPackage_t packet);
+static void handleSetSchedule(LoraPackage_t packet);
+static void handleSyncTime(LoraPackage_t packet);
+static void handleGetFactoryInfo(LoraPackage_t packet);
+static void handleConfigConnection(LoraPackage_t packet);
+static void handleAlarmMessage(LoraPackage_t packet);
+
+/* Command dispatch table. Keep this order aligned with implementations below. */
 const CmdMapping_t cmdTable[] = {
-    {CMD_HISTORY, RemoteHistory_Handle},
+    {CMD_HISTORY, handleHistory},
     {CMD_SET_CONFIG, handleSetConfig},
 	{CMD_GET_STATUS, handleGetStatus},
 	{CMD_CONTROL_POWER, handleControlPower},
@@ -29,11 +42,12 @@ const CmdMapping_t cmdTable[] = {
 static uint16_t configTransaction;
 static uint8_t configNode;
 
-volatile ScheduleRequestState_t scheduleRequest;
+volatile CmdHandler_ScheduleRequestState_t scheduleRequest;
 
-void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload)
+/* Public schedule request API. */
+void CmdHandler_Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload)
 {
-    scheduleRequest.state = TIMER_IDLE;
+    scheduleRequest.state = eCmdHandler_TimerState_Idle;
     scheduleRequest.syncTime = payload->syncTime;
     scheduleRequest.deadline = payload->scheduleTime;
     scheduleRequest.transaction = packet->transactionID;
@@ -43,46 +57,46 @@ void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule
     scheduleRequest.attempts = 1;
     scheduleRequest.txOk = 0;
     scheduleRequest.retryAt = HAL_GetTick() + 3000u;
-    scheduleRequest.state = TIMER_WAITING;
+    scheduleRequest.state = eCmdHandler_TimerState_Waiting;
 }
 
-void Schedule_QueueFailed(void)
+void CmdHandler_Schedule_QueueFailed(void)
 {
-    if (scheduleRequest.state == TIMER_WAITING) scheduleRequest.state = TIMER_QUEUE_ERROR;
+    if (scheduleRequest.state == eCmdHandler_TimerState_Waiting) scheduleRequest.state = eCmdHandler_TimerState_QueueError;
 }
 
-void Schedule_CancelForNode(uint8_t node)
+void CmdHandler_Schedule_CancelForNode(uint8_t node)
 {
-    if (scheduleRequest.node == node) scheduleRequest.state = TIMER_IDLE;
+    if (scheduleRequest.node == node) scheduleRequest.state = eCmdHandler_TimerState_Idle;
 }
 
-uint8_t Schedule_StateForNode(uint8_t node)
+CmdHandler_TimerState_e CmdHandler_Schedule_StateForNode(uint8_t node)
 {
-    return scheduleRequest.node == node ? scheduleRequest.state : TIMER_IDLE;
+    return scheduleRequest.node == node ? scheduleRequest.state : eCmdHandler_TimerState_Idle;
 }
 
-uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet)
+uint8_t CmdHandler_Schedule_ShouldTransmit(const LoraPackage_t *packet)
 {
     if (packet->code != CMD_SET_SCHEDULE || packet->type != LORA_PACKAGE_TYPE_REQUEST) return 1;
-    return scheduleRequest.state == TIMER_WAITING && packet->netId == scheduleRequest.net &&
+    return scheduleRequest.state == eCmdHandler_TimerState_Waiting && packet->netId == scheduleRequest.net &&
         packet->nodeId == scheduleRequest.node && packet->transactionID == scheduleRequest.transaction;
 }
 
-void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
+void CmdHandler_Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
 {
-    if (Schedule_ShouldTransmit(packet) && packet->code == CMD_SET_SCHEDULE) {
+    if (CmdHandler_Schedule_ShouldTransmit(packet) && packet->code == CMD_SET_SCHEDULE) {
         if (success) scheduleRequest.txOk++;
         scheduleRequest.retryAt = HAL_GetTick() + 3000u;
     }
 }
 
-void Schedule_Tick(void)
+void CmdHandler_Schedule_Tick(void)
 {
-    if (scheduleRequest.state != TIMER_WAITING ||
+    if (scheduleRequest.state != eCmdHandler_TimerState_Waiting ||
         (int32_t)(HAL_GetTick() - scheduleRequest.retryAt) < 0) return;
     if (scheduleRequest.attempts >= 3 ||
         (scheduleRequest.deadline && systemInfo.currentTime >= scheduleRequest.deadline)) {
-        scheduleRequest.state = TIMER_TIMEOUT;
+        scheduleRequest.state = eCmdHandler_TimerState_Timeout;
         Main_SetBuzzerMode(BUZZER_LONG_BEEP);
         return;
     }
@@ -98,10 +112,10 @@ void Schedule_Tick(void)
     packet.rawData[packet.byteCount - 1] = packet.checkSum;
     scheduleRequest.attempts++;
     scheduleRequest.retryAt = HAL_GetTick() + 3000u;
-    if (osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) != osOK) Schedule_QueueFailed();
+    if (osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) != osOK) CmdHandler_Schedule_QueueFailed();
 }
 
-uint8_t sendCurrentModuleConfig(void)
+uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
 	DeviceInfo_t *device = &deviceBuff[systemInfo.currentDeviceId];
 	MotorData_t *module = &device->motorData[systemInfo.currentModuleId];
@@ -120,7 +134,14 @@ uint8_t sendCurrentModuleConfig(void)
 	return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
 }
 
-void handleSetConfig(LoraPackage_t packet)
+/* Command handler implementations, ordered as cmdTable. */
+static void handleHistory(LoraPackage_t packet)
+{
+    if (packet.code != CMD_HISTORY) return;
+    RemoteHistory_Handle(packet);
+}
+
+static void handleSetConfig(LoraPackage_t packet)
 {
     PayloadCommonResponse_t reply;
     if (packet.type != LORA_PACKAGE_TYPE_RESPONSE ||
@@ -134,31 +155,38 @@ void handleSetConfig(LoraPackage_t packet)
     Main_SetBuzzerMode(reply.result ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
 }
 
-void handleGetStatus(LoraPackage_t fwPackage) {
+static void handleGetStatus(LoraPackage_t fwPackage)
+{
 	if ((fwPackage.netId != systemInfo.netId) ||
-			(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
-			(fwPackage.code != CMD_GET_STATUS)) {
+		(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
+		(fwPackage.code != CMD_GET_STATUS))
+	{
 		return;
 	}
 	PayloadResponseGetStatus_t payloadResponse;
-	if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE) return;
-	if (Comm_ParsePayloadResGetStatus(fwPackage, &payloadResponse) == FALSE) {
+	if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE)
+		return;
+	if (Comm_ParsePayloadResGetStatus(fwPackage, &payloadResponse) == FALSE)
+	{
 		return;
 	}
-	if (payloadResponse.result != 1 || payloadResponse.moduleIndex != 0) return;
-	
-	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) {
-		if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId) {
+	if (payloadResponse.result != 1 || payloadResponse.moduleIndex != 0)
+		return;
+
+	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+	{
+		if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+		{
 			Link_RecordPacket(devNo, 1);
-            Link_RecordStatusReply(devNo, fwPackage.transactionID);
+			Link_RecordStatusReply(devNo, fwPackage.transactionID);
 			deviceBuff[devNo].motorData[0].pwrState = (MotorPowerState_t)payloadResponse.powerState;
 			deviceBuff[devNo].localTime = payloadResponse.localTime;
-			deviceBuff[devNo].motorData[0].scheduleTime = payloadResponse.scheduleTime;			
-			if ((scheduleRequest.state == TIMER_WAITING || scheduleRequest.state == TIMER_TIMEOUT) &&
-                fwPackage.nodeId == scheduleRequest.node &&
-                payloadResponse.scheduleTime == scheduleRequest.deadline &&
-                (!scheduleRequest.deadline || payloadResponse.powerState == MOTOR_POWER_ON))
-                scheduleRequest.state = TIMER_CONFIRMED;
+			deviceBuff[devNo].motorData[0].scheduleTime = payloadResponse.scheduleTime;
+			if ((scheduleRequest.state == eCmdHandler_TimerState_Waiting || scheduleRequest.state == eCmdHandler_TimerState_Timeout) &&
+				fwPackage.nodeId == scheduleRequest.node &&
+				payloadResponse.scheduleTime == scheduleRequest.deadline &&
+				(!scheduleRequest.deadline || payloadResponse.powerState == MOTOR_POWER_ON))
+				scheduleRequest.state = eCmdHandler_TimerState_Confirmed;
 			deviceBuff[devNo].motorData[0].phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
 			deviceBuff[devNo].motorData[0].phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
 			deviceBuff[devNo].motorData[0].phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
@@ -169,7 +197,7 @@ void handleGetStatus(LoraPackage_t fwPackage) {
 	}
 }
 
-void handleControlPower(LoraPackage_t fwPackage) {
+static void handleControlPower(LoraPackage_t fwPackage) {
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
 			(fwPackage.code != CMD_CONTROL_POWER)) {
@@ -190,7 +218,7 @@ void handleControlPower(LoraPackage_t fwPackage) {
 	}
 }
 
-void handleSetSchedule(LoraPackage_t fwPackage) {
+static void handleSetSchedule(LoraPackage_t fwPackage) {
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
 			(fwPackage.code != CMD_SET_SCHEDULE)) {
@@ -200,12 +228,12 @@ void handleSetSchedule(LoraPackage_t fwPackage) {
 	if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE || fwPackage.byteCount !=
 		LORA_PACKAGE_HEADER_SIZE + sizeof(payloadResponse) + LORA_PACKAGE_CRC_SIZE) return;
 	memcpy(&payloadResponse, &fwPackage.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(payloadResponse));
-	if ((scheduleRequest.state != TIMER_WAITING && scheduleRequest.state != TIMER_TIMEOUT) ||
+	if ((scheduleRequest.state != eCmdHandler_TimerState_Waiting && scheduleRequest.state != eCmdHandler_TimerState_Timeout) ||
         fwPackage.netId != scheduleRequest.net ||
         fwPackage.nodeId != scheduleRequest.node || fwPackage.transactionID != scheduleRequest.transaction ||
         payloadResponse.moduleIndex != scheduleRequest.module) return;
 	uint8_t accepted = payloadResponse.result == 1;
-	scheduleRequest.state = accepted ? TIMER_CONFIRMED : TIMER_REJECTED;
+	scheduleRequest.state = accepted ? eCmdHandler_TimerState_Confirmed : eCmdHandler_TimerState_Rejected;
 	Main_SetBuzzerMode(accepted ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
 	
 	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) {
@@ -221,7 +249,7 @@ void handleSetSchedule(LoraPackage_t fwPackage) {
 	}
 }
 
-void handleSyncTime(LoraPackage_t fwPackage) {
+static void handleSyncTime(LoraPackage_t fwPackage) {
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
 			(fwPackage.code != CMD_SYNC_TIME)) {
@@ -241,15 +269,18 @@ void handleSyncTime(LoraPackage_t fwPackage) {
 		}
 	}
 }
-void handleGetFactoryInfo(LoraPackage_t fwPackage){
+static void handleGetFactoryInfo(LoraPackage_t fwPackage){
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId != LORA_NODE_ID_DEFAULT && fwPackage.nodeId != LORA_NODE_ID_BROADCAST) ||
-			(fwPackage.code != CMD_GET_FACTORY_INFO)) {
+			(fwPackage.code != CMD_GET_FACTORY_INFO))
+	{
 		return;
 	}
 	PayloadResponseGetFactoryInfo_t payloadResponse;
 	if (Comm_ParsePayloadResGetFactoryInfo(fwPackage, &payloadResponse) == FALSE)
+	{
 		return;
+	}
 	
 	if (systemInfo.findDeviceStep == STEP_PROCESSING) {
 		systemInfo.findDeviceStep = STEP_DONE;
@@ -265,7 +296,7 @@ void handleGetFactoryInfo(LoraPackage_t fwPackage){
 		}
 	}
 }
-void handleConfigConnection(LoraPackage_t fwPackage) {
+static void handleConfigConnection(LoraPackage_t fwPackage) {
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId != LORA_NODE_ID_DEFAULT && fwPackage.nodeId != LORA_NODE_ID_BROADCAST) ||
 			(fwPackage.code != CMD_CONFIG_CONNECTION)) {
@@ -290,7 +321,7 @@ void handleConfigConnection(LoraPackage_t fwPackage) {
 		}
 	}
 }
-void handleAlarmMessage(LoraPackage_t fwPackage)
+static void handleAlarmMessage(LoraPackage_t fwPackage)
 {
 	if ((fwPackage.netId != systemInfo.netId) ||
 			(fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||

@@ -56,7 +56,7 @@ uint32_t Rtc_Read(void)
 uint8_t Rtc_Set(uint32_t timestamp)
 {
     if (timestamp<946684800u || timestamp>4102444799u) return RTC_SET_RANGE;
-    if (scheduleRequest.state==TIMER_WAITING) return RTC_SET_BUSY;
+    if (scheduleRequest.state==eCmdHandler_TimerState_Waiting) return RTC_SET_BUSY;
     for (uint8_t i=0;i<MAXIMUM_DEVICE;i++)
         for (uint8_t module=0;module<sizeof(deviceBuff[i].motorData)/sizeof(deviceBuff[i].motorData[0]);module++)
             if (!deviceBuff[i].isDelete && deviceBuff[i].motorData[module].pwrState==MOTOR_POWER_ON &&

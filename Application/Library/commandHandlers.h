@@ -4,30 +4,33 @@
 #include "communicationLora.h"
 
 typedef void (*CmdHandler_t)(LoraPackage_t fwPackage);
-void handleControlPower(LoraPackage_t fwPackage);
-void handleGetStatus(LoraPackage_t fwPackage) ;
-void handleSetSchedule(LoraPackage_t fwPackage);
-void handleSyncTime(LoraPackage_t fwPackage);
-void handleGetFactoryInfo(LoraPackage_t fwPackage);
-void handleConfigConnection(LoraPackage_t fwPackage);
-void handleAlarmMessage(LoraPackage_t fwPackage);
-void handleSetConfig(LoraPackage_t fwPackage);
-uint8_t sendCurrentModuleConfig(void);
+uint8_t CmdHandler_SendCurrentModuleConfig(void);
 
-enum { TIMER_IDLE, TIMER_WAITING, TIMER_CONFIRMED, TIMER_REJECTED, TIMER_TIMEOUT, TIMER_QUEUE_ERROR };
+typedef enum CmdHandler_TimerState_e
+{
+    eCmdHandler_TimerState_Idle,
+    eCmdHandler_TimerState_Waiting,
+    eCmdHandler_TimerState_Confirmed,
+    eCmdHandler_TimerState_Rejected,
+    eCmdHandler_TimerState_Timeout,
+    eCmdHandler_TimerState_QueueError
+} CmdHandler_TimerState_e;
+
 typedef struct {
     uint32_t syncTime, deadline, retryAt;
     uint16_t transaction;
-    uint8_t net, node, module, state, attempts, txOk;
-} ScheduleRequestState_t;
-extern volatile ScheduleRequestState_t scheduleRequest;
-void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload);
-void Schedule_QueueFailed(void);
-void Schedule_Tick(void);
-void Schedule_CancelForNode(uint8_t node);
-uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet);
-void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success);
-uint8_t Schedule_StateForNode(uint8_t node);
+    uint8_t net, node, module, attempts, txOk;
+    CmdHandler_TimerState_e state;
+} CmdHandler_ScheduleRequestState_t;
+
+extern volatile CmdHandler_ScheduleRequestState_t scheduleRequest;
+void CmdHandler_Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload);
+void CmdHandler_Schedule_QueueFailed(void);
+void CmdHandler_Schedule_Tick(void);
+void CmdHandler_Schedule_CancelForNode(uint8_t node);
+uint8_t CmdHandler_Schedule_ShouldTransmit(const LoraPackage_t *packet);
+void CmdHandler_Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success);
+CmdHandler_TimerState_e CmdHandler_Schedule_StateForNode(uint8_t node);
 typedef struct {
     uint8_t cmdCode;
     CmdHandler_t handler;

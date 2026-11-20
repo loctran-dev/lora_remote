@@ -260,12 +260,12 @@ static void DCS_FormatRemaining(uint32_t seconds, char *text)
 
 static void DCS_CountdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    uint8_t state = Schedule_StateForNode(device->nodeId);
-    if (state == TIMER_WAITING || state >= TIMER_REJECTED) {
+    CmdHandler_TimerState_e state = CmdHandler_Schedule_StateForNode(device->nodeId);
+    if (state == eCmdHandler_TimerState_Waiting || state >= eCmdHandler_TimerState_Rejected) {
         UG_TextboxSetText(&window_1, 11, "Timer");
-        UG_TextboxSetText(&window_1, 12, state == TIMER_WAITING ? "Sending" :
-            state == TIMER_REJECTED ? "Rejected" : state == TIMER_TIMEOUT ? "No reply" : "Queue err");
-        UG_TextboxSetForeColor(&window_1, 12, state == TIMER_WAITING ? C_CYAN : C_ORANGE);
+        UG_TextboxSetText(&window_1, 12, state == eCmdHandler_TimerState_Waiting ? "Sending" :
+            state == eCmdHandler_TimerState_Rejected ? "Rejected" : state == eCmdHandler_TimerState_Timeout ? "No reply" : "Queue err");
+        UG_TextboxSetForeColor(&window_1, 12, state == eCmdHandler_TimerState_Waiting ? C_CYAN : C_ORANGE);
         if (UG_TextboxCheckVisible(&window_1, TXB_ID_8)) UG_TextboxHide(&window_1, TXB_ID_8);
         return;
     }

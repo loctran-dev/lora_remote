@@ -353,7 +353,7 @@ void EDSS_CenterButtonPressedCallback(void)
     if (indexOfSettingMenu == 0 || (indexOfSettingMenu == 1 || indexOfSettingMenu == 6))
     {
         Screen_SaveDeviceSettings(systemInfo.currentDeviceId);
-        if (!sendCurrentModuleConfig())
+        if (!CmdHandler_SendCurrentModuleConfig())
             Main_SetBuzzerMode(BUZZER_LONG_BEEP);
     }
     if (indexOfSettingMenu == 2 || indexOfSettingMenu == 3)

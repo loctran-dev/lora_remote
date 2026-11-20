@@ -78,7 +78,7 @@ void Power_Tick(void)
     if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == SYS_MODE_ALARM ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
-        Screen_IsScheduleEditing() || scheduleRequest.state == TIMER_WAITING || RemoteHistory_Busy() ||
+        Screen_IsScheduleEditing() || scheduleRequest.state == eCmdHandler_TimerState_Waiting || RemoteHistory_Busy() ||
         currentScreen == &devicePairingScreen || systemInfo.isNeedSaveConfig || buttonsDown())
         return;
     if (systemInfo.runMode != SYS_MODE_SLEEP &&
