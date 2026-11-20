@@ -16,6 +16,7 @@
 - Mọi API được gọi từ file khác phải có tiền tố đại diện module, theo mẫu `<Module>_<Verb><Noun>`.
   - Ví dụ: `Comm_ProcessRxData()`, `RemoteHistory_Handle()`, `MotorHistory_Tick()` và `CmdHandler_Schedule_Tick()`.
 - API của `commandHandlers.c` dùng tiền tố `CmdHandler_`.
+- API của `schedule.c` dùng tiền tố `Schedule_`.
 - Khi một hàm đổi từ nội bộ thành API liên-file, bỏ `static`, thêm tiền tố module và thêm declaration vào header trong cùng thay đổi.
 
 ```c

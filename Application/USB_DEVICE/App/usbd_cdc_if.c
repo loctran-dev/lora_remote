@@ -29,6 +29,7 @@
 #include "linkMonitor.h"
 #include "powerSleep.h"
 #include "commandHandlers.h"
+#include "schedule.h"
 #include "remote_history.h"
 #include "rtcSetting.h"
 #include "FreeRTOS.h"
@@ -495,11 +496,13 @@ void CDC_ProcessEcho_FS(void)
         memcmp(UserRxBufferFS, "TIMER\n", 6) == 0)
     {
       MotorData_t *motor = &deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId];
+      Schedule_RequestState_t scheduleState;
+      Schedule_GetRequestState(&scheduleState);
       echoLength = snprintf((char*)UserRxBufferFS, APP_RX_DATA_SIZE,
         "TIMER NOW=%lu PWR=%u DEADLINE=%lu STATE=%u NODE=%u ID=%u TRY=%u TX_OK=%u SYNC=%lu TARGET=%lu\n",
         (unsigned long)systemInfo.currentTime, motor->pwrState, (unsigned long)motor->scheduleTime,
-        scheduleRequest.state, scheduleRequest.node, scheduleRequest.transaction, scheduleRequest.attempts,
-        scheduleRequest.txOk, (unsigned long)scheduleRequest.syncTime, (unsigned long)scheduleRequest.deadline);
+        scheduleState.state, scheduleState.node, scheduleState.transaction, scheduleState.attempts,
+        scheduleState.txOk, (unsigned long)scheduleState.syncTime, (unsigned long)scheduleState.deadline);
       responsePrepared = 1;
     }
     if (!responsePrepared && !probePending && echoLength == 5 &&

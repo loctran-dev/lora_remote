@@ -902,6 +902,16 @@
               <FileType>1</FileType>
               <FilePath>..\Library\commandHandlers.c</FilePath>
             </File>
+            <File>
+              <FileName>schedule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\schedule.c</FilePath>
+            </File>
+            <File>
+              <FileName>schedule.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Library\schedule.h</FilePath>
+            </File>
               <File><FileName>history_journal.c</FileName><FileType>1</FileType><FilePath>..\Library\history_journal.c</FilePath></File>
               <File><FileName>remote_history.c</FileName><FileType>1</FileType><FilePath>..\Library\remote_history.c</FilePath></File>
               <File><FileName>historyScreen.c</FileName><FileType>1</FileType><FilePath>..\Library\historyScreen.c</FilePath></File>

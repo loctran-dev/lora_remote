@@ -6,7 +6,7 @@
 #include "main.h"
 #include "utility.h"
 #include "powerSleep.h"
-#include "commandHandlers.h"
+#include "schedule.h"
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
@@ -260,12 +260,12 @@ static void DCS_FormatRemaining(uint32_t seconds, char *text)
 
 static void DCS_CountdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    CmdHandler_TimerState_e state = CmdHandler_Schedule_StateForNode(device->nodeId);
-    if (state == eCmdHandler_TimerState_Waiting || state >= eCmdHandler_TimerState_Rejected) {
+    Schedule_State_e state = Schedule_GetStateForNode(device->nodeId);
+    if (state == eSchedule_State_Waiting || state >= eSchedule_State_Rejected) {
         UG_TextboxSetText(&window_1, 11, "Timer");
-        UG_TextboxSetText(&window_1, 12, state == eCmdHandler_TimerState_Waiting ? "Sending" :
-            state == eCmdHandler_TimerState_Rejected ? "Rejected" : state == eCmdHandler_TimerState_Timeout ? "No reply" : "Queue err");
-        UG_TextboxSetForeColor(&window_1, 12, state == eCmdHandler_TimerState_Waiting ? C_CYAN : C_ORANGE);
+        UG_TextboxSetText(&window_1, 12, state == eSchedule_State_Waiting ? "Sending" :
+            state == eSchedule_State_Rejected ? "Rejected" : state == eSchedule_State_Timeout ? "No reply" : "Queue err");
+        UG_TextboxSetForeColor(&window_1, 12, state == eSchedule_State_Waiting ? C_CYAN : C_ORANGE);
         if (UG_TextboxCheckVisible(&window_1, TXB_ID_8)) UG_TextboxHide(&window_1, TXB_ID_8);
         return;
     }

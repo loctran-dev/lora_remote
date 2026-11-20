@@ -9,6 +9,7 @@
 #include "linkMonitor.h"
 #include "powerSleep.h"
 #include "remote_history.h"
+#include "schedule.h"
 extern osMessageQueueId_t txMsgQueueHandle;
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
@@ -41,79 +42,6 @@ const CmdMapping_t cmdTable[] = {
 
 static uint16_t configTransaction;
 static uint8_t configNode;
-
-volatile CmdHandler_ScheduleRequestState_t scheduleRequest;
-
-/* Public schedule request API. */
-void CmdHandler_Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload)
-{
-    scheduleRequest.state = eCmdHandler_TimerState_Idle;
-    scheduleRequest.syncTime = payload->syncTime;
-    scheduleRequest.deadline = payload->scheduleTime;
-    scheduleRequest.transaction = packet->transactionID;
-    scheduleRequest.net = packet->netId;
-    scheduleRequest.node = packet->nodeId;
-    scheduleRequest.module = payload->moduleIndex;
-    scheduleRequest.attempts = 1;
-    scheduleRequest.txOk = 0;
-    scheduleRequest.retryAt = HAL_GetTick() + 3000u;
-    scheduleRequest.state = eCmdHandler_TimerState_Waiting;
-}
-
-void CmdHandler_Schedule_QueueFailed(void)
-{
-    if (scheduleRequest.state == eCmdHandler_TimerState_Waiting) scheduleRequest.state = eCmdHandler_TimerState_QueueError;
-}
-
-void CmdHandler_Schedule_CancelForNode(uint8_t node)
-{
-    if (scheduleRequest.node == node) scheduleRequest.state = eCmdHandler_TimerState_Idle;
-}
-
-CmdHandler_TimerState_e CmdHandler_Schedule_StateForNode(uint8_t node)
-{
-    return scheduleRequest.node == node ? scheduleRequest.state : eCmdHandler_TimerState_Idle;
-}
-
-uint8_t CmdHandler_Schedule_ShouldTransmit(const LoraPackage_t *packet)
-{
-    if (packet->code != CMD_SET_SCHEDULE || packet->type != LORA_PACKAGE_TYPE_REQUEST) return 1;
-    return scheduleRequest.state == eCmdHandler_TimerState_Waiting && packet->netId == scheduleRequest.net &&
-        packet->nodeId == scheduleRequest.node && packet->transactionID == scheduleRequest.transaction;
-}
-
-void CmdHandler_Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
-{
-    if (CmdHandler_Schedule_ShouldTransmit(packet) && packet->code == CMD_SET_SCHEDULE) {
-        if (success) scheduleRequest.txOk++;
-        scheduleRequest.retryAt = HAL_GetTick() + 3000u;
-    }
-}
-
-void CmdHandler_Schedule_Tick(void)
-{
-    if (scheduleRequest.state != eCmdHandler_TimerState_Waiting ||
-        (int32_t)(HAL_GetTick() - scheduleRequest.retryAt) < 0) return;
-    if (scheduleRequest.attempts >= 3 ||
-        (scheduleRequest.deadline && systemInfo.currentTime >= scheduleRequest.deadline)) {
-        scheduleRequest.state = eCmdHandler_TimerState_Timeout;
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
-        return;
-    }
-    PayloadRequestSetSchedule_t payload;
-    payload.moduleIndex = scheduleRequest.module;
-    payload.syncTime = scheduleRequest.syncTime;
-    payload.scheduleTime = scheduleRequest.deadline;
-    LoraPackage_t packet = Comm_CreateReqSetSchedule(scheduleRequest.net, scheduleRequest.node, payload);
-    /* Retransmit the SAME transaction and absolute deadline: never extend a timer. */
-    packet.transactionID = scheduleRequest.transaction;
-    memcpy(packet.rawData + 6, &packet.transactionID, sizeof(packet.transactionID));
-    packet.checkSum = calculateCRC(packet.rawData, packet.length);
-    packet.rawData[packet.byteCount - 1] = packet.checkSum;
-    scheduleRequest.attempts++;
-    scheduleRequest.retryAt = HAL_GetTick() + 3000u;
-    if (osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) != osOK) CmdHandler_Schedule_QueueFailed();
-}
 
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
@@ -182,11 +110,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
 			deviceBuff[devNo].motorData[0].pwrState = (MotorPowerState_t)payloadResponse.powerState;
 			deviceBuff[devNo].localTime = payloadResponse.localTime;
 			deviceBuff[devNo].motorData[0].scheduleTime = payloadResponse.scheduleTime;
-			if ((scheduleRequest.state == eCmdHandler_TimerState_Waiting || scheduleRequest.state == eCmdHandler_TimerState_Timeout) &&
-				fwPackage.nodeId == scheduleRequest.node &&
-				payloadResponse.scheduleTime == scheduleRequest.deadline &&
-				(!scheduleRequest.deadline || payloadResponse.powerState == MOTOR_POWER_ON))
-				scheduleRequest.state = eCmdHandler_TimerState_Confirmed;
+			Schedule_HandleStatus(&fwPackage, &payloadResponse);
 			deviceBuff[devNo].motorData[0].phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
 			deviceBuff[devNo].motorData[0].phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
 			deviceBuff[devNo].motorData[0].phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
@@ -228,19 +152,16 @@ static void handleSetSchedule(LoraPackage_t fwPackage) {
 	if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE || fwPackage.byteCount !=
 		LORA_PACKAGE_HEADER_SIZE + sizeof(payloadResponse) + LORA_PACKAGE_CRC_SIZE) return;
 	memcpy(&payloadResponse, &fwPackage.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(payloadResponse));
-	if ((scheduleRequest.state != eCmdHandler_TimerState_Waiting && scheduleRequest.state != eCmdHandler_TimerState_Timeout) ||
-        fwPackage.netId != scheduleRequest.net ||
-        fwPackage.nodeId != scheduleRequest.node || fwPackage.transactionID != scheduleRequest.transaction ||
-        payloadResponse.moduleIndex != scheduleRequest.module) return;
+	uint32_t deadline;
+	if (!Schedule_HandleResponse(&fwPackage, &payloadResponse, &deadline)) return;
 	uint8_t accepted = payloadResponse.result == 1;
-	scheduleRequest.state = accepted ? eCmdHandler_TimerState_Confirmed : eCmdHandler_TimerState_Rejected;
 	Main_SetBuzzerMode(accepted ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
 	
 	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) {
 		if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId) {
 			/* ACK confirms this exact deadline; STATUS remains authoritative afterwards. */
-            if (accepted && scheduleRequest.module < sizeof(deviceBuff[devNo].motorData) / sizeof(deviceBuff[devNo].motorData[0]))
-                deviceBuff[devNo].motorData[scheduleRequest.module].scheduleTime = scheduleRequest.deadline;
+			if (accepted && payloadResponse.moduleIndex < sizeof(deviceBuff[devNo].motorData) / sizeof(deviceBuff[devNo].motorData[0]))
+                deviceBuff[devNo].motorData[payloadResponse.moduleIndex].scheduleTime = deadline;
 			Link_RecordPacket(devNo, 0);
 			deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
 			deviceBuff[devNo].lastCommTime = systemInfo.currentTime;

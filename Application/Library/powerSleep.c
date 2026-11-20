@@ -1,6 +1,6 @@
 #include "powerSleep.h"
-#include "commandHandlers.h"
 #include "remote_history.h"
+#include "schedule.h"
 #include "linkMonitor.h"
 #include "screens.h"
 #include "main.h"
@@ -78,7 +78,7 @@ void Power_Tick(void)
     if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == SYS_MODE_ALARM ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
-        Screen_IsScheduleEditing() || scheduleRequest.state == eCmdHandler_TimerState_Waiting || RemoteHistory_Busy() ||
+        Screen_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
         currentScreen == &devicePairingScreen || systemInfo.isNeedSaveConfig || buttonsDown())
         return;
     if (systemInfo.runMode != SYS_MODE_SLEEP &&

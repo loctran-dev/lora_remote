@@ -42,6 +42,7 @@
 #include "linkMonitor.h"
 #include "powerSleep.h"
 #include "commandHandlers.h"
+#include "schedule.h"
 #include "remote_history.h"
 #include "rtcSetting.h"
 /* USER CODE END Includes */
@@ -979,7 +980,7 @@ void Main_SetMotorPower(uint8_t motorPower)
 		return;
 	}
 	if (deviceBuff[systemInfo.currentDeviceId].isDelete == FALSE) {
-		CmdHandler_Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
+		Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
 		LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, systemInfo.currentModuleId, motorPower);
 		osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
 	} 
@@ -1005,9 +1006,9 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
 		payload.scheduleTime = systemInfo.currentTime + time;
 	}
 	LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
-	CmdHandler_Schedule_Track(&packageOut, &payload);
+	Schedule_Track(&packageOut, &payload);
 	if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
-        CmdHandler_Schedule_QueueFailed();
+        Schedule_QueueFailed();
 }
 
 void Main_ScanNewDevice(void)
@@ -1312,7 +1313,7 @@ void StartSystemTask(void *argument)
 				Main_SetBuzzerMode(BUZZER_LONG_BEEP);
 		}
         RemoteHistory_Tick();
-        CmdHandler_Schedule_Tick();
+        Schedule_Tick();
         if (!powerSleep.rxPending) Link_Tick();
         Power_TryStop();
         osMutexRelease(uiMutex);
@@ -1505,7 +1506,7 @@ void StartLoraSendTask(void *argument)
   {
 		queueStatus = osMessageQueueGet(txMsgQueueHandle, &txPackage, NULL, osWaitForever); 
 		if (queueStatus == osOK) {
-			if (!Link_ShouldTransmit(&txPackage) || !CmdHandler_Schedule_ShouldTransmit(&txPackage)) continue;
+			if (!Link_ShouldTransmit(&txPackage) || !Schedule_ShouldTransmit(&txPackage)) continue;
 			osMutexAcquire(radioMutex, osWaitForever);
 			powerSleep.txBusy = 1;
 			uint8_t sent = LoRa_transmit(&sLoRaCtrl, txPackage.rawData, txPackage.byteCount, 5000);
@@ -1513,7 +1514,7 @@ void StartLoraSendTask(void *argument)
 			powerSleep.txBusy = 0;
 			osMutexRelease(radioMutex);
 			Link_TxFinished(&txPackage, sent);
-			CmdHandler_Schedule_TxFinished(&txPackage, sent);
+			Schedule_TxFinished(&txPackage, sent);
 			osDelay(pdMS_TO_TICKS(200));
 		}
   }
