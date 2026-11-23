@@ -9,14 +9,14 @@ class HistoryUiTests(unittest.TestCase):
     def setUp(self):
         self.hw=h.JournalTests();self.hw.setUp();self.cpu=self.hw.cpu;self.call=self.hw.call
         self.hw.globals_for_sync()
-        self.text={};self.bg={};self.visible={}
+        self.text={};self.bg={};self.visible={};self.beeps=[]
         self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("screen_mms.o:init")|1,h.symbol("screen_mms.o:render")|1))
         names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
                "UG_WindowSetBackColor","UG_WindowSetXStart","UG_WindowSetXEnd","UG_WindowSetYStart","UG_WindowSetYEnd",
                "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",
                "UG_TextboxSetForeColor","UG_TextboxSetAlignment","UG_TextboxSetScrollEnabled","UG_TextboxCheckVisible",
                "UG_TextboxShow","UG_TextboxHide","UG_Update","screen_mms.o:init","screen_mms.o:render",
-               "Screen_StatusBarCreate","Screen_StatusBarUpdate"]
+               "Screen_StatusBarCreate","Screen_StatusBarUpdate","Main_SetBuzzerMode"]
         hooks={h.symbol(n)&~1:n for n in names}
         def intercept(cpu,address,size,data):
             if address not in hooks:return
@@ -24,10 +24,18 @@ class HistoryUiTests(unittest.TestCase):
             if n=="UG_TextboxSetText":self.text[a[1]]=bytes(cpu.mem_read(a[2],80)).split(b"\0")[0].decode()
             if n=="UG_TextboxSetBackColor":self.bg[a[1]]=a[2]
             if n=="UG_TextboxCheckVisible":result=int(self.visible.get(a[1],True))
+            if n=="Main_SetBuzzerMode":self.beeps.append(a[0])
             if n=="UG_TextboxShow":self.visible[a[1]]=True
             if n=="UG_TextboxHide":self.visible[a[1]]=False
             cpu.reg_write(UC_ARM_REG_R0,result);cpu.reg_write(UC_ARM_REG_PC,cpu.reg_read(UC_ARM_REG_LR))
         self.cpu.hook_add(UC_HOOK_CODE,intercept)
+    def test_every_history_button_beeps(self):
+        for i in range(2):self.hw.append()
+        self.open_list()
+        for name in ["leftClicked","rightClicked","centerClicked","centerPressed","rightPressed"]:
+            del self.beeps[:]
+            self.call("screen_hs.o:"+name)
+            self.assertEqual(len(self.beeps),1,name)
     def open_list(self):
         self.call("Screen_OpenHistory");self.call("screen_hs.o:centerClicked")
     def test_menu_picker_list_details_and_back_preserve_selection(self):

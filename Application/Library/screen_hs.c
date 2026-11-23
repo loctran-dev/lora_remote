@@ -170,17 +170,20 @@ static void render(void)
 
 static void leftClicked(void)
 {
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     move(-1);
 }
 
 static void rightClicked(void)
 {
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     move(1);
 }
 
 /* Picker -> list -> detail -> list. */
 static void centerClicked(void)
 {
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (historyScreenMode == MODE_PICKER)
     {
         if (!available(chosenDevice))
@@ -208,6 +211,7 @@ static void centerClicked(void)
 /* Back one mode; from the picker, back to the main menu. */
 static void rightPressed(void)
 {
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (historyScreenMode)
     {
         historyScreenMode--;
@@ -229,6 +233,7 @@ static void centerPressed(void)
     uint16_t oldSlot;
     uint32_t oldGeneration;
 
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (!historyScreenMode)
     {
         return;

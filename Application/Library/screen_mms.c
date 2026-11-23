@@ -130,14 +130,12 @@ static void rightClicked(void)
 /* Open the selected item. */
 static void centerClicked(void)
 {
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (menuIndex == ITEM_HISTORY)
     {
         Screen_OpenHistory();
-        return;
     }
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-
-    if (menuIndex == ITEM_DEVICE_MANAGER)
+    else if (menuIndex == ITEM_DEVICE_MANAGER)
     {
         Screen_OpenDeviceManager();
     }
