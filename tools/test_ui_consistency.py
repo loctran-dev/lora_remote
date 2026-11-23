@@ -107,7 +107,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         for item in range(7):
             with self.subTest(item=item):
                 self.put(h.symbol('indexOfSettingMenu')[0],item)
-                self.call('EDSS_Init');self.call('EDSS_Render');self.header();self.layout();self.check_help()
+                self.call('screen_edss.o:init');self.call('screen_edss.o:render');self.header();self.layout();self.check_help()
     def check_help(self):
         for id in (60,61):
             x,y,xe,ye=self.rect[('UG_TextboxCreate',id)]

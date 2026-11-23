@@ -11,7 +11,7 @@ class DeviceMenuTests(MenuHarness):
         self.mocks(["Screen_SettingsMenuCreateStacked", "Screen_SettingsMenuBegin",
                     "Screen_SettingsMenuPage", "Screen_SettingsMenuRow",
                     "Screen_SettingsMenuUpdate", "Main_SetBuzzerMode",
-                    "UG_WindowHide", "UG_WindowDelete", "EDSS_Init", "EDSS_Render"])
+                    "UG_WindowHide", "UG_WindowDelete", "screen_edss.o:init", "screen_edss.o:render"])
         self.add(0)
         self.select(0)
         self.call("Link_Init", 0)
@@ -24,7 +24,7 @@ class DeviceMenuTests(MenuHarness):
         self.cpu.mem_write(self.module + 40, b"ABCDEFGHIJKLMNOPQRS\0")
         self.cpu.mem_write(self.module + 60, struct.pack("<fI", 12.34, 30))
         self.put(self.module + 68, 1)
-        for screen, init, render in [("editDeviceSettingScreen", "EDSS_Init", "EDSS_Render"),
+        for screen, init, render in [("editDeviceSettingScreen", "screen_edss.o:init", "screen_edss.o:render"),
                                      ("deviceSettingScreen", "screen_dss.o:init", "screen_dss.o:render")]:
             self.cpu.mem_write(harness.symbol(screen)[0] + 4,
                                struct.pack("<II", harness.symbol(init)[0] | 1,
@@ -62,7 +62,7 @@ class DeviceMenuTests(MenuHarness):
         for position in range(7):
             self.call("screen_dss.o:centerClicked")
             self.assertEqual(self.get(harness.symbol("indexOfSettingMenu")[0]), position)
-            self.call("EDSS_RightButtonPressedCallback")
+            self.call("screen_edss.o:rightPressed")
             rows = self.render()
             self.assertTrue(rows[position % 4][1][3])
             self.advance(1)
