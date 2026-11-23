@@ -26,11 +26,11 @@ class RemoteScheduleChecks(harness.FirmwareHarness):
         self.cpu.mem_write(self.system + self.time_offset, struct.pack("<I", 1000))
         self.cpu.mem_write(0x20008000, b"00h01\0")
         self.cpu.mem_write(harness.symbol("deviceControlScreen")[0] + 4,
-                           struct.pack("<II", harness.symbol("DCS_Init")[0] | 1,
-                                       harness.symbol("DCS_Render")[0] | 1))
+                           struct.pack("<II", harness.symbol("screen_dcs.o:init")[0] | 1,
+                                       harness.symbol("screen_dcs.o:render")[0] | 1))
         self.packets = []
         names = ["osMessageQueuePut", "Main_SetBuzzerMode", "UG_WindowHide",
-                 "UG_WindowDelete", "DCS_Init", "DCS_Render", "DCS_TimerRender"]
+                 "UG_WindowDelete", "screen_dcs.o:init", "screen_dcs.o:render", "screen_dcs.o:timerRender"]
         hooks = {harness.symbol(name)[0] & ~1: name for name in names}
 
         def intercept(cpu, address, size, data):
@@ -62,22 +62,22 @@ class RemoteScheduleChecks(harness.FirmwareHarness):
     def test_custom_00h01_transmits_now_plus_60_seconds(self):
         self.mode(0, editing=True)
         self.cpu.mem_write(harness.symbol("scheduleCustomMinutes")[0], struct.pack("<H", 1))
-        self.call("DCS_CenterButtonPressedCallback")
+        self.call("screen_dcs.o:centerPressed")
         self.assertEqual(self.payload(), (0, 1000, 1060))
 
     def test_30_minute_preset_transmits_now_plus_1800(self):
         self.mode(2)
-        self.call("DCS_CenterButtonClickedCallback")
+        self.call("screen_dcs.o:centerClicked")
         self.assertEqual(self.payload(), (0, 1000, 2800))
 
     def test_off_preset_transmits_zero_deadline(self):
         self.mode(1)
-        self.call("DCS_CenterButtonClickedCallback")
+        self.call("screen_dcs.o:centerClicked")
         self.assertEqual(self.payload(), (0, 1000, 0))
 
     def test_holding_center_on_preset_goes_back_without_sending(self):
         self.mode(1)
-        self.call("DCS_CenterButtonPressedCallback")
+        self.call("screen_dcs.o:centerPressed")
         self.assertFalse(self.packets)
 
     def test_deleted_device_cannot_send_timer(self):

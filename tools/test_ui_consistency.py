@@ -88,7 +88,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         for init,render in [('screen_mms.o:init','screen_mms.o:render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
                             ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('screen_hs.o:init','screen_hs.o:render'),
                             ('screens.o:managerInit','screens.o:managerRender'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
-                            ('DCS_Init','DCS_Render')]:
+                            ('screen_dcs.o:init','screen_dcs.o:render')]:
             with self.subTest(screen=init):
                 self.call(init);self.call(render);self.header();self.layout()
     def test_main_menu_and_pairing_clock_advances_without_reentering_screen(self):
@@ -119,7 +119,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         for custom in (0,1):
             self.put(h.symbol('inScheduleSelection')[0],1)
             self.put(h.symbol('adjustingScheduleValue')[0],custom)
-            self.call('DCS_Init');self.call('DCS_Render');self.header();self.layout()
+            self.call('screen_dcs.o:init');self.call('screen_dcs.o:render');self.header();self.layout()
     def test_pairing_states_have_no_duplicate_footer_or_overlapping_data_rows(self):
         for state in range(6):
             with self.subTest(state=state):

@@ -30,12 +30,12 @@ class TimerUiTests(h.FirmwareHarness):
         self.sent = []
         self.creates = 0
         self.cpu.mem_write(h.symbol("deviceControlScreen")[0] + 4,
-                           struct.pack("<II", h.symbol("DCS_Init")[0] | 1,
-                                       h.symbol("DCS_Render")[0] | 1))
+                           struct.pack("<II", h.symbol("screen_dcs.o:init")[0] | 1,
+                                       h.symbol("screen_dcs.o:render")[0] | 1))
         names = ["Main_SetBuzzerMode", "Main_SetScheduleTimeToCurrentModule", "UG_TextboxSetText",
                  "UG_TextboxSetBackColor", "UG_TextboxSetForeColor", "UG_TextboxCheckVisible",
                  "UG_TextboxShow", "UG_TextboxHide", "UG_Update", "Screen_UpdateBattery",
-                 "DCS_TimerText", "DCS_Init", "DCS_Render", "UG_WindowCreate", "UG_WindowHide",
+                 "screen_dcs.o:createText", "screen_dcs.o:init", "screen_dcs.o:render", "UG_WindowCreate", "UG_WindowHide",
                  "UG_WindowDelete", "UG_WindowSetStyle", "UG_WindowSetTitleHeight",
                  "UG_WindowSetBackColor", "UG_WindowSetXStart", "UG_WindowSetYStart",
                  "UG_WindowSetXEnd", "UG_WindowSetYEnd", "UG_WindowShow", "Screen_StatusBarCreate",
@@ -55,7 +55,7 @@ class TimerUiTests(h.FirmwareHarness):
             elif name == "UG_TextboxCheckVisible": result = int(self.visible.get(args[1], True))
             elif name in ["UG_TextboxShow", "UG_TextboxHide"]:
                 self.visible[args[1]] = name == "UG_TextboxShow"
-            elif name == "DCS_TimerText":
+            elif name == "screen_dcs.o:createText":
                 extra = struct.unpack("<5I", bytes(cpu.mem_read(cpu.reg_read(UC_ARM_REG_SP), 20)))
                 self.rectangles[args[1]] = (args[2], args[3], extra[0], extra[1])
             elif name == "UG_WindowCreate": self.creates += 1
@@ -82,7 +82,7 @@ class TimerUiTests(h.FirmwareHarness):
     def test_next_moves_focus_across_four_digits_skipping_colon(self):
         self.editor(12 * 60 + 34)
         for expected in (1, 2, 3, 0):
-            self.call("DCS_CenterButtonClickedCallback")
+            self.call("screen_dcs.o:centerClicked")
             self.assertEqual(self.get(h.symbol("indexScheduleValue")[0]), expected)
             self.assertEqual([self.texts[32 + i] for i in range(4)], list("1234"))
             selected = [i for i in range(4) if self.backgrounds[32 + i] != 0x2104]
@@ -91,37 +91,37 @@ class TimerUiTests(h.FirmwareHarness):
     def test_selected_digit_is_the_only_changed_digit(self):
         for position, expected in enumerate([22 * 60 + 34, 13 * 60 + 34, 12 * 60 + 44, 12 * 60 + 35]):
             self.editor(12 * 60 + 34, position)
-            self.call("DCS_LeftButtonClickedCallback")
+            self.call("screen_dcs.o:leftClicked")
             self.assertEqual(self.minutes(), expected)
 
     def test_minutes_tens_wrap_at_five_not_nine(self):
         self.editor(50, 2)
-        self.call("DCS_LeftButtonClickedCallback")
+        self.call("screen_dcs.o:leftClicked")
         self.assertEqual(self.minutes(), 0)
-        self.call("DCS_RightButtonClickedCallback")
+        self.call("screen_dcs.o:rightClicked")
         self.assertEqual(self.minutes(), 50)
 
     def test_hour_tens_wrap_without_modifying_minutes(self):
         self.editor(90 * 60 + 59, 0)
-        self.call("DCS_LeftButtonClickedCallback")
+        self.call("screen_dcs.o:leftClicked")
         self.assertEqual(self.minutes(), 59)
 
     def test_zero_duration_is_rejected_without_transmission(self):
         self.editor()
-        self.call("DCS_CenterButtonPressedCallback")
+        self.call("screen_dcs.o:centerPressed")
         self.assertFalse(self.sent)
         self.assertEqual(self.texts[39], "Minimum: 1 minute")
         self.assertTrue(self.call("Screen_IsScheduleEditing"))
 
     def test_custom_apply_uses_numeric_state_not_string_cursor(self):
         self.editor(61)
-        self.call("DCS_CenterButtonPressedCallback")
+        self.call("screen_dcs.o:centerPressed")
         self.assertEqual(self.sent, [3660])
         self.assertFalse(self.call("Screen_IsScheduleEditing"))
 
     def test_hold_right_cancels_custom_without_sending(self):
         self.editor(61)
-        self.call("DCS_RightButtonPressedCallback")
+        self.call("screen_dcs.o:rightPressed")
         self.assertFalse(self.sent)
         self.assertFalse(self.call("Screen_IsScheduleEditing"))
 
@@ -129,12 +129,12 @@ class TimerUiTests(h.FirmwareHarness):
         self.editor()
         self.put(h.symbol("adjustingScheduleValue")[0], 0)
         self.put(h.symbol("indexScheduleSelection")[0], 2)
-        self.call("DCS_CenterButtonPressedCallback")
+        self.call("screen_dcs.o:centerPressed")
         self.assertFalse(self.sent)
 
     def test_digit_and_separator_boxes_do_not_overlap(self):
         self.editor()
-        self.call("DCS_TimerScreenCreate")
+        self.call("screen_dcs.o:createTimerScreen")
         for left, right in [(32, 33), (33, 36), (36, 34), (34, 35)]:
             self.assertLess(self.rectangles[left][2], self.rectangles[right][0])
         self.assertLess(self.rectangles[35][3], self.rectangles[38][1])
@@ -146,7 +146,7 @@ class TimerUiTests(h.FirmwareHarness):
         self.put(self.module + self.offset["pwrState"], power)
         self.put(self.device + 32, int(offline))
         before = bytes(self.cpu.mem_read(self.module, 72))
-        self.call("DCS_CountdownUpdate", self.device, self.module)
+        self.call("screen_dcs.o:countdownUpdate", self.device, self.module)
         self.assertEqual(bytes(self.cpu.mem_read(self.module, 72)), before)
 
     def test_active_countdown_separates_time_left_from_deadline(self):
