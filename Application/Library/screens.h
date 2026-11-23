@@ -110,16 +110,14 @@ void Screen_SettingsMenuUpdate(void);
 void Screen_EmptyControlInit(void);
 void Screen_EmptyControlRender(void);
 
-/* screens.c: device manager */
-void Screen_OpenDeviceManager(void);
-uint8_t Screen_ManagerSelectedDevice(void);
-
 /* screens.c: menu scrolling and character editor */
 void Screen_MenuScrollUpdate(uint8_t count, uint8_t selected);
 void Screen_EditCharactersCreate(uint8_t count);
 void Screen_EditCharactersUpdate(uint8_t position);
 
 /* Implemented by individual screens (screen_*.c). */
+void Screen_OpenDeviceManager(void);
+uint8_t Screen_ManagerSelectedDevice(void);
 void Screen_ShowMotorLocked(uint8_t motorPower);
 void Screen_ShowConnectionError(uint8_t deviceId);
 uint8_t Screen_IsScheduleEditing(void);

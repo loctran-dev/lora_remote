@@ -6,7 +6,6 @@
 #include "image_data.h"
 #include "main.h"
 
-#define MANAGER_ROWS        4
 #define EDIT_CHARACTERS_MAX 19
 
 extern SystemInfo_t systemInfo;
@@ -44,12 +43,6 @@ UG_GIF gif_1;
 UG_GIF gif_2;
 UG_REALEDIT real_edit_1;
 
-/* Device manager state. */
-static uint8_t managerIds[MAXIMUM_DEVICE];
-static uint8_t managerCount;
-static uint8_t managerSelected;
-static uint8_t managerPage = 0xFF;
-
 /* Settings menu state. */
 static uint8_t settingsPage;
 static uint8_t settingsPageChanged;
@@ -61,25 +54,11 @@ static UG_TEXTBOX editCharacters[EDIT_CHARACTERS_MAX];
 static uint8_t editCharacterCount;
 
 static void windowCallback(UG_MESSAGE *message);
-static void noAction(void);
 static void createWindow(void);
 static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye,
     char *text, UG_COLOR background);
 static void createSettingsMenu(char *title, uint8_t stacked);
 static void saveRadioSettings(void);
-static void managerInit(void);
-static void managerRender(void);
-static void managerPrevious(void);
-static void managerNext(void);
-static void managerToggle(void);
-static void managerBack(void);
-
-Screen_t deviceManagerScreen = {
-    0, managerInit, managerRender,
-    managerPrevious, managerNext, managerToggle, noAction, noAction,
-    managerBack, managerBack, managerBack, noAction, noAction
-};
-
 /* Device visibility and selection ========================================== */
 
 /* Hide is device-level in the current single-module storage layout. */
@@ -325,22 +304,6 @@ void Screen_EmptyControlRender(void)
     UG_Update();
 }
 
-/* Device manager =========================================================== */
-
-void Screen_OpenDeviceManager(void)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &deviceManagerScreen;
-    currentScreen->init();
-    currentScreen->render();
-}
-
-uint8_t Screen_ManagerSelectedDevice(void)
-{
-    return managerSelected < managerCount ? managerIds[managerSelected] : MAXIMUM_DEVICE;
-}
-
 /* Menu scrolling and character editor ====================================== */
 
 void Screen_MenuScrollUpdate(uint8_t count, uint8_t selected)
@@ -398,10 +361,6 @@ void Screen_EditCharactersUpdate(uint8_t position)
 static void windowCallback(UG_MESSAGE *message)
 {
     (void)message;
-}
-
-static void noAction(void)
-{
 }
 
 static void createWindow(void)
@@ -480,140 +439,4 @@ static void saveRadioSettings(void)
     storageData.frequencyConfig = systemInfo.frequencyConfig;
     storageData.sfConfig = systemInfo.sfConfig;
     systemInfo.isNeedSaveConfig = 1;
-}
-
-static void managerInit(void)
-{
-    UG_TEXTBOX *rows[] = {&textbox_7, &textbox_9, &textbox_11, &textbox_13};
-
-    /* List every paired device, including hidden ones. */
-    managerCount = 0;
-    managerSelected = 0;
-    managerPage = 0xFF;
-    for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
-    {
-        if (!deviceBuff[id].isDelete)
-        {
-            managerIds[managerCount++] = id;
-        }
-    }
-
-    createWindow();
-    Screen_StatusBarCreate();
-    createText(&textbox_6, 5, 0, 20, 127, 37, "Device manager", C_DARK_SLATE_BLUE);
-    for (uint8_t row = 0; row < MANAGER_ROWS; row++)
-    {
-        createText(rows[row], 6 + row * 2, 0, 42 + row * 22, 127, 62 + row * 22, "", C_BLACK);
-    }
-    createText(&textbox_15, 20, 0, 130, 127, 141, "", C_BLACK);
-    UG_TextboxSetScrollEnabled(&window_1, 20, 0);
-    createText(&textbox_3, 2, 0, 144, 35, 159, "Up", C_RED);
-    createText(&textbox_4, 3, 36, 144, 91, 159, "", C_RED);
-    createText(&textbox_5, 4, 92, 144, 127, 159, "Down", C_RED);
-    UG_WindowShow(&window_1);
-}
-
-static void managerRender(void)
-{
-    uint8_t page = managerSelected / MANAGER_ROWS * MANAGER_ROWS;
-    uint8_t pageChanged = page != managerPage;
-    char text[96];
-    uint8_t item;
-    uint8_t id;
-    DeviceInfo_t *device;
-
-    if (pageChanged)
-    {
-        /* Clear stale rows once per page change, not on every render tick. */
-        UG_FillFrame(0, 42, 127, 129, C_BLACK);
-        managerPage = page;
-    }
-
-    /* Device rows. */
-    for (uint8_t row = 0; row < MANAGER_ROWS; row++)
-    {
-        item = page + row;
-        id = 6 + row * 2;
-        if (item >= managerCount)
-        {
-            if (UG_TextboxCheckVisible(&window_1, id))
-            {
-                UG_TextboxHide(&window_1, id);
-            }
-            continue;
-        }
-        if (pageChanged || !UG_TextboxCheckVisible(&window_1, id))
-        {
-            UG_TextboxShow(&window_1, id);
-        }
-        if (item < managerCount)
-        {
-            device = &deviceBuff[managerIds[item]];
-            snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
-                device->factoryInfo.deviceTypeChar, device->deviceIndex + 1,
-                device->motorData[0].isHide ? "Hidden" : "Visible", device->motorData[0].name);
-        }
-        else
-        {
-            text[0] = 0;
-        }
-        UG_TextboxSetText(&window_1, id, text);
-        UG_TextboxSetBackColor(&window_1, id,
-            item < managerCount && item == managerSelected ? C_DIM_GRAY : C_BLACK);
-        UG_TextboxSetScrollEnabled(&window_1, id, item < managerCount && item == managerSelected);
-    }
-
-    /* Page indicator and the centre button action. */
-    if (managerCount)
-    {
-        snprintf(text, sizeof(text), "Hold: Back  %u-%u/%u", page + 1,
-            page + MANAGER_ROWS < managerCount ? page + MANAGER_ROWS : managerCount, managerCount);
-    }
-    else
-    {
-        strcpy(text, "No paired devices");
-    }
-    UG_TextboxSetText(&window_1, 20, text);
-    UG_TextboxSetText(&window_1, 3, !managerCount ? "" :
-        deviceBuff[managerIds[managerSelected]].motorData[0].isHide ? "Show" : "Hide");
-    Screen_StatusBarUpdate();
-    UG_Update();
-}
-
-static void managerPrevious(void)
-{
-    if (managerSelected)
-    {
-        managerSelected--;
-    }
-}
-
-static void managerNext(void)
-{
-    if (managerSelected + 1 < managerCount)
-    {
-        managerSelected++;
-    }
-}
-
-static void managerToggle(void)
-{
-    uint8_t id;
-
-    if (!managerCount)
-    {
-        return;
-    }
-    id = managerIds[managerSelected];
-    deviceBuff[id].motorData[0].isHide = !deviceBuff[id].motorData[0].isHide;
-    Screen_SaveDeviceFlags(id);
-}
-
-static void managerBack(void)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &mainMenuScreen;
-    currentScreen->init();
-    currentScreen->render();
 }

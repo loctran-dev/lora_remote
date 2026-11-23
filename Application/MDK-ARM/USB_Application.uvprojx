@@ -948,6 +948,11 @@
               <FilePath>..\Library\screens.c</FilePath>
             </File>
             <File>
+              <FileName>screen_dvm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\screen_dvm.c</FilePath>
+            </File>
+            <File>
               <FileName>link_monitor.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Library\link_monitor.c</FilePath>

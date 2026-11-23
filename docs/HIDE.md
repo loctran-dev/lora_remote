@@ -28,7 +28,7 @@ hidden devices in the background.
 
 ## Implementation notes
 
-Shared selection and manager UI live in Library/screens.c; Device manager is
+Shared selection lives in Library/screens.c; Device manager (screen_dvm.c) is
 wired to the previously inactive first main-menu entry. The existing Flash writer
 was fixed to interpret its length as bytes (callers pass sizeof), pad partial
 words, calculate erased pages, and relock Flash after an error. No new Flash
