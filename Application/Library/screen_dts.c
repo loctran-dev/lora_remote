@@ -76,7 +76,7 @@ void DTS_Render(void)
         UG_TextboxSetForeColor(&window_1,5+i,i==selectedField?C_WHITE:C_CYAN);
     }
     Screen_StatusBarUpdate();
-    UG_TextboxSetText(&window_1,15,saveError==RTC_SET_BUSY?"Timer active: blocked":
+    UG_TextboxSetText(&window_1,15,saveError==eRtc_SetResult_Busy?"Timer active: blocked":
         saveError?"RTC error; try again":"Hold CENTER: save");
     UG_TextboxSetForeColor(&window_1,15,saveError?C_RED:C_WHITE);
     UG_Update();

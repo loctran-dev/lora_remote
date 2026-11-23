@@ -428,20 +428,20 @@ void CDC_ProcessEcho_FS(void)
         ((echoLength==5 && UserRxBufferFS[4]=='\n') || (echoLength>=7 && UserRxBufferFS[4]==' ')) &&
         memcmp(UserRxBufferFS,"TIME",4)==0)
     {
-      uint8_t result=RTC_SET_OK;
+      uint8_t result=eRtc_SetResult_Ok;
       uint32_t stamp=0;
       if (!(echoLength==5 && UserRxBufferFS[4]=='\n')) {
-        if (!Rtc_Parse(UserRxBufferFS,echoLength,&stamp)) result=RTC_SET_RANGE;
+        if (!Rtc_Parse(UserRxBufferFS,echoLength,&stamp)) result=eRtc_SetResult_Range;
         else result=Rtc_Set(stamp);
       }
-      if (result==RTC_SET_OK) {
+      if (result==eRtc_SetResult_Ok) {
         stamp=Rtc_Read();
         echoLength=snprintf((char*)UserRxBufferFS,APP_RX_DATA_SIZE,
           "TIME TS=%lu DATE=%04u-%02u-%02u CLOCK=%02u:%02u:%02u\n",(unsigned long)stamp,
           2000u+systemInfo.date.Year,systemInfo.date.Month,systemInfo.date.Date,
           systemInfo.time.Hours,systemInfo.time.Minutes,systemInfo.time.Seconds);
       } else echoLength=snprintf((char*)UserRxBufferFS,APP_RX_DATA_SIZE,"ERR TIME %s\n",
-          result==RTC_SET_BUSY?"ACTIVE_TIMER":result==RTC_SET_IO?"RTC_WRITE":"SYNTAX_OR_RANGE");
+          result==eRtc_SetResult_Busy?"ACTIVE_TIMER":result==eRtc_SetResult_Io?"RTC_WRITE":"SYNTAX_OR_RANGE");
       responsePrepared=1;
     }
     if (!responsePrepared && !probePending && echoLength == 8 &&
