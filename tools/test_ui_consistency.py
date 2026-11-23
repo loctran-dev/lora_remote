@@ -92,7 +92,7 @@ class UiConsistencyTests(h.FirmwareHarness):
             with self.subTest(screen=init):
                 self.call(init);self.call(render);self.header();self.layout()
     def test_main_menu_and_pairing_clock_advances_without_reentering_screen(self):
-        for init,render in [('screen_mms.o:init','screen_mms.o:render'),('DPS_Init','DPS_Render')]:
+        for init,render in [('screen_mms.o:init','screen_mms.o:render'),('screen_dps.o:init','screen_dps.o:render')]:
             self.call(init)
             self.cpu.mem_write(self.system+self.members['time'],bytes([0,1,0]))
             self.call(render);self.assertEqual(self.text[0],'00:01')
@@ -125,7 +125,7 @@ class UiConsistencyTests(h.FirmwareHarness):
             with self.subTest(state=state):
                 self.put(h.symbol('pairingUI_Step')[0],state)
                 self.cpu.mem_write(self.system+self.members['findDevicefactoryInfo'],struct.pack('<IBBB',0xabcdef01,1,ord('M'),1))
-                self.call('DPS_Init');self.call('DPS_Render');self.header();self.layout()
+                self.call('screen_dps.o:init');self.call('screen_dps.o:render');self.header();self.layout()
                 if state in [1,3,4,5]:
                     self.assertEqual(self.text[8],'0xABCDEF01')
                     for label,value in [(7,8),(9,10),(11,12)]:
