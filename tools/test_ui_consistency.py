@@ -86,7 +86,7 @@ class UiConsistencyTests(h.FirmwareHarness):
             self.assertTrue(0<=x<=xe<128 and 0<=y<=ye<160,rect)
     def test_every_screen_uses_identical_live_clock_and_battery_header(self):
         for init,render in [('MMS_Init','MMS_Render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
-                            ('DMS_Init','DMS_Render'),('screen_dts.o:init','screen_dts.o:render'),('HS_Init','HS_Render'),
+                            ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('HS_Init','HS_Render'),
                             ('screens.o:managerInit','screens.o:managerRender'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
                             ('DCS_Init','DCS_Render')]:
             with self.subTest(screen=init):
@@ -131,7 +131,7 @@ class UiConsistencyTests(h.FirmwareHarness):
                     for label,value in [(7,8),(9,10),(11,12)]:
                         self.assertLess(self.rect[('UG_TextboxCreate',label)][2],self.rect[('UG_TextboxCreate',value)][0])
     def test_monitor_full_serial_and_columns_fit(self):
-        self.call('DMS_Init');self.call('DMS_Render')
+        self.call('screen_dms.o:init');self.call('screen_dms.o:render')
         self.assertEqual(self.text[7],'0xABCDEF01')
         self.assertEqual(self.text[15],'1')
         for label in range(6,20,2):
@@ -144,7 +144,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.call('Link_RecordPacket',0,1)
         self.call('Link_ClockStep',64)
         self.cpu.mem_write(self.system+self.members['currentTime'],struct.pack('<I',946684800))
-        self.call('DMS_Render');self.assertEqual(self.text[19],'3 s')
+        self.call('screen_dms.o:render');self.assertEqual(self.text[19],'3 s')
     def test_device_manager_pages_do_not_overlap_header_or_help(self):
         for id in range(20):self.add(id)
         self.call('screens.o:managerInit');self.call('screens.o:managerRender');self.header();self.layout()
