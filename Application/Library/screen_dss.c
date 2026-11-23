@@ -6,105 +6,146 @@
 #include "main.h"
 #include "link_monitor.h"
 
+#define ITEM_COUNT    7
+#define ROWS_PER_PAGE 4
+
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
 uint8_t indexOfSettingMenu;
+
 static uint8_t menuIndex;
-void Screen_DeviceSettingsResetSelection(void) { menuIndex = 0; }
-static void window_1_callback(UG_MESSAGE *msg)
+
+static void init(void);
+static void render(void);
+static void leftClicked(void);
+static void rightClicked(void);
+static void centerClicked(void);
+static void rightPressed(void);
+static void noAction(void);
+
+Screen_t deviceSettingScreen = {
+    0,
+    init,
+    render,
+    leftClicked,
+    rightClicked,
+    centerClicked,
+    noAction,
+    noAction,
+    noAction,
+    rightPressed,
+    noAction,
+    noAction,
+    noAction
+};
+
+/* Public API =============================================================== */
+
+void Screen_DeviceSettingsResetSelection(void)
 {
+    menuIndex = 0;
 }
-void DSS_LeftButtonClickedCallback(void)
-{
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    if (menuIndex) menuIndex--;
-}
-void DSS_LeftButtonPressedCallback(void)
-{
-}
-void DSS_RightButtonClickedCallback(void)
-{
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    if (menuIndex + 1 < 7) menuIndex++;
-}
-void DSS_RightButtonPressedCallback(void)
-{
-	Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-	
-	UG_WindowHide(&window_1);
- 	UG_WindowDelete(&window_1);
-	currentScreen = &deviceControlScreen;
-	currentScreen->init();
-	currentScreen->render();
-}
-void DSS_CenterButtonClickedCallback(void)
-{
-	Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-	indexOfSettingMenu = menuIndex;
-	UG_WindowHide(&window_1);
-  	UG_WindowDelete(&window_1);
-	currentScreen = &editDeviceSettingScreen;
-	currentScreen->init();
-	currentScreen->render();
-}
-void DSS_CenterButtonPressedCallback(void)
-{
-}
-void DSS_BLeftButtonClickedCallback(void)
-{
-}
-void DSS_BLeftButtonPressedCallback(void)
-{
-}
-void DSS_BRightButtonClickedCallback(void)
-{
-}
-void DSS_BRightButtonPressedCallback(void)
-{
-}
-void DSS_Init(void)
+
+/* Screen handlers ========================================================== */
+
+static void init(void)
 {
     /* Keep the row/page on editor return; reset only on fresh control entry. */
     Screen_SettingsMenuCreateStacked("Device setup");
 }
-void DSS_Render(void)
+
+static void render(void)
 {
-    char *labels[] = {"Low-current alarm", "Alarm delay", "Lock", "Hide", "Delete device", "Device name", "Auto status interval"};
+    char *labels[] = {"Low-current alarm", "Alarm delay", "Lock", "Hide", "Delete device", "Device name",
+                      "Auto status interval"};
     MotorData_t *module = &deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId];
-    uint8_t page = menuIndex / 4 * 4;
+    uint8_t page = menuIndex / ROWS_PER_PAGE * ROWS_PER_PAGE;
+    uint8_t item;
+    char value[32];
+
     Screen_SettingsMenuBegin(page);
-    Screen_SettingsMenuPage(page, 7);
-    for (uint8_t row = 0; row < 4; row++) {
-        uint8_t item = page + row;
-        char value[32] = {0};
-        if (item >= 7) { Screen_SettingsMenuRow(row, NULL, NULL, 0); continue; }
-        switch (item) {
-            case 0: sprintf(value, "%.2f A", module->alarmThreshold); break;
-            case 1: sprintf(value, "%lu s", (unsigned long)module->alarmDelayTime); break;
-            case 2: strcpy(value, module->isLock ? "Yes" : "No"); break;
-            case 3: strcpy(value, module->isHide ? "Yes" : "No"); break;
-            case 4: strcpy(value, deviceBuff[systemInfo.currentDeviceId].isDelete ? "Yes" : "No"); break;
-            case 5: snprintf(value, sizeof(value), "%.19s", module->name); break;
-            case 6: sprintf(value, "%u s", Link_GetAutoStatus(systemInfo.currentDeviceId)); break;
+    Screen_SettingsMenuPage(page, ITEM_COUNT);
+    for (uint8_t row = 0; row < ROWS_PER_PAGE; row++)
+    {
+        item = page + row;
+        value[0] = '\0';
+        if (item >= ITEM_COUNT)
+        {
+            Screen_SettingsMenuRow(row, NULL, NULL, 0);
+            continue;
+        }
+        switch (item)
+        {
+            case 0:
+                sprintf(value, "%.2f A", module->alarmThreshold);
+                break;
+            case 1:
+                sprintf(value, "%lu s", (unsigned long)module->alarmDelayTime);
+                break;
+            case 2:
+                strcpy(value, module->isLock ? "Yes" : "No");
+                break;
+            case 3:
+                strcpy(value, module->isHide ? "Yes" : "No");
+                break;
+            case 4:
+                strcpy(value, deviceBuff[systemInfo.currentDeviceId].isDelete ? "Yes" : "No");
+                break;
+            case 5:
+                snprintf(value, sizeof(value), "%.19s", module->name);
+                break;
+            case 6:
+                sprintf(value, "%u s", Link_GetAutoStatus(systemInfo.currentDeviceId));
+                break;
+            default:
+                break;
         }
         Screen_SettingsMenuRow(row, labels[item], value, item == menuIndex);
     }
     Screen_SettingsMenuUpdate();
 }
-Screen_t deviceSettingScreen = 
-{ 
-	0,
-	DSS_Init,
-	DSS_Render,
-	DSS_LeftButtonClickedCallback,
-	DSS_RightButtonClickedCallback,
-	DSS_CenterButtonClickedCallback,
-	DSS_BLeftButtonClickedCallback,
-	DSS_BRightButtonClickedCallback,
-	DSS_LeftButtonPressedCallback,
-	DSS_RightButtonPressedCallback,
-	DSS_CenterButtonPressedCallback,
-	DSS_BLeftButtonPressedCallback,
-	DSS_BRightButtonPressedCallback
-};
+
+static void leftClicked(void)
+{
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    if (menuIndex)
+    {
+        menuIndex--;
+    }
+}
+
+static void rightClicked(void)
+{
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    if (menuIndex + 1 < ITEM_COUNT)
+    {
+        menuIndex++;
+    }
+}
+
+static void centerClicked(void)
+{
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    indexOfSettingMenu = menuIndex;
+    UG_WindowHide(&window_1);
+    UG_WindowDelete(&window_1);
+    currentScreen = &editDeviceSettingScreen;
+    currentScreen->init();
+    currentScreen->render();
+}
+
+/* Long press on RIGHT returns to device control. */
+static void rightPressed(void)
+{
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    UG_WindowHide(&window_1);
+    UG_WindowDelete(&window_1);
+    currentScreen = &deviceControlScreen;
+    currentScreen->init();
+    currentScreen->render();
+}
+
+static void noAction(void)
+{
+}

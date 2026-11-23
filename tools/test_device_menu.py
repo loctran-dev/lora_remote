@@ -25,21 +25,21 @@ class DeviceMenuTests(MenuHarness):
         self.cpu.mem_write(self.module + 60, struct.pack("<fI", 12.34, 30))
         self.put(self.module + 68, 1)
         for screen, init, render in [("editDeviceSettingScreen", "EDSS_Init", "EDSS_Render"),
-                                     ("deviceSettingScreen", "DSS_Init", "DSS_Render")]:
+                                     ("deviceSettingScreen", "screen_dss.o:init", "screen_dss.o:render")]:
             self.cpu.mem_write(harness.symbol(screen)[0] + 4,
                                struct.pack("<II", harness.symbol(init)[0] | 1,
                                            harness.symbol(render)[0] | 1))
         self.call("Screen_DeviceSettingsResetSelection")
-        self.call("DSS_Init")
+        self.call("screen_dss.o:init")
 
     def render(self):
         self.calls.clear()
-        self.call("DSS_Render")
+        self.call("screen_dss.o:render")
         return [call for call in self.calls if call[0] == "Screen_SettingsMenuRow"]
 
     def advance(self, count):
         for _ in range(count):
-            self.call("DSS_RightButtonClickedCallback")
+            self.call("screen_dss.o:rightClicked")
 
     def test_first_page_values_and_selected_row(self):
         rows = self.render()
@@ -60,7 +60,7 @@ class DeviceMenuTests(MenuHarness):
         storage = bytes(self.cpu.mem_read(self.storage, 885))
         device = bytes(self.cpu.mem_read(self.device, 468))
         for position in range(7):
-            self.call("DSS_CenterButtonClickedCallback")
+            self.call("screen_dss.o:centerClicked")
             self.assertEqual(self.get(harness.symbol("indexOfSettingMenu")[0]), position)
             self.call("EDSS_RightButtonPressedCallback")
             rows = self.render()
@@ -73,10 +73,10 @@ class DeviceMenuTests(MenuHarness):
         self.advance(20)
         self.assertEqual([row[1][3] for row in self.render()], [0, 0, 1, 0])
         self.call("Screen_DeviceSettingsResetSelection")
-        self.call("DSS_Init")
+        self.call("screen_dss.o:init")
         self.assertTrue(self.render()[0][1][3])
         for _ in range(20):
-            self.call("DSS_LeftButtonClickedCallback")
+            self.call("screen_dss.o:leftClicked")
         self.assertTrue(self.render()[0][1][3])
 
     def test_labels_and_maximum_length_name_fit_the_shared_layout(self):
