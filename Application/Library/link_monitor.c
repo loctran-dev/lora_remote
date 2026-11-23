@@ -87,6 +87,8 @@ void Link_Init(uint32_t rtcSecond)
         storageData.linkSettingsChecksum == extensionChecksum() &&
         storageData.sleepAfterIdleSeconds && storageData.sleepAfterIdleSeconds <= 9999 &&
         storageData.connectionTimeoutSeconds && storageData.connectionTimeoutSeconds <= 9999;
+
+    /* Validate stored settings; fall back to defaults when corrupt. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
         if (storageData.autoStatusSeconds[id] > 9999)
@@ -104,6 +106,8 @@ void Link_Init(uint32_t rtcSecond)
         }
         saveSettings();
     }
+
+    /* Reset runtime state. */
     memset(linkDevices, 0, sizeof(linkDevices));
     memset(&linkProbe, 0, sizeof(linkProbe));
     linkProbe.device = -1;
@@ -122,8 +126,10 @@ void Link_Init(uint32_t rtcSecond)
 /* RTC seconds-of-day survives STOP; no RTOS tick or adjustable wall date needed. */
 void Link_ClockStep(uint32_t rtcSecond)
 {
+    uint32_t delta;
+
     rtcSecond %= 86400u;
-    uint32_t delta = (rtcSecond + 86400u - previousRtc) % 86400u;
+    delta = (rtcSecond + 86400u - previousRtc) % 86400u;
     if (delta < 43200u)
     {
         uptimeSeconds += delta;
@@ -228,6 +234,8 @@ void Link_TxFinished(const LoraPackage_t *packet, uint8_t success)
 
 void Link_Tick(void)
 {
+    uint8_t id;
+
     if (currentScreen == &devicePairingScreen)
     {
         return;
@@ -236,7 +244,9 @@ void Link_Tick(void)
     {
         beginStatusSync();
     }
-    for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
+
+    /* Reset link state of devices that were re-paired or deleted. */
+    for (id = 0; id < MAXIMUM_DEVICE; id++)
     {
         if (linkDevices[id].node != deviceBuff[id].nodeId || deviceBuff[id].isDelete)
         {
@@ -252,9 +262,11 @@ void Link_Tick(void)
             }
         }
     }
+
+    /* Continue the probe in progress. */
     if (linkProbe.device >= 0)
     {
-        uint8_t id = linkProbe.device;
+        id = linkProbe.device;
         if ((syncPending & (1u << id)) ? syncReply :
             linkDevices[id].statusGeneration != probeGeneration)
         {
@@ -276,6 +288,8 @@ void Link_Tick(void)
         }
         return;
     }
+
+    /* Start a new probe for the next device that needs one. */
     if (systemInfo.runMode != SYS_MODE_SLEEP &&
         uptimeSeconds - lastScan >= systemInfo.tUpdate)
     {
@@ -289,7 +303,7 @@ void Link_Tick(void)
     lastScan = uptimeSeconds;
     for (uint8_t offset = 0; offset < MAXIMUM_DEVICE; offset++)
     {
-        uint8_t id = (nextDevice + offset) % MAXIMUM_DEVICE;
+        id = (nextDevice + offset) % MAXIMUM_DEVICE;
         if (!deviceBuff[id].isDelete && deviceBuff[id].nodeId && deviceBuff[id].nodeId != 255 &&
             ((syncPending & (1u << id)) ||
              (uptimeSeconds - linkDevices[id].lastRx > Link_GetTimeoutSeconds() &&
@@ -369,10 +383,12 @@ static void sendProbe(void)
 {
     uint8_t id = linkProbe.device;
     PayloadRequestGetStatus_t payload;
+    LoraPackage_t packet;
+
     payload.moduleIndex = 0;
     /* Never overwrite a slave's valid clock with the default January 2000 RTC. */
     payload.syncTime = systemInfo.currentTime >= 1704067200u ? systemInfo.currentTime : 0;
-    LoraPackage_t packet = Comm_CreateReqGetStatus(systemInfo.netId, deviceBuff[id].nodeId, payload);
+    packet = Comm_CreateReqGetStatus(systemInfo.netId, deviceBuff[id].nodeId, payload);
     /* Publish before queueing: the higher-priority sender can run immediately. */
     linkProbe.transaction = packet.transactionID;
     linkProbe.state = 1;

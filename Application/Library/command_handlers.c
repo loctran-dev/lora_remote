@@ -96,13 +96,14 @@ static void handleSetConfig(LoraPackage_t packet)
 
 static void handleGetStatus(LoraPackage_t fwPackage)
 {
+    PayloadResponseGetStatus_t payloadResponse;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_GET_STATUS))
     {
         return;
     }
-    PayloadResponseGetStatus_t payloadResponse;
     if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE)
     {
         return;
@@ -138,13 +139,14 @@ static void handleGetStatus(LoraPackage_t fwPackage)
 
 static void handleControlPower(LoraPackage_t fwPackage)
 {
+    PayloadCommonResponse_t payloadResponse;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_CONTROL_POWER))
     {
         return;
     }
-    PayloadCommonResponse_t payloadResponse;
     if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE ||
         fwPackage.byteCount != LORA_PACKAGE_HEADER_SIZE + sizeof(payloadResponse) + LORA_PACKAGE_CRC_SIZE)
     {
@@ -166,25 +168,27 @@ static void handleControlPower(LoraPackage_t fwPackage)
 
 static void handleSetSchedule(LoraPackage_t fwPackage)
 {
+    PayloadCommonResponse_t payloadResponse;
+    uint32_t deadline;
+    uint8_t accepted;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_SET_SCHEDULE))
     {
         return;
     }
-    PayloadCommonResponse_t payloadResponse;
     if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE ||
         fwPackage.byteCount != LORA_PACKAGE_HEADER_SIZE + sizeof(payloadResponse) + LORA_PACKAGE_CRC_SIZE)
     {
         return;
     }
     memcpy(&payloadResponse, &fwPackage.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(payloadResponse));
-    uint32_t deadline;
     if (!Schedule_HandleResponse(&fwPackage, &payloadResponse, &deadline))
     {
         return;
     }
-    uint8_t accepted = payloadResponse.result == 1;
+    accepted = payloadResponse.result == 1;
     Main_SetBuzzerMode(accepted ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
@@ -206,13 +210,14 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
 
 static void handleSyncTime(LoraPackage_t fwPackage)
 {
+    PayloadCommonResponse_t payloadResponse;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_SYNC_TIME))
     {
         return;
     }
-    PayloadCommonResponse_t payloadResponse;
     if (fwPackage.type != LORA_PACKAGE_TYPE_RESPONSE ||
         fwPackage.byteCount != LORA_PACKAGE_HEADER_SIZE + sizeof(payloadResponse) + LORA_PACKAGE_CRC_SIZE)
     {
@@ -234,13 +239,14 @@ static void handleSyncTime(LoraPackage_t fwPackage)
 
 static void handleGetFactoryInfo(LoraPackage_t fwPackage)
 {
+    PayloadResponseGetFactoryInfo_t payloadResponse;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId != LORA_NODE_ID_DEFAULT && fwPackage.nodeId != LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_GET_FACTORY_INFO))
     {
         return;
     }
-    PayloadResponseGetFactoryInfo_t payloadResponse;
     if (Comm_ParsePayloadResGetFactoryInfo(fwPackage, &payloadResponse) == FALSE)
     {
         return;
@@ -266,13 +272,14 @@ static void handleGetFactoryInfo(LoraPackage_t fwPackage)
 
 static void handleConfigConnection(LoraPackage_t fwPackage)
 {
+    PayloadResponseConfigConnection_t payloadResponse;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId != LORA_NODE_ID_DEFAULT && fwPackage.nodeId != LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_CONFIG_CONNECTION))
     {
         return;
     }
-    PayloadResponseConfigConnection_t payloadResponse;
     if (Comm_ParsePayloadResConfigConnection(fwPackage, &payloadResponse) == FALSE)
     {
         return;
@@ -298,13 +305,14 @@ static void handleConfigConnection(LoraPackage_t fwPackage)
 
 static void handleAlarmMessage(LoraPackage_t fwPackage)
 {
+    PayloadRequestAlarm_t payloadRequest;
+
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
         (fwPackage.code != CMD_ALARM_MESSAGE))
     {
         return;
     }
-    PayloadRequestAlarm_t payloadRequest;
     if (Comm_ParsePayloadReqAlarm(fwPackage, &payloadRequest) == FALSE)
     {
         return;

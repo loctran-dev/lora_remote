@@ -84,6 +84,8 @@ void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
 
 void Schedule_Tick(void)
 {
+    PayloadRequestSetSchedule_t payload;
+
     if (scheduleRequest.state != eSchedule_State_Waiting ||
         (int32_t)(HAL_GetTick() - scheduleRequest.retryAt) < 0)
     {
@@ -98,7 +100,6 @@ void Schedule_Tick(void)
         return;
     }
 
-    PayloadRequestSetSchedule_t payload;
     payload.moduleIndex = scheduleRequest.module;
     payload.syncTime = scheduleRequest.syncTime;
     payload.scheduleTime = scheduleRequest.deadline;

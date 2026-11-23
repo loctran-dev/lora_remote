@@ -44,11 +44,12 @@ uint32_t Power_ReadRtcSecond(void)
 
 void Power_Init(void)
 {
+    GPIO_InitTypeDef gpio = {0};
+
     memset(&powerSleep, 0, sizeof(powerSleep));
     powerSleep.lastUser = Link_Now();
     /* Three non-conflicting EXTI lines: LEFT PA9, RIGHT PC8, OFF PC7.
        CENTER PC9 / ON PA8 share lines 9/8 and cannot also wake from STOP. */
-    GPIO_InitTypeDef gpio = {0};
     gpio.Pin = BTN5_Pin;
     gpio.Mode = GPIO_MODE_IT_RISING;
     gpio.Pull = GPIO_NOPULL;
@@ -139,6 +140,12 @@ void Power_Tick(void)
 
 void Power_TryStop(void)
 {
+    uint32_t now;
+    uint32_t remaining;
+    uint32_t systick;
+    uint32_t cfgr;
+    uint32_t cause;
+
     if (systemInfo.runMode != SYS_MODE_SLEEP || Link_IsBusy() || powerSleep.rxPending ||
         powerSleep.txBusy || usbActive() || systemInfo.isNeedSaveConfig ||
         osMessageQueueGetCount(txMsgQueueHandle) || osMessageQueueGetCount(buzzerQueueHandle) ||
@@ -147,19 +154,25 @@ void Power_TryStop(void)
     {
         return;
     }
-    uint32_t now = Link_Now();
-    uint32_t remaining = (int32_t)(powerSleep.nextRtc - now) > 0 ? powerSleep.nextRtc - now : 1;
+
+    /* Arm the RTC wake-up and stop peripherals that must not run in STOP. */
+    now = Link_Now();
+    remaining = (int32_t)(powerSleep.nextRtc - now) > 0 ? powerSleep.nextRtc - now : 1;
     Main_SetRtcAlarmRelative(remaining);
     HAL_TIM_Base_Stop(&htim8);
     HAL_ADC_Stop_DMA(&hadc1);
+
+    /* Freeze the scheduler and SysTick. */
     vTaskSuspendAll();
     powerSleep.stopping = 1;
     __disable_irq();
-    uint32_t systick = SysTick->CTRL;
-    uint32_t cfgr = RCC->CFGR;
+    systick = SysTick->CTRL;
+    cfgr = RCC->CFGR;
     SysTick->CTRL = 0;
     SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk;
     HAL_SuspendTick();
+
+    /* Enter STOP unless a wake-up source is already pending. */
     if (!powerSleep.rxPending && !powerSleep.buttonPending &&
         !(EXTI->PR & (LORA_DIO_Pin | BTN1_Pin | BTN4_Pin | BTN5_Pin | (1u << 17))))
     {
@@ -167,7 +180,8 @@ void Power_TryStop(void)
         __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
         powerSleep.stops++;
         HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-        uint32_t cause = EXTI->PR;
+
+        cause = EXTI->PR;
         if (cause & LORA_DIO_Pin)
         {
             powerSleep.radioWakes++;
@@ -182,6 +196,8 @@ void Power_TryStop(void)
         }
         restoreClock(cfgr);
     }
+
+    /* Resume SysTick and the scheduler. */
     Link_ClockStep(Power_ReadRtcSecond());
     HAL_ResumeTick();
     SysTick->VAL = 0;
@@ -189,11 +205,14 @@ void Power_TryStop(void)
     __enable_irq();
     powerSleep.stopping = 0;
     xTaskResumeAll();
+
     /* RTOS time intentionally pauses in STOP; health/deadlines use RTC uptime. */
     if (powerSleep.rxPending)
     {
         xTaskNotifyGive(loraReceiveTaskHandle);
     }
+
+    /* Restart battery sampling. */
     __HAL_TIM_SET_COUNTER(&htim8, 0);
     HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
     HAL_TIM_Base_Start(&htim8);

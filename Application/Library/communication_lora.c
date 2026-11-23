@@ -87,14 +87,17 @@ LoraPackage_t Comm_CreateReqConfigConnection(uint8_t netId, uint8_t nodeId, Payl
 
 void Comm_ProcessRxData(uint8_t *buffer, uint32_t length)
 {
+    uint8_t *frameStart = NULL;
+    uint32_t frameLength = 0;
+    LoraPackage_t fwPackage;
+    uint8_t readCRC;
+
     if (length < 3)
     {
         return;
     }
 
-    uint8_t *frameStart = NULL;
-    uint32_t frameLength = 0;
-
+    /* Find the frame signature. */
     for (uint32_t i = 0; i < (length - 1); i++)
     {
         if (*(uint16_t *)&buffer[i] == LORA_PACKAGE_SIGNATURE)
@@ -110,20 +113,20 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length)
         return;
     }
 
-    LoraPackage_t fwPackage;
+    /* Decode the header and validate the frame length. */
     memset(fwPackage.rawData, 0x00, LORA_PACKAGE_RAW_DATA_SIZE);
     memcpy(&fwPackage, frameStart, LORA_PACKAGE_HEADER_SIZE);
-
     fwPackage.byteCount = fwPackage.length + sizeof(fwPackage.signature) + sizeof(fwPackage.checkSum);
-
     if (fwPackage.byteCount > frameLength || fwPackage.byteCount > LORA_PACKAGE_RAW_DATA_SIZE ||
         fwPackage.byteCount < LORA_PACKAGE_HEADER_SIZE + LORA_PACKAGE_CRC_SIZE)
     {
         return;
     }
+
+    /* Copy the full frame and verify its checksum. */
     memcpy(fwPackage.rawData, frameStart, fwPackage.byteCount);
     fwPackage.checkSum = frameStart[fwPackage.byteCount - 1];
-    uint8_t readCRC = Util_CalculateCRC(&fwPackage.rawData[0], fwPackage.length);
+    readCRC = Util_CalculateCRC(&fwPackage.rawData[0], fwPackage.length);
     if (readCRC != fwPackage.checkSum)
     {
         return;

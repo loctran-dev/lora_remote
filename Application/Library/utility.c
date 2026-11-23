@@ -31,6 +31,8 @@ void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_
     uint32_t rem;
     uint32_t year = 0;
     uint32_t month = 0;
+    uint32_t length;
+
     /* RTC calendar supports years 2000..2099. */
     if (timestamp < 946684800u)
     {
@@ -40,6 +42,8 @@ void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_
     {
         timestamp = 4102444799u;
     }
+
+    /* Time of day. */
     days = (timestamp - 946684800u) / 86400;
     rem = timestamp % 86400;
 
@@ -48,6 +52,7 @@ void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_
     sTime->Minutes = rem / 60;
     sTime->Seconds = rem % 60;
 
+    /* Calendar date. */
     sDate->WeekDay = (days + 5) % 7 + 1;
     while (days >= 365u + !(year & 3))
     {
@@ -56,7 +61,7 @@ void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_
     }
     while (month < 11)
     {
-        uint32_t length = monthDays[month] + (month == 1 && !(year & 3));
+        length = monthDays[month] + (month == 1 && !(year & 3));
         if (days < length)
         {
             break;

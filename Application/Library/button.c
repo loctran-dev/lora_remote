@@ -2,8 +2,10 @@
 
 void Button_UpdateState(Button_t *btn)
 {
+    uint8_t reading;
+
     /* Read the button hardware status. */
-    uint8_t reading = (HAL_GPIO_ReadPin(btn->GPIOx, btn->GPIO_Pin) == GPIO_PIN_SET);
+    reading = (HAL_GPIO_ReadPin(btn->GPIOx, btn->GPIO_Pin) == GPIO_PIN_SET);
 
     switch (btn->state)
     {
