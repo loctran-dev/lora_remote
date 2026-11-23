@@ -5,6 +5,8 @@
 #include "main.h"
 #include "command_handlers.h"
 
+#define LORA_PACKAGE_SIGNATURE 0xFF55
+
 static uint16_t currentTransactionID = 0;
 
 static uint16_t generateTransactionID(void);

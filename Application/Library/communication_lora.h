@@ -2,7 +2,6 @@
 #define COMMUNICATION_LORA_H
 #include "stdint.h"
 
-#define LORA_PACKAGE_SIGNATURE          0xFF55
 #define LORA_PACKAGE_HEADER_SIZE        0x09
 #define LORA_PACKAGE_RAW_DATA_SIZE      256
 #define LORA_PACKAGE_CRC_SIZE           0x01

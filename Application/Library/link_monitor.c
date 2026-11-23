@@ -7,18 +7,24 @@
 #include <string.h>
 #include <stddef.h>
 
-#define LINK_MAGIC 0x314B4E4Cu
+#define LINK_MAGIC                 0x314B4E4Cu
+#define LINK_CONFIRM_ATTEMPTS      3
+#define LINK_REPLY_TIMEOUT_SECONDS 10
 
 extern SystemInfo_t systemInfo;
 extern SystemStorageData_t storageData;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 extern osMessageQueueId_t txMsgQueueHandle;
 
-LinkDeviceState_t linkDevices[MAXIMUM_DEVICE];
-LinkProbeState_t linkProbe;
+Link_DeviceState_t linkDevices[MAXIMUM_DEVICE];
+Link_ProbeState_t linkProbe;
 
-static uint32_t uptimeSeconds, previousRtc, lastScan, probeGeneration;
-static uint8_t scanRequested, nextDevice;
+static uint32_t uptimeSeconds;
+static uint32_t previousRtc;
+static uint32_t lastScan;
+static uint32_t probeGeneration;
+static uint8_t scanRequested;
+static uint8_t nextDevice;
 static uint32_t syncPending;
 static uint8_t syncReply;
 static volatile uint8_t syncRequested;

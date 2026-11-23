@@ -3,26 +3,30 @@
 #include <stdint.h>
 #include "communication_lora.h"
 
-#define LINK_CONFIRM_ATTEMPTS      3
-#define LINK_REPLY_TIMEOUT_SECONDS 10
-
 typedef struct
 {
-    uint32_t lastRx, lastStatus, retryAt, statusGeneration;
+    uint32_t lastRx;
+    uint32_t lastStatus;
+    uint32_t retryAt;
+    uint32_t statusGeneration;
     uint8_t node;
-} LinkDeviceState_t;
+} Link_DeviceState_t;
 
 typedef struct
 {
-    uint32_t requests, confirmations, failures, receivedStatus;
+    uint32_t requests;
+    uint32_t confirmations;
+    uint32_t failures;
+    uint32_t receivedStatus;
     uint32_t deadline;
     uint16_t transaction;
     int8_t device;
-    uint8_t attempts, state;
-} LinkProbeState_t;
+    uint8_t attempts;
+    uint8_t state;
+} Link_ProbeState_t;
 
-extern LinkDeviceState_t linkDevices[];
-extern LinkProbeState_t linkProbe;
+extern Link_DeviceState_t linkDevices[];
+extern Link_ProbeState_t linkProbe;
 
 /* Settings */
 uint16_t Link_GetIdleSeconds(void);

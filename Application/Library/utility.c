@@ -27,7 +27,10 @@ uint32_t Util_GetUnixTimestamp(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
 void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
 {
     static const uint8_t monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    uint32_t days, rem, year = 0, month = 0;
+    uint32_t days;
+    uint32_t rem;
+    uint32_t year = 0;
+    uint32_t month = 0;
     /* RTC calendar supports years 2000..2099. */
     if (timestamp < 946684800u)
     {
