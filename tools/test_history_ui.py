@@ -9,7 +9,7 @@ class HistoryUiTests(unittest.TestCase):
     def setUp(self):
         self.hw=h.JournalTests();self.hw.setUp();self.cpu=self.hw.cpu;self.call=self.hw.call
         self.hw.globals_for_sync()
-        self.text={};self.bg={};self.visible={};self.beeps=[]
+        self.text={};self.bg={};self.fg={};self.visible={};self.beeps=[]
         self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("screen_mms.o:init")|1,h.symbol("screen_mms.o:render")|1))
         self.cpu.mem_write(h.symbol("deviceControlScreen")+4,struct.pack("<II",h.symbol("screen_dcs.o:init")|1,h.symbol("screen_dcs.o:render")|1))
         names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
@@ -24,6 +24,7 @@ class HistoryUiTests(unittest.TestCase):
             n=hooks[address];a=[cpu.reg_read(r) for r in [UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3]];result=0
             if n=="UG_TextboxSetText":self.text[a[1]]=bytes(cpu.mem_read(a[2],80)).split(b"\0")[0].decode()
             if n=="UG_TextboxSetBackColor":self.bg[a[1]]=a[2]
+            if n=="UG_TextboxSetForeColor":self.fg[a[1]]=a[2]
             if n=="UG_TextboxCheckVisible":result=int(self.visible.get(a[1],True))
             if n=="Main_SetBuzzerMode":self.beeps.append(a[0])
             if n=="UG_TextboxShow":self.visible[a[1]]=True
@@ -52,6 +53,11 @@ class HistoryUiTests(unittest.TestCase):
         self.call("screen_hs.o:rightPressed")
         self.assertEqual(self.screen(),h.symbol("historyScreen"))
         self.assertEqual(self.text[5],"Select device")
+    def test_list_colours_by_action(self):
+        # RGB565: ON green, OFF chocolate brown, other actions white. Newest record is row 0.
+        for action in (3,2,1):self.hw.append(action=action)
+        self.open_list()
+        self.assertEqual([self.fg[7],self.fg[9],self.fg[11]],[0x07E0,0xD344,0xFFFF])
     def open_list(self):
         self.call("Screen_OpenHistory");self.call("screen_hs.o:centerClicked")
     def test_menu_picker_list_details_and_back_preserve_selection(self):

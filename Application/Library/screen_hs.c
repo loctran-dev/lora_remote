@@ -51,6 +51,7 @@ static const HistoryRecord *view(uint16_t index);
 static void snapshot(void);
 static char *powerName(uint8_t state);
 static char *actionName(uint8_t action);
+static UG_COLOR actionColor(const HistoryEvent *event);
 static char *sourceName(uint8_t source);
 static char *errorName(uint16_t error);
 static char *resultName(uint8_t result);
@@ -377,7 +378,7 @@ static void renderList(char *text, uint16_t size)
         for (uint8_t cell = a; cell <= b; cell++)
         {
             UG_TextboxSetBackColor(&window_1, cell, index == selected ? C_DIM_GRAY : C_BLACK);
-            UG_TextboxSetForeColor(&window_1, cell, cell == b ? C_CYAN : r->event.error ? C_ORANGE : C_WHITE);
+            UG_TextboxSetForeColor(&window_1, cell, cell == b ? C_CYAN : actionColor(&r->event));
             UG_TextboxSetScrollEnabled(&window_1, cell, index == selected);
         }
     }
@@ -566,6 +567,23 @@ static char *actionName(uint8_t action)
             return "LINK OK";
         default:
             return "?";
+    }
+}
+
+/* List colour of the time/action line: ON green, OFF brown, a lost link
+   orange (it always carries HIST_ERROR_NO_STATUS), everything else white. */
+static UG_COLOR actionColor(const HistoryEvent *event)
+{
+    switch (event->action)
+    {
+        case HIST_ON:
+            return C_GREEN;
+        case HIST_OFF:
+            return C_CHOCOLATE;
+        case HIST_LINK_LOST:
+            return event->error ? C_ORANGE : C_WHITE;
+        default:
+            return C_WHITE;
     }
 }
 
