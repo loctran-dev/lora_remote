@@ -82,6 +82,45 @@ Sắp xếp theo thứ tự sau:
 - Gom các hàm cùng trách nhiệm vào một nhóm; dùng comment phân tách nhóm khi cần.
 - Không đặt implementation lẫn vào giữa các khai báo, public API hoặc dispatch table.
 
+## Thứ tự trong file `.h`
+
+Sắp xếp theo thứ tự sau:
+
+1. Include guard (`#ifndef MODULE_NAME_H` / `#define MODULE_NAME_H`)
+2. `#include` chỉ những header cần cho các khai báo trong file này
+3. Macro và hằng số (`#define`)
+4. Kiểu dữ liệu: `enum`, `struct`, `typedef`
+5. `extern` variable thực sự được dùng từ file khác
+6. Khai báo public API
+7. `#endif` của include guard
+
+- Tên include guard viết hoa theo tên file, ví dụ `communication_lora.h` dùng `COMMUNICATION_LORA_H`.
+- Khai báo public API theo cùng thứ tự với implementation trong file `.c`; gom theo nhóm trách nhiệm và dùng comment phân tách nhóm khi cần.
+- Không khai báo hàm `static`, helper nội bộ hoặc hàm không có định nghĩa.
+- Không đặt định nghĩa biến hoặc implementation hàm trong header (trừ macro và `static inline` khi thật sự cần).
+
+```c
+#ifndef COMMUNICATION_LORA_H
+#define COMMUNICATION_LORA_H
+#include <stdint.h>
+
+#define LORA_PACKAGE_SIGNATURE 0xFF55
+
+typedef struct LoraPackage_t
+{
+    uint16_t signature;
+    uint8_t length;
+} LoraPackage_t;
+
+/* Package builders */
+LoraPackage_t Comm_CreateNewPackage(...);
+
+/* Receive path */
+void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
+
+#endif
+```
+
 ## Format
 
 - Dùng 4 spaces để thụt lề trong code mới; không dùng tab.
