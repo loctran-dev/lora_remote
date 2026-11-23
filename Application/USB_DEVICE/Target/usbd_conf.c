@@ -26,7 +26,9 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN Includes */
+#ifndef USB_BOOTLOADER
 #include "powerSleep.h"
+#endif
 
 /* USER CODE END Includes */
 
@@ -160,7 +162,9 @@ static void PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
+#ifndef USB_BOOTLOADER
   Power_UsbSofISR();
+#endif
   USBD_LL_SOF((USBD_HandleTypeDef*)hpcd->pData);
 }
 
