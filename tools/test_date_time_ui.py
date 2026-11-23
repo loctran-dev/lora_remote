@@ -29,14 +29,14 @@ class DateTimeUiTests(m.MenuHarness):
         self.cpu.hook_add(UC_HOOK_CODE,save,begin=address,end=address)
         self.cpu.mem_write(h.symbol("generalSettingScreen")[0]+4,
             struct.pack("<II",h.symbol("screen_gss.o:init")[0]|1,h.symbol("screen_gss.o:render")[0]|1))
-        self.call("DTS_Init")
+        self.call("screen_dts.o:init")
     def render(self):
-        self.calls.clear();self.call("DTS_Render")
+        self.calls.clear();self.call("screen_dts.o:render")
         return {c[1][1]:c[3][0] for c in self.calls if c[0]=="UG_TextboxSetText"}
     def field(self,index):
         # Deterministically navigate using public button callbacks only.
-        self.call("DTS_Init")
-        for _ in range(index):self.call("DTS_Next")
+        self.call("screen_dts.o:init")
+        for _ in range(index):self.call("screen_dts.o:centerClicked")
     def set_calendar(self,year,month,day):
         self.cpu.mem_write(h.symbol("editedDate")[0],bytes([1,month,day,year-2000]))
     def test_snapshot_has_separate_date_and_time_fields(self):
@@ -47,39 +47,39 @@ class DateTimeUiTests(m.MenuHarness):
         colors=[c for c in self.calls if c[0]=="UG_TextboxSetBackColor" and 5<=c[1][1]<=10]
         selected_color=colors[0][1][2]
         for selected in [1,2,3,4,5,0]:
-            self.call("DTS_Next");self.render()
+            self.call("screen_dts.o:centerClicked");self.render()
             colors=[c for c in self.calls if c[0]=="UG_TextboxSetBackColor" and 5<=c[1][1]<=10]
             self.assertEqual([c[1][1] for c in colors if c[1][2]==selected_color],[5+selected])
     def test_month_change_clamps_day_to_valid_month(self):
-        self.field(1);self.set_calendar(2026,1,31);self.call("DTS_Increment")
+        self.field(1);self.set_calendar(2026,1,31);self.call("screen_dts.o:leftClicked")
         text=self.render();self.assertEqual((text[5],text[6]),("28","02"))
     def test_leap_day_is_preserved_then_clamped_when_year_changes(self):
-        self.field(2);self.set_calendar(2024,2,29);self.call("DTS_Increment")
+        self.field(2);self.set_calendar(2024,2,29);self.call("screen_dts.o:leftClicked")
         text=self.render();self.assertEqual((text[5],text[7]),("28","2025"))
     def test_day_and_time_fields_wrap_at_their_own_bounds(self):
-        self.set_calendar(2024,2,29);self.call("DTS_Increment")
+        self.set_calendar(2024,2,29);self.call("screen_dts.o:leftClicked")
         self.assertEqual(self.render()[5],"01")
-        self.call("DTS_Decrement");self.assertEqual(self.render()[5],"29")
+        self.call("screen_dts.o:rightClicked");self.assertEqual(self.render()[5],"29")
         for index,bound,box in [(3,23,8),(4,59,9),(5,59,10)]:
             self.field(index)
             self.cpu.mem_write(h.symbol("editedTime")[0]+index-3,bytes([bound]))
-            self.call("DTS_Increment");self.assertEqual(self.render()[box],"00")
-            self.call("DTS_Decrement");self.assertEqual(self.render()[box],str(bound))
+            self.call("screen_dts.o:leftClicked");self.assertEqual(self.render()[box],"00")
+            self.call("screen_dts.o:rightClicked");self.assertEqual(self.render()[box],str(bound))
     def test_cancel_and_editing_never_call_rtc_setter(self):
         before=bytes(self.cpu.mem_read(self.system,128))
-        self.call("DTS_Increment");self.call("DTS_Next");self.call("DTS_Decrement");self.call("DTS_Cancel")
+        self.call("screen_dts.o:leftClicked");self.call("screen_dts.o:centerClicked");self.call("screen_dts.o:rightClicked");self.call("screen_dts.o:rightPressed")
         self.assertEqual(self.saved,[])
         self.assertEqual(bytes(self.cpu.mem_read(self.system,128)),before)
     def test_save_commits_the_snapshot_once_then_returns_to_general(self):
-        self.call("DTS_Save")
+        self.call("screen_dts.o:centerPressed")
         self.assertEqual(self.saved,[int(datetime.datetime(2026,11,19,12,34,56,tzinfo=datetime.timezone.utc).timestamp())])
         self.assertEqual(int.from_bytes(self.cpu.mem_read(h.symbol("currentScreen")[0],4),"little"),h.symbol("generalSettingScreen")[0])
     def test_timer_guard_keeps_editor_open_with_explanation(self):
-        self.save_result=2;self.call("DTS_Save")
+        self.save_result=2;self.call("screen_dts.o:centerPressed")
         self.assertFalse(any(c[0]=="UG_WindowDelete" for c in self.calls))
         self.assertEqual(self.render()[15],"Timer active: blocked")
     def test_link_warning_does_not_discard_clock_editor(self):
-        self.add(0);self.call("DTS_Increment")
+        self.add(0);self.call("screen_dts.o:leftClicked")
         self.call("Screen_ShowConnectionError",0)
         self.assertFalse(any(c[0]=="UG_WindowDelete" for c in self.calls))
         self.assertEqual(self.render()[5],"20")

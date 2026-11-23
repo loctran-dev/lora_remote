@@ -221,7 +221,7 @@ class VisibilityTests(FirmwareHarness):
         self.put(symbol("managerCount")[0], 1)
         self.put(symbol("managerSelected")[0], 0)
         self.put(symbol("managerIds")[0], 2)
-        self.call("managerToggle")
+        self.call("screens.o:managerToggle")
         self.assertEqual(self.call("Screen_DeviceVisible", 2), 1)
         self.assertEqual(self.get(self.system + 80), 0)
         self.assertEqual(self.get(self.device + 2 * 468 + 36 + 68), 1)
@@ -232,14 +232,14 @@ class VisibilityTests(FirmwareHarness):
         selected = symbol("managerSelected")[0]
         self.put(symbol("managerCount")[0], 20)
         self.put(selected, 0)
-        self.call("managerPrevious")
+        self.call("screens.o:managerPrevious")
         self.assertEqual(self.get(selected), 0)
         for _ in range(25):
-            self.call("managerNext")
+            self.call("screens.o:managerNext")
         self.assertEqual(self.get(selected), 19)
         self.put(symbol("managerCount")[0], 0)
         before = bytes(self.cpu.mem_read(self.storage, 836))
-        self.call("managerToggle")
+        self.call("screens.o:managerToggle")
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
 
     def flash_mocks(self, erase_error=False, program_error=False):

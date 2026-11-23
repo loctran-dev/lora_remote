@@ -43,14 +43,14 @@ class GeneralMenuTests(MenuHarness):
         self.mocks(["Screen_SettingsMenuCreateStacked", "Screen_SettingsMenuBegin",
                     "Screen_SettingsMenuPage", "Screen_SettingsMenuRow",
                     "Screen_SettingsMenuUpdate", "Main_SetBuzzerMode",
-                    "UG_WindowHide", "UG_WindowDelete", "EGSS_Init", "EGSS_Render", "DTS_Init", "DTS_Render"])
+                    "UG_WindowHide", "UG_WindowDelete", "EGSS_Init", "EGSS_Render", "screen_dts.o:init", "screen_dts.o:render"])
         self.call("Link_Init", 0)
         # Initialized-RW screen vtable is copied by scatter-load on real boot.
         self.cpu.mem_write(harness.symbol("editGeneralSettingScreen")[0] + 4,
                            struct.pack("<II", harness.symbol("EGSS_Init")[0] | 1,
                                        harness.symbol("EGSS_Render")[0] | 1))
         self.cpu.mem_write(harness.symbol("dateTimeScreen")[0] + 4,
-                           struct.pack("<II",harness.symbol("DTS_Init")[0]|1,harness.symbol("DTS_Render")[0]|1))
+                           struct.pack("<II",harness.symbol("screen_dts.o:init")[0]|1,harness.symbol("screen_dts.o:render")[0]|1))
         self.call("Link_SetIdleSeconds", 45)
         self.call("Link_SetTimeoutSeconds", 180)
         self.cpu.mem_write(self.system + self.fields["tUpdate"], struct.pack("<I", 5))
@@ -126,7 +126,7 @@ class GeneralMenuTests(MenuHarness):
 class SettingsLayoutTests(MenuHarness):
     def setUp(self):
         super().setUp()
-        self.mocks(["createWindow", "createText", "UG_ImageCreate", "UG_ImageSetBMP",
+        self.mocks(["screens.o:createWindow", "screens.o:createText", "UG_ImageCreate", "UG_ImageSetBMP",
                     "UG_TextboxSetAlignment", "UG_TextboxSetForeColor",
                     "UG_TextboxSetScrollEnabled", "UG_TextboxSetText",
                     "UG_TextboxSetBackColor", "UG_TextboxCheckVisible",
@@ -136,7 +136,7 @@ class SettingsLayoutTests(MenuHarness):
         self.cpu.mem_write(0x20008000, b"General setup\0")
         self.call("Screen_SettingsMenuCreateStacked", 0x20008000)
         return {call[1][1]: (*call[1][2:], *call[2][:2])
-                for call in self.calls if call[0] == "createText"}
+                for call in self.calls if call[0] == "screens.o:createText"}
 
     def test_label_and_value_rectangles_never_overlap(self):
         boxes = self.create()
