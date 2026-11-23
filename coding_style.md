@@ -36,6 +36,7 @@ static uint16_t generateTransactionID(void);
 - Handler command dùng tên `handle<Command>` và luôn là `static`.
   - Ví dụ: `static void handleHistory(LoraPackage_t packet)`.
 - Tên hàm dùng `lowerCamelCase` sau tiền tố module; kiểu dữ liệu, macro và enum giữ theo quy ước hiện có của project.
+- Kiểu `struct` dùng mẫu `<Module>_<Name>_t`, ví dụ `Link_ProbeState_t`, `Schedule_RequestState_t`. Nếu struct đại diện cho chính module thì có thể dùng `<Module>_t`, ví dụ `Button_t`.
 - Kiểu `enum` phải có tiền tố module và hậu tố `_e`; giá trị enum bắt đầu bằng `e` và lặp lại tên kiểu.
 
 ```c
@@ -72,11 +73,14 @@ static void handleHistory(LoraPackage_t packet)
 Sắp xếp theo thứ tự sau:
 
 1. `#include`
-2. `extern` declaration
-3. `static` variable và forward declaration của private function
-4. Bảng dispatch hoặc dữ liệu module (`cmdTable`)
-5. Public API của module
-6. Private helper và handler implementation
+2. `#define` chỉ dùng nội bộ module
+3. `extern` declaration
+4. `static` variable và forward declaration của private function
+5. Bảng dispatch hoặc dữ liệu module (`cmdTable`)
+6. Public API của module
+7. Private helper và handler implementation
+
+- Macro/hằng số chỉ dùng trong một file `.c` phải đặt trong file `.c` đó, không đặt trong header. Chỉ đưa vào header các macro được file khác dùng hoặc cần cho khai báo trong header (ví dụ kích thước mảng của struct public).
 
 - Các handler implementation phải cùng thứ tự với `cmdTable`.
 - Gom các hàm cùng trách nhiệm vào một nhóm; dùng comment phân tách nhóm khi cần.
@@ -129,6 +133,7 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
 - Có một dòng trống giữa các function.
 - Không để trailing whitespace.
 - Dùng `void` cho function không có tham số.
+- Mỗi khai báo biến hoặc field của struct nằm trên một dòng riêng; không gộp nhiều biến trong một khai báo như `uint32_t a, b, c;`.
 
 ```c
 static uint8_t isValidPacket(const LoraPackage_t *packet)
