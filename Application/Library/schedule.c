@@ -10,6 +10,8 @@ extern SystemInfo_t systemInfo;
 
 static volatile Schedule_RequestState_t scheduleRequest;
 
+/* Request lifecycle ======================================================== */
+
 void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload)
 {
     scheduleRequest.state = eSchedule_State_Idle;
@@ -50,6 +52,8 @@ Schedule_State_e Schedule_GetStateForNode(uint8_t node)
 
     return scheduleRequest.state;
 }
+
+/* Transmit path ============================================================ */
 
 uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet)
 {
@@ -115,6 +119,8 @@ void Schedule_Tick(void)
     }
 }
 
+/* Receive path ============================================================= */
+
 void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGetStatus_t *payload)
 {
     if ((scheduleRequest.state != eSchedule_State_Waiting &&
@@ -150,6 +156,8 @@ uint8_t Schedule_HandleResponse(const LoraPackage_t *packet, const PayloadCommon
 
     return TRUE;
 }
+
+/* State queries ============================================================ */
 
 uint8_t Schedule_IsWaiting(void)
 {

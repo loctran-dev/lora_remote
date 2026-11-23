@@ -28,16 +28,23 @@ typedef struct Schedule_RequestState_t
     Schedule_State_e state;
 } Schedule_RequestState_t;
 
+/* Request lifecycle */
 void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload);
 void Schedule_QueueFailed(void);
-void Schedule_Tick(void);
 void Schedule_CancelForNode(uint8_t node);
+Schedule_State_e Schedule_GetStateForNode(uint8_t node);
+
+/* Transmit path */
 uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet);
 void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success);
-Schedule_State_e Schedule_GetStateForNode(uint8_t node);
+void Schedule_Tick(void);
+
+/* Receive path */
 void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGetStatus_t *payload);
 uint8_t Schedule_HandleResponse(const LoraPackage_t *packet, const PayloadCommonResponse_t *payload,
     uint32_t *deadline);
+
+/* State queries */
 uint8_t Schedule_IsWaiting(void);
 void Schedule_GetRequestState(Schedule_RequestState_t *state);
 
