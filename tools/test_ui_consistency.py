@@ -86,7 +86,7 @@ class UiConsistencyTests(h.FirmwareHarness):
             self.assertTrue(0<=x<=xe<128 and 0<=y<=ye<160,rect)
     def test_every_screen_uses_identical_live_clock_and_battery_header(self):
         for init,render in [('MMS_Init','MMS_Render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
-                            ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('HS_Init','HS_Render'),
+                            ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('screen_hs.o:init','screen_hs.o:render'),
                             ('screens.o:managerInit','screens.o:managerRender'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
                             ('DCS_Init','DCS_Render')]:
             with self.subTest(screen=init):

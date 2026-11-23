@@ -16,7 +16,10 @@ PER=(PAGE-HEADER)//32
 SLOTS=PER*8
 RAW=18 if REMOTE else 14
 def symbol(name):
-    m=re.search(r"^\s+"+re.escape(name)+r"\s+(0x[0-9a-fA-F]+)\s+(?:Data|Thumb Code)\s+(\d+)",MAP,re.M)
+    # "file.o:name" selects a static symbol that exists in several objects.
+    obj,_,sym=name.rpartition(":")
+    owner=r"\s+"+re.escape(obj)+r"\(" if obj else ""
+    m=re.search(r"^\s+"+re.escape(sym)+r"\s+(0x[0-9a-fA-F]+)\s+(?:Data|Thumb Code)\s+(\d+)"+owner,MAP,re.M)
     assert m,name
     return int(m[1],16)
 class JournalTests(unittest.TestCase):

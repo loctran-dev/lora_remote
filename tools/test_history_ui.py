@@ -29,39 +29,39 @@ class HistoryUiTests(unittest.TestCase):
             cpu.reg_write(UC_ARM_REG_R0,result);cpu.reg_write(UC_ARM_REG_PC,cpu.reg_read(UC_ARM_REG_LR))
         self.cpu.hook_add(UC_HOOK_CODE,intercept)
     def open_list(self):
-        self.call("Screen_OpenHistory");self.call("HS_Center")
+        self.call("Screen_OpenHistory");self.call("screen_hs.o:centerClicked")
     def test_menu_picker_list_details_and_back_preserve_selection(self):
         for i in range(3):self.hw.append()
         self.open_list()
         self.assertEqual(self.text[6],"1/1")
-        self.call("HS_Right")
+        self.call("screen_hs.o:rightClicked")
         self.assertNotEqual(self.bg[9],self.bg[7])
-        self.call("HS_Center")
+        self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.text[6],"2/3")
         self.assertEqual(self.text[8],"Action: ON")
         self.assertEqual(self.text[9],"Source: Remote")
         self.assertEqual(self.text[10],"Before: OFF")
         self.assertEqual(self.text[11],"After: ON")
-        self.call("HS_Back");self.call("HS_Center")
+        self.call("screen_hs.o:rightPressed");self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.text[6],"2/3")
     def test_empty_history_does_not_open_bogus_detail(self):
         self.open_list();self.assertEqual(self.text[7],"No history yet")
-        self.call("HS_Center")
+        self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.cpu.mem_read(h.symbol("historyScreenMode"),1),b"\x01")
     def test_hidden_device_is_still_selectable(self):
         self.cpu.mem_write(h.symbol("deviceBuff")+36+69,b"\x01")
         self.call("Screen_OpenHistory")
         self.assertIn("[Hidden]",self.text[7])
-        self.call("HS_Center");self.assertEqual(self.text[7],"No history yet")
+        self.call("screen_hs.o:centerClicked");self.assertEqual(self.text[7],"No history yet")
     def test_new_records_do_not_move_frozen_selection_until_refresh(self):
         self.hw.append();self.open_list()
         self.hw.append()
-        self.call("HS_Render")
+        self.call("screen_hs.o:render")
         self.assertEqual(self.text[6],"1/1")
-        self.call("HS_Refresh");self.call("HS_Center")
+        self.call("screen_hs.o:centerPressed");self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.text[6],"2/2")  # Refresh keeps the formerly selected event.
     def test_unknown_time_is_labeled_instead_of_fabricated_date(self):
-        self.hw.append(flags=1);self.open_list();self.call("HS_Center")
+        self.hw.append(flags=1);self.open_list();self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.text[7],"Time not synced")
 
 if __name__=="__main__":unittest.main(verbosity=2)
