@@ -39,7 +39,7 @@ class TimerUiTests(h.FirmwareHarness):
                  "UG_WindowDelete", "UG_WindowSetStyle", "UG_WindowSetTitleHeight",
                  "UG_WindowSetBackColor", "UG_WindowSetXStart", "UG_WindowSetYStart",
                  "UG_WindowSetXEnd", "UG_WindowSetYEnd", "UG_WindowShow", "Screen_StatusBarCreate",
-                 "Screen_StatusBarUpdate", "convertTimestampToRTC", "Power_WakeForError"]
+                 "Screen_StatusBarUpdate", "Util_ConvertTimestampToRTC", "Power_WakeForError"]
         hooks = {h.symbol(name)[0] & ~1: name for name in names}
 
         def intercept(cpu, address, size, data):
@@ -59,7 +59,7 @@ class TimerUiTests(h.FirmwareHarness):
                 extra = struct.unpack("<5I", bytes(cpu.mem_read(cpu.reg_read(UC_ARM_REG_SP), 20)))
                 self.rectangles[args[1]] = (args[2], args[3], extra[0], extra[1])
             elif name == "UG_WindowCreate": self.creates += 1
-            elif name == "convertTimestampToRTC": cpu.mem_write(args[1], bytes([14, 35, 0]))
+            elif name == "Util_ConvertTimestampToRTC": cpu.mem_write(args[1], bytes([14, 35, 0]))
             cpu.reg_write(UC_ARM_REG_R0, result)
             cpu.reg_write(UC_ARM_REG_PC, cpu.reg_read(UC_ARM_REG_LR))
 

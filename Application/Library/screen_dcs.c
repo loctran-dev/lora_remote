@@ -282,7 +282,7 @@ static void DCS_CountdownUpdate(const DeviceInfo_t *device, const MotorData_t *m
                          module->scheduleTime - systemInfo.currentTime : 0;
     RTC_TimeTypeDef time;
     RTC_DateTypeDef date;
-    convertTimestampToRTC(module->scheduleTime, &time, &date);
+    Util_ConvertTimestampToRTC(module->scheduleTime, &time, &date);
     snprintf(text, sizeof(text), "At %02u:%02u", time.Hours, time.Minutes);
     UG_TextboxSetText(&window_1, 12, device->isConnectionError ? "Offline" : text);
     DCS_FormatRemaining(remaining, text);

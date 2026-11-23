@@ -20,7 +20,7 @@ void Comm_UpdatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int1
     memcpy(packageOut->rawData, &packageIn, LORA_PACKAGE_HEADER_SIZE);
     memcpy(&packageOut->rawData[LORA_PACKAGE_HEADER_SIZE], payload, payloadLength);
     packageOut->byteCount = LORA_PACKAGE_HEADER_SIZE + payloadLength + sizeof(packageOut->checkSum);
-    packageOut->checkSum = calculateCRC(&packageOut->rawData[0], packageOut->length);
+    packageOut->checkSum = Util_CalculateCRC(&packageOut->rawData[0], packageOut->length);
     memcpy(&packageOut->rawData[packageOut->byteCount - 1], &packageOut->checkSum, sizeof(packageOut->checkSum));
 }
 
@@ -41,7 +41,7 @@ LoraPackage_t Comm_CreateNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcod
     memcpy(packageOut.rawData, &packageOut, LORA_PACKAGE_HEADER_SIZE);
     memcpy(&packageOut.rawData[LORA_PACKAGE_HEADER_SIZE], payload, payloadLength);
 
-    packageOut.checkSum = calculateCRC(&packageOut.rawData[0], packageOut.length);
+    packageOut.checkSum = Util_CalculateCRC(&packageOut.rawData[0], packageOut.length);
     memcpy(&packageOut.rawData[packageOut.byteCount - 1], &packageOut.checkSum, sizeof(packageOut.checkSum));
 
     return packageOut;
@@ -121,7 +121,7 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length)
     }
     memcpy(fwPackage.rawData, frameStart, fwPackage.byteCount);
     fwPackage.checkSum = frameStart[fwPackage.byteCount - 1];
-    uint8_t readCRC = calculateCRC(&fwPackage.rawData[0], fwPackage.length);
+    uint8_t readCRC = Util_CalculateCRC(&fwPackage.rawData[0], fwPackage.length);
     if (readCRC != fwPackage.checkSum)
     {
         return;

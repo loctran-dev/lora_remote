@@ -114,7 +114,7 @@ void RemoteHistory_Tick(void)
                 LORA_PACKAGE_TYPE_RESPONSE,(uint8_t *)&ack,sizeof(ack),0);
             packet.transactionID=p->transaction;
             memcpy(packet.rawData+6,&packet.transactionID,2);
-            packet.checkSum=calculateCRC(packet.rawData,packet.length);
+            packet.checkSum=Util_CalculateCRC(packet.rawData,packet.length);
             packet.rawData[packet.byteCount-1]=packet.checkSum;
             if (osMessageQueuePut(txMsgQueueHandle,&packet,0,0)==osOK) remoteHistoryAcked++;
         }

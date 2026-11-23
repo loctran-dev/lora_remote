@@ -40,16 +40,16 @@ void Rtc_RestoreDate(void)
     uint32_t first,second,low;
     do { first=RTC->CNTH; low=RTC->CNTL; second=RTC->CNTH; } while (first!=second);
     uint32_t days=((second<<16)|low)/86400u;
-    uint64_t restored=(uint64_t)getUnixTimestamp(&time,&date)+(uint64_t)days*86400u;
+    uint64_t restored=(uint64_t)Util_GetUnixTimestamp(&time,&date)+(uint64_t)days*86400u;
     if (restored>4102444799u) return;
-    convertTimestampToRTC((uint32_t)restored,&time,&date);
+    Util_ConvertTimestampToRTC((uint32_t)restored,&time,&date);
     HAL_RTC_SetDate(&hrtc,&date,RTC_FORMAT_BIN);
 }
 uint32_t Rtc_Read(void)
 {
     HAL_RTC_GetTime(&hrtc,&systemInfo.time,RTC_FORMAT_BIN);
     HAL_RTC_GetDate(&hrtc,&systemInfo.date,RTC_FORMAT_BIN);
-    systemInfo.currentTime=getUnixTimestamp(&systemInfo.time,&systemInfo.date);
+    systemInfo.currentTime=Util_GetUnixTimestamp(&systemInfo.time,&systemInfo.date);
     Rtc_SaveDate();
     return systemInfo.currentTime;
 }
@@ -63,7 +63,7 @@ uint8_t Rtc_Set(uint32_t timestamp)
                 deviceBuff[i].motorData[module].scheduleTime) return RTC_SET_BUSY;
     RTC_TimeTypeDef time={0};
     RTC_DateTypeDef date={0};
-    convertTimestampToRTC(timestamp,&time,&date);
+    Util_ConvertTimestampToRTC(timestamp,&time,&date);
     __HAL_RCC_PWR_CLK_ENABLE();
     HAL_PWR_EnableBkUpAccess();
     if (HAL_RTC_SetTime(&hrtc,&time,RTC_FORMAT_BIN)!=HAL_OK ||

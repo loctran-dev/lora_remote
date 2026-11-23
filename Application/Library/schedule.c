@@ -103,7 +103,7 @@ void Schedule_Tick(void)
         payload);
     packet.transactionID = scheduleRequest.transaction;
     memcpy(packet.rawData + 6, &packet.transactionID, sizeof(packet.transactionID));
-    packet.checkSum = calculateCRC(packet.rawData, packet.length);
+    packet.checkSum = Util_CalculateCRC(packet.rawData, packet.length);
     packet.rawData[packet.byteCount - 1] = packet.checkSum;
 
     scheduleRequest.attempts++;

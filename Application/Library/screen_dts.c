@@ -103,7 +103,7 @@ void DTS_Next(void) { selectedField=(selectedField+1)%6; saveError=0; Main_SetBu
 void DTS_Cancel(void) { Main_SetBuzzerMode(BUZZER_SHORT_BEEP); back(); }
 void DTS_Save(void)
 {
-    saveError=Rtc_Set(getUnixTimestamp(&editedTime,&editedDate));
+    saveError=Rtc_Set(Util_GetUnixTimestamp(&editedTime,&editedDate));
     if (saveError) { Main_SetBuzzerMode(BUZZER_LONG_BEEP); return; }
     Main_SetBuzzerMode(BUZZER_2_SHORT_BEEP); back();
 }

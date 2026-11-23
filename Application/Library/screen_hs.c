@@ -160,7 +160,7 @@ static void HS_Render(void)
                 continue;
             }
             RTC_TimeTypeDef time; RTC_DateTypeDef date;
-            convertTimestampToRTC(r->event.timestamp,&time,&date);
+            Util_ConvertTimestampToRTC(r->event.timestamp,&time,&date);
             if (r->event.flags&HIST_TIME_UNKNOWN) snprintf(text,sizeof(text),"--:--:-- %s",actionName(r->event.action));
             else snprintf(text,sizeof(text),"%02u:%02u:%02u %s",time.Hours,time.Minutes,time.Seconds,actionName(r->event.action));
             UG_TextboxSetText(&window_1,a,text);
@@ -182,7 +182,7 @@ static void HS_Render(void)
             for (uint8_t i=1;i<7;i++) UG_TextboxSetText(&window_1,7+i,"");
         } else {
             RTC_TimeTypeDef time; RTC_DateTypeDef date;
-            convertTimestampToRTC(r->event.timestamp,&time,&date);
+            Util_ConvertTimestampToRTC(r->event.timestamp,&time,&date);
             if (r->event.flags&HIST_TIME_UNKNOWN) strcpy(text,"Time not synced");
             else snprintf(text,sizeof(text),"%02u/%02u/%02u %02u:%02u:%02u",date.Date,date.Month,date.Year,time.Hours,time.Minutes,time.Seconds);
             UG_TextboxSetText(&window_1,7,text);

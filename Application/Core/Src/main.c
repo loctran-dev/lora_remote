@@ -321,7 +321,7 @@ int main(void)
 	
 	HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-	systemInfo.currentTime = getUnixTimestamp(&systemInfo.time, &systemInfo.date);
+	systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
 	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) {
 		if (deviceBuff[devNo].isDelete == FALSE) {
 			deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
@@ -1129,7 +1129,7 @@ void StartSystemTask(void *argument)
 		// Read the date time value
 		HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
 		HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-		systemInfo.currentTime = getUnixTimestamp(&systemInfo.time, &systemInfo.date);
+		systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
         Rtc_SaveDate();
 		
     Main_UpdateBattery();

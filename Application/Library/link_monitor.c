@@ -22,7 +22,7 @@ static volatile uint8_t syncRequested;
 
 static uint8_t extensionChecksum(void)
 {
-    return calculateCRC((uint8_t *)&storageData.linkSettingsMagic,
+    return Util_CalculateCRC((uint8_t *)&storageData.linkSettingsMagic,
         offsetof(SystemStorageData_t, linkSettingsChecksum) -
         offsetof(SystemStorageData_t, linkSettingsMagic));
 }

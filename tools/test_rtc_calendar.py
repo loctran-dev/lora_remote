@@ -10,14 +10,14 @@ class CalendarTests(h.FirmwareHarness):
                      datetime.datetime(2099,12,31,23,59,59)]:
             stamp=int(date.replace(tzinfo=datetime.timezone.utc).timestamp())
             self.cpu.mem_write(0x20008000,bytes(24));self.cpu.mem_write(0x20008100,bytes(4))
-            self.call("convertTimestampToRTC",stamp,0x20008000,0x20008100)
+            self.call("Util_ConvertTimestampToRTC",stamp,0x20008000,0x20008100)
             time=bytes(self.cpu.mem_read(0x20008000,3))
             rtc_date=bytes(self.cpu.mem_read(0x20008100,4))
             self.assertEqual(time,bytes([date.hour,date.minute,date.second]))
             self.assertEqual(rtc_date[1:],bytes([date.month,date.day,date.year-2000]))
-            self.assertEqual(self.call("getUnixTimestamp",0x20008000,0x20008100),stamp)
+            self.assertEqual(self.call("Util_GetUnixTimestamp",0x20008000,0x20008100),stamp)
     def test_out_of_calendar_timestamp_is_clamped(self):
-        self.call("convertTimestampToRTC",0,0x20008000,0x20008100)
+        self.call("Util_ConvertTimestampToRTC",0,0x20008000,0x20008100)
         self.assertEqual(bytes(self.cpu.mem_read(0x20008101,3)),bytes([1,1,0]))
 
 if __name__=="__main__":unittest.main(verbosity=2)
