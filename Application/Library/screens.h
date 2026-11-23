@@ -106,4 +106,5 @@ extern Screen_t devicePairingScreen;
 extern uint8_t indexOfSettingMenu;
 extern uint8_t indexOfGeneralSettingMenu;
 extern uint8_t pairingUI_Step;
+extern uint8_t historyScreenMode;
 #endif
