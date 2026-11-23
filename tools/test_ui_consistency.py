@@ -85,14 +85,14 @@ class UiConsistencyTests(h.FirmwareHarness):
             x,y,xe,ye=rect
             self.assertTrue(0<=x<=xe<128 and 0<=y<=ye<160,rect)
     def test_every_screen_uses_identical_live_clock_and_battery_header(self):
-        for init,render in [('MMS_Init','MMS_Render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
+        for init,render in [('screen_mms.o:init','screen_mms.o:render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
                             ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('screen_hs.o:init','screen_hs.o:render'),
                             ('screens.o:managerInit','screens.o:managerRender'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
                             ('DCS_Init','DCS_Render')]:
             with self.subTest(screen=init):
                 self.call(init);self.call(render);self.header();self.layout()
     def test_main_menu_and_pairing_clock_advances_without_reentering_screen(self):
-        for init,render in [('MMS_Init','MMS_Render'),('DPS_Init','DPS_Render')]:
+        for init,render in [('screen_mms.o:init','screen_mms.o:render'),('DPS_Init','DPS_Render')]:
             self.call(init)
             self.cpu.mem_write(self.system+self.members['time'],bytes([0,1,0]))
             self.call(render);self.assertEqual(self.text[0],'00:01')

@@ -10,12 +10,12 @@ class HistoryUiTests(unittest.TestCase):
         self.hw=h.JournalTests();self.hw.setUp();self.cpu=self.hw.cpu;self.call=self.hw.call
         self.hw.globals_for_sync()
         self.text={};self.bg={};self.visible={}
-        self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("MMS_Init")|1,h.symbol("MMS_Render")|1))
+        self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("screen_mms.o:init")|1,h.symbol("screen_mms.o:render")|1))
         names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
                "UG_WindowSetBackColor","UG_WindowSetXStart","UG_WindowSetXEnd","UG_WindowSetYStart","UG_WindowSetYEnd",
                "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",
                "UG_TextboxSetForeColor","UG_TextboxSetAlignment","UG_TextboxSetScrollEnabled","UG_TextboxCheckVisible",
-               "UG_TextboxShow","UG_TextboxHide","UG_Update","MMS_Init","MMS_Render",
+               "UG_TextboxShow","UG_TextboxHide","UG_Update","screen_mms.o:init","screen_mms.o:render",
                "Screen_StatusBarCreate","Screen_StatusBarUpdate"]
         hooks={h.symbol(n)&~1:n for n in names}
         def intercept(cpu,address,size,data):
