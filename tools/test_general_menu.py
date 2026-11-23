@@ -56,16 +56,16 @@ class GeneralMenuTests(MenuHarness):
         self.cpu.mem_write(self.system + self.fields["tUpdate"], struct.pack("<I", 5))
         self.cpu.mem_write(self.system + self.fields["tSleepUpdate"], struct.pack("<I", 300))
         self.call("Screen_GeneralSettingsResetSelection")
-        self.call("GSS_Init")
+        self.call("screen_gss.o:init")
 
     def render(self):
         self.calls.clear()
-        self.call("GSS_Render")
+        self.call("screen_gss.o:render")
         return [call for call in self.calls if call[0] == "Screen_SettingsMenuRow"]
 
     def advance(self, count):
         for _ in range(count):
-            self.call("GSS_RightButtonClickedCallback")
+            self.call("screen_gss.o:rightClicked")
 
     def test_sleep_fields_are_grouped_on_first_page(self):
         rows = self.render()
@@ -84,9 +84,9 @@ class GeneralMenuTests(MenuHarness):
     def test_every_item_opens_its_original_editor_and_keeps_selection(self):
         before = bytes(self.cpu.mem_read(self.storage, 885))
         for position, original_id in enumerate([0, 6, 2, 7, 1, 3, 4, 5]):
-            self.call("GSS_CenterButtonClickedCallback")
+            self.call("screen_gss.o:centerClicked")
             self.assertEqual(self.get(harness.symbol("indexOfGeneralSettingMenu")[0]), original_id)
-            self.call("GSS_Init")  # Same path as editor save/cancel return.
+            self.call("screen_gss.o:init")  # Same path as editor save/cancel return.
             rows = self.render()
             self.assertTrue(rows[position % 4][1][3])
             self.advance(1)
@@ -94,12 +94,12 @@ class GeneralMenuTests(MenuHarness):
 
     def test_navigation_bounds_and_fresh_menu_entry(self):
         for _ in range(12):
-            self.call("GSS_LeftButtonClickedCallback")
+            self.call("screen_gss.o:leftClicked")
         self.assertTrue(self.render()[0][1][3])
         self.advance(12)
         self.assertTrue(self.render()[0][1][3])
         self.call("Screen_GeneralSettingsResetSelection")
-        self.call("GSS_Init")
+        self.call("screen_gss.o:init")
         rows = self.render()
         self.assertEqual(rows[0][3][0], "Enable sleep mode")
         self.assertTrue(rows[0][1][3])
@@ -116,7 +116,7 @@ class GeneralMenuTests(MenuHarness):
         self.assertEqual(rows[0][3][0],"Date & time")
         self.assertTrue(rows[0][1][3])
         self.assertTrue(all(row[1][1:3]==(0,0) for row in rows[1:]))
-        self.call("GSS_CenterButtonClickedCallback")
+        self.call("screen_gss.o:centerClicked")
         self.assertEqual(self.get(harness.symbol("indexOfGeneralSettingMenu")[0]),8)
         self.assertEqual(int.from_bytes(self.cpu.mem_read(harness.symbol("currentScreen")[0],4),"little"),
                          harness.symbol("dateTimeScreen")[0])

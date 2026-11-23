@@ -15,7 +15,7 @@ class DateTimeUiTests(m.MenuHarness):
                     "UG_WindowSetYEnd","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText",
                     "UG_TextboxSetBackColor","UG_TextboxSetForeColor","UG_TextboxSetAlignment",
                     "UG_TextboxSetScrollEnabled","UG_WindowShow","UG_Update","Main_SetBuzzerMode",
-                    "UG_WindowHide","UG_WindowDelete","GSS_Init","GSS_Render","Power_WakeForError",
+                    "UG_WindowHide","UG_WindowDelete","screen_gss.o:init","screen_gss.o:render","Power_WakeForError",
                     "Screen_StatusBarCreate","Screen_StatusBarUpdate"])
         self.cpu.mem_write(self.system+28,bytes([12,34,56]))
         self.cpu.mem_write(self.system+31,bytes([4,11,19,26]))
@@ -28,7 +28,7 @@ class DateTimeUiTests(m.MenuHarness):
         address=h.symbol("Rtc_Set")[0]&~1
         self.cpu.hook_add(UC_HOOK_CODE,save,begin=address,end=address)
         self.cpu.mem_write(h.symbol("generalSettingScreen")[0]+4,
-            struct.pack("<II",h.symbol("GSS_Init")[0]|1,h.symbol("GSS_Render")[0]|1))
+            struct.pack("<II",h.symbol("screen_gss.o:init")[0]|1,h.symbol("screen_gss.o:render")[0]|1))
         self.call("DTS_Init")
     def render(self):
         self.calls.clear();self.call("DTS_Render")
