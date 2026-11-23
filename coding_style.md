@@ -134,6 +134,26 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
 - Không để trailing whitespace.
 - Dùng `void` cho function không có tham số.
 - Mỗi khai báo biến hoặc field của struct nằm trên một dòng riêng; không gộp nhiều biến trong một khai báo như `uint32_t a, b, c;`.
+- Biến cục bộ của function khai báo ở đầu thân function, trước câu lệnh đầu tiên; không khai báo biến giữa function hoặc trong block `if`/`while`. Khi cần dùng thì gán giá trị tại chỗ.
+  - Ngoại lệ: biến đếm của vòng `for` được khai báo trong câu lệnh `for`, ví dụ `for (uint8_t id = 0; ...)`.
+- Trong function dài, tách các đoạn có nhiệm vụ khác nhau (kiểm tra đầu vào, chuẩn bị dữ liệu, xử lý, cập nhật trạng thái...) bằng một dòng trống.
+
+```c
+static void handleSetSchedule(LoraPackage_t fwPackage)
+{
+    PayloadCommonResponse_t payloadResponse;
+    uint32_t deadline;
+    uint8_t accepted;
+
+    if (fwPackage.code != CMD_SET_SCHEDULE)
+    {
+        return;
+    }
+
+    memcpy(&payloadResponse, &fwPackage.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(payloadResponse));
+    accepted = payloadResponse.result == 1;
+}
+```
 
 ```c
 static uint8_t isValidPacket(const LoraPackage_t *packet)
