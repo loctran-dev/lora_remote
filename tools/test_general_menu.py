@@ -43,12 +43,12 @@ class GeneralMenuTests(MenuHarness):
         self.mocks(["Screen_SettingsMenuCreateStacked", "Screen_SettingsMenuBegin",
                     "Screen_SettingsMenuPage", "Screen_SettingsMenuRow",
                     "Screen_SettingsMenuUpdate", "Main_SetBuzzerMode",
-                    "UG_WindowHide", "UG_WindowDelete", "EGSS_Init", "EGSS_Render", "screen_dts.o:init", "screen_dts.o:render"])
+                    "UG_WindowHide", "UG_WindowDelete", "screen_egss.o:init", "screen_egss.o:render", "screen_dts.o:init", "screen_dts.o:render"])
         self.call("Link_Init", 0)
         # Initialized-RW screen vtable is copied by scatter-load on real boot.
         self.cpu.mem_write(harness.symbol("editGeneralSettingScreen")[0] + 4,
-                           struct.pack("<II", harness.symbol("EGSS_Init")[0] | 1,
-                                       harness.symbol("EGSS_Render")[0] | 1))
+                           struct.pack("<II", harness.symbol("screen_egss.o:init")[0] | 1,
+                                       harness.symbol("screen_egss.o:render")[0] | 1))
         self.cpu.mem_write(harness.symbol("dateTimeScreen")[0] + 4,
                            struct.pack("<II",harness.symbol("screen_dts.o:init")[0]|1,harness.symbol("screen_dts.o:render")[0]|1))
         self.call("Link_SetIdleSeconds", 45)

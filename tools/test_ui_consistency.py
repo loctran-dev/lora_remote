@@ -101,7 +101,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         for item in range(8):
             with self.subTest(item=item):
                 self.put(h.symbol('indexOfGeneralSettingMenu')[0],item)
-                self.call('EGSS_Init');self.call('EGSS_Render');self.header();self.layout()
+                self.call('screen_egss.o:init');self.call('screen_egss.o:render');self.header();self.layout()
                 if item!=5:self.check_help()
     def test_all_device_editors_share_header_and_help_fits_without_scrolling(self):
         for item in range(7):
