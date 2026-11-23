@@ -87,7 +87,7 @@ class UiConsistencyTests(h.FirmwareHarness):
     def test_every_screen_uses_identical_live_clock_and_battery_header(self):
         for init,render in [('MMS_Init','MMS_Render'),('GSS_Init','GSS_Render'),('DSS_Init','DSS_Render'),
                             ('DMS_Init','DMS_Render'),('DTS_Init','DTS_Render'),('HS_Init','HS_Render'),
-                            ('Manager_Init','Manager_Render'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
+                            ('managerInit','managerRender'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
                             ('DCS_Init','DCS_Render')]:
             with self.subTest(screen=init):
                 self.call(init);self.call(render);self.header();self.layout()
@@ -147,13 +147,13 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.call('DMS_Render');self.assertEqual(self.text[19],'3 s')
     def test_device_manager_pages_do_not_overlap_header_or_help(self):
         for id in range(20):self.add(id)
-        self.call('Manager_Init');self.call('Manager_Render');self.header();self.layout()
+        self.call('managerInit');self.call('managerRender');self.header();self.layout()
         for id in (6,8,10,12):
             rect=self.rect[('UG_TextboxCreate',id)]
             self.assertGreater(rect[1],37);self.assertLess(rect[3],130)
         self.assertIn('1-4/20',self.text[20])
         self.put(h.symbol('managerSelected')[0],19)
-        self.call('Manager_Render');self.assertIn('17-20/20',self.text[20])
+        self.call('managerRender');self.assertIn('17-20/20',self.text[20])
         self.assertEqual(self.text[1],'100%')
     def test_empty_battery_uses_frame_zero_and_unknown_voltage_is_not_100_percent(self):
         self.call('Screen_StatusBarCreate')

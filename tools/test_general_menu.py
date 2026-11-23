@@ -126,7 +126,7 @@ class GeneralMenuTests(MenuHarness):
 class SettingsLayoutTests(MenuHarness):
     def setUp(self):
         super().setUp()
-        self.mocks(["Simple_Window", "Simple_Text", "UG_ImageCreate", "UG_ImageSetBMP",
+        self.mocks(["createWindow", "createText", "UG_ImageCreate", "UG_ImageSetBMP",
                     "UG_TextboxSetAlignment", "UG_TextboxSetForeColor",
                     "UG_TextboxSetScrollEnabled", "UG_TextboxSetText",
                     "UG_TextboxSetBackColor", "UG_TextboxCheckVisible",
@@ -136,7 +136,7 @@ class SettingsLayoutTests(MenuHarness):
         self.cpu.mem_write(0x20008000, b"General setup\0")
         self.call("Screen_SettingsMenuCreateStacked", 0x20008000)
         return {call[1][1]: (*call[1][2:], *call[2][:2])
-                for call in self.calls if call[0] == "Simple_Text"}
+                for call in self.calls if call[0] == "createText"}
 
     def test_label_and_value_rectangles_never_overlap(self):
         boxes = self.create()
