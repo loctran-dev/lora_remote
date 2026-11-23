@@ -21,7 +21,15 @@ FROMELF = Path(os.environ.get("LOCALAPPDATA", "")) / "Keil_v5/ARM/ARM_Compiler_5
 
 
 def symbol(name):
-    match = re.search(r"^\s+" + re.escape(name) + r"\s+(0x[0-9a-fA-F]+)\s+(?:Data|Thumb Code)\s+(\d+)", MAP, re.M)
+    """Return (address, size) of a map symbol.
+
+    Use "file.o:name" for a static symbol whose name exists in several objects,
+    e.g. "screen_dss.o:init".
+    """
+    obj, _, sym = name.rpartition(":")
+    owner = r"\s+" + re.escape(obj) + r"\(" if obj else ""
+    match = re.search(r"^\s+" + re.escape(sym) + r"\s+(0x[0-9a-fA-F]+)\s+(?:Data|Thumb Code)\s+(\d+)" + owner,
+                      MAP, re.M)
     if not match:
         raise AssertionError(f"Missing symbol: {name}")
     return int(match[1], 16), int(match[2])

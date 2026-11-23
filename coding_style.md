@@ -68,6 +68,12 @@ static void handleHistory(LoraPackage_t packet)
 }
 ```
 
+## Screen
+
+- Mỗi file `screen_<xxx>.c` định nghĩa một `Screen_t`; các handler trong bảng là `static` và dùng tên chung giống nhau ở mọi screen: `init`, `render`, `leftClicked`, `rightClicked`, `centerClicked`, `bLeftClicked`, `bRightClicked`, `leftPressed`, `rightPressed`, `centerPressed`, `bLeftPressed`, `bRightPressed`.
+- Handler không làm gì thì trỏ tới một hàm `static void noAction(void)` chung của file.
+- Test giả lập gọi các hàm `static` này bằng tên kèm object file, ví dụ `symbol("screen_dss.o:init")`.
+
 ## Thứ tự trong file `.c`
 
 Sắp xếp theo thứ tự sau:
