@@ -266,7 +266,7 @@ class VisibilityTests(FirmwareHarness):
         source = 0x20008000
         payload = bytes(i % 256 for i in range(836))
         self.cpu.mem_write(source, payload + b"BAD!")
-        self.assertEqual(self.call("writeDataToFlash", 0x0803F000, source, len(payload)), 0)
+        self.assertEqual(self.call("Flash_WriteData", 0x0803F000, source, len(payload)), 0)
         self.assertIn(("HAL_FLASHEx_Erase", 0x0803F000, 1), calls)
         writes = [c for c in calls if c[0] == "HAL_FLASH_Program"]
         self.assertEqual(len(writes), 209)
@@ -277,19 +277,19 @@ class VisibilityTests(FirmwareHarness):
     def test_flash_partial_word_padding(self):
         calls = self.flash_mocks()
         self.cpu.mem_write(0x20008000, b"ABCDEBAD")
-        self.call("writeDataToFlash", 0x0803F000, 0x20008000, 5)
+        self.call("Flash_WriteData", 0x0803F000, 0x20008000, 5)
         writes = [c for c in calls if c[0] == "HAL_FLASH_Program"]
         self.assertEqual([c[2] for c in writes], [0x44434241, 0xFFFFFF45])
 
     def test_flash_relocks_on_erase_failure(self):
         calls = self.flash_mocks(erase_error=True)
-        self.assertEqual(self.call("writeDataToFlash", 0x0803F000, 0x20008000, 836), 4)
+        self.assertEqual(self.call("Flash_WriteData", 0x0803F000, 0x20008000, 836), 4)
         self.assertIn(("HAL_FLASH_Lock",), calls)
         self.assertFalse(any(c[0] == "HAL_FLASH_Program" for c in calls))
 
     def test_flash_relocks_on_program_failure(self):
         calls = self.flash_mocks(program_error=True)
-        self.assertEqual(self.call("writeDataToFlash", 0x0803F000, 0x20008000, 836), 4)
+        self.assertEqual(self.call("Flash_WriteData", 0x0803F000, 0x20008000, 836), 4)
         self.assertIn(("HAL_FLASH_Lock",), calls)
         self.assertEqual(len([c for c in calls if c[0] == "HAL_FLASH_Program"]), 1)
 

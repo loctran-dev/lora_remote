@@ -246,7 +246,7 @@ int main(void)
 		{
 			storageData.DeviceConfig[devNo].isDelete = TRUE;
 		}
-		writeDataToFlash(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t));
+		Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t));
 	}
 	
 	if (storageData.netIdConfig == 0 || storageData.netIdConfig == 255) storageData.netIdConfig = 1;
@@ -1303,7 +1303,7 @@ void StartSystemTask(void *argument)
 		{
 			storageData.lastWriteSuccess = TRUE;
 			systemInfo.isNeedSaveConfig = FALSE;
-			if (writeDataToFlash(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t)) ||
+			if (Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t)) ||
 				memcmp((void *)CONFIG_DATA_ADDRESS, &storageData, sizeof(storageData)))
 				Main_SetBuzzerMode(BUZZER_LONG_BEEP);
 		}
