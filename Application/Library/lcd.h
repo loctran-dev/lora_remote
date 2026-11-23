@@ -1,7 +1,6 @@
 #ifndef __ST7735_H__
 #define __ST7735_H__
 
-#include "images.h"
 #include "ugui.h"
 #include "main.h"
 

@@ -2,7 +2,7 @@
 #include "main.h"
 #include "define.h"
 #include "cmsis_os.h"
-#include "linkMonitor.h"
+#include "link_monitor.h"
 #include "utility.h"
 #include <string.h>
 extern SystemInfo_t systemInfo;

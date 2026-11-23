@@ -33,7 +33,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.cpu.mem_write(self.system+self.members['batteryVoltage'],struct.pack('<f',4.1))
         self.put(self.system+self.members['batteryUsage'],100)
         self.tick=0;self.rect={};self.text={};self.scroll={};self.align={};self.color={};self.created=[];self.frames=[]
-        files=list((h.ROOT/'Application/Library').glob('*Screen.c'))+[h.ROOT/'Application/Library/deviceMonitorSceen.c',h.ROOT/'Application/Library/screens.c']
+        files=list((h.ROOT/'Application/Library').glob('screen_*.c'))+[h.ROOT/'Application/Library/screens.c']
         names=set(re.findall(r'\b(_?UG_\w+)\s*\(',''.join(f.read_text() for f in files)))
         names.update(['Rtc_Read','Main_SetBuzzerMode','Screen_EditCharactersCreate','Screen_EditCharactersUpdate','HAL_GetTick'])
         hooks={}

@@ -27,7 +27,7 @@
 
 /* USER CODE BEGIN Includes */
 #ifndef USB_BOOTLOADER
-#include "powerSleep.h"
+#include "power_sleep.h"
 #endif
 
 /* USER CODE END Includes */

@@ -1,6 +1,6 @@
 #ifndef REMOTE_HISTORY_H
 #define REMOTE_HISTORY_H
-#include "communicationLora.h"
+#include "communication_lora.h"
 #include "history_journal.h"
 void RemoteHistory_Init(void);
 void RemoteHistory_Handle(LoraPackage_t packet);

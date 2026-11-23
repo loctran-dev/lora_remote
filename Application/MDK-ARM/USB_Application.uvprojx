@@ -337,7 +337,7 @@
               <MiscControls />
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine />
-              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;../Library;../Library/UGUI;../Library/UGUI/Fonts;../Library/Fonts;../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3;../USB_DEVICE/App;../USB_DEVICE/Target;../Middlewares/ST/STM32_USB_Device_Library/Core/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc</IncludePath>
+              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;../Library;../Library/UGUI;../Library/UGUI/Fonts;../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3;../USB_DEVICE/App;../USB_DEVICE/Target;../Middlewares/ST/STM32_USB_Device_Library/Core/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -868,24 +868,24 @@
               <FilePath>..\Library\button.h</FilePath>
             </File>
             <File>
-              <FileName>Lora.c</FileName>
+              <FileName>lora.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\Lora.c</FilePath>
+              <FilePath>..\Library\lora.c</FilePath>
             </File>
             <File>
-              <FileName>Lora.h</FileName>
+              <FileName>lora.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Library\Lora.h</FilePath>
+              <FilePath>..\Library\lora.h</FilePath>
             </File>
             <File>
-              <FileName>communicationLora.c</FileName>
+              <FileName>communication_lora.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\communicationLora.c</FilePath>
+              <FilePath>..\Library\communication_lora.c</FilePath>
             </File>
             <File>
-              <FileName>communicationLora.h</FileName>
+              <FileName>communication_lora.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Library\communicationLora.h</FilePath>
+              <FilePath>..\Library\communication_lora.h</FilePath>
             </File>
             <File>
               <FileName>utility.c</FileName>
@@ -898,9 +898,9 @@
               <FilePath>..\Library\utility.h</FilePath>
             </File>
             <File>
-              <FileName>commandHandlers.c</FileName>
+              <FileName>command_handlers.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\commandHandlers.c</FilePath>
+              <FilePath>..\Library\command_handlers.c</FilePath>
             </File>
             <File>
               <FileName>schedule.c</FileName>
@@ -914,13 +914,13 @@
             </File>
               <File><FileName>history_journal.c</FileName><FileType>1</FileType><FilePath>..\Library\history_journal.c</FilePath></File>
               <File><FileName>remote_history.c</FileName><FileType>1</FileType><FilePath>..\Library\remote_history.c</FilePath></File>
-              <File><FileName>historyScreen.c</FileName><FileType>1</FileType><FilePath>..\Library\historyScreen.c</FilePath></File>
-              <File><FileName>rtcSetting.c</FileName><FileType>1</FileType><FilePath>..\Library\rtcSetting.c</FilePath></File>
-              <File><FileName>dateTimeScreen.c</FileName><FileType>1</FileType><FilePath>..\Library\dateTimeScreen.c</FilePath></File>
+              <File><FileName>screen_hs.c</FileName><FileType>1</FileType><FilePath>..\Library\screen_hs.c</FilePath></File>
+              <File><FileName>rtc_setting.c</FileName><FileType>1</FileType><FilePath>..\Library\rtc_setting.c</FilePath></File>
+              <File><FileName>screen_dts.c</FileName><FileType>1</FileType><FilePath>..\Library\screen_dts.c</FilePath></File>
             <File>
-              <FileName>commandHandlers.h</FileName>
+              <FileName>command_handlers.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Library\commandHandlers.h</FilePath>
+              <FilePath>..\Library\command_handlers.h</FilePath>
             </File>
             <File>
               <FileName>flash.c</FileName>
@@ -948,14 +948,14 @@
               <FilePath>..\Library\screens.c</FilePath>
             </File>
             <File>
-              <FileName>linkMonitor.c</FileName>
+              <FileName>link_monitor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\linkMonitor.c</FilePath>
+              <FilePath>..\Library\link_monitor.c</FilePath>
             </File>
             <File>
-              <FileName>powerSleep.c</FileName>
+              <FileName>power_sleep.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\powerSleep.c</FilePath>
+              <FilePath>..\Library\power_sleep.c</FilePath>
             </File>
             <File>
               <FileName>screens.h</FileName>
@@ -963,44 +963,44 @@
               <FilePath>..\Library\screens.h</FilePath>
             </File>
             <File>
-              <FileName>deviceControlScreen.c</FileName>
+              <FileName>screen_dcs.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\deviceControlScreen.c</FilePath>
+              <FilePath>..\Library\screen_dcs.c</FilePath>
             </File>
             <File>
-              <FileName>deviceSettingScreen.c</FileName>
+              <FileName>screen_dss.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\deviceSettingScreen.c</FilePath>
+              <FilePath>..\Library\screen_dss.c</FilePath>
             </File>
             <File>
-              <FileName>deviceMonitorSceen.c</FileName>
+              <FileName>screen_dms.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\deviceMonitorSceen.c</FilePath>
+              <FilePath>..\Library\screen_dms.c</FilePath>
             </File>
             <File>
-              <FileName>editDeviceSettingScreen.c</FileName>
+              <FileName>screen_edss.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\editDeviceSettingScreen.c</FilePath>
+              <FilePath>..\Library\screen_edss.c</FilePath>
             </File>
             <File>
-              <FileName>editGeneralSettingScreen.c</FileName>
+              <FileName>screen_egss.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\editGeneralSettingScreen.c</FilePath>
+              <FilePath>..\Library\screen_egss.c</FilePath>
             </File>
             <File>
-              <FileName>addDeviceScreen.c</FileName>
+              <FileName>screen_dps.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\addDeviceScreen.c</FilePath>
+              <FilePath>..\Library\screen_dps.c</FilePath>
             </File>
             <File>
-              <FileName>generalSettingScreen.c</FileName>
+              <FileName>screen_gss.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\generalSettingScreen.c</FilePath>
+              <FilePath>..\Library\screen_gss.c</FilePath>
             </File>
             <File>
-              <FileName>mainMenuScreen.c</FileName>
+              <FileName>screen_mms.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Library\mainMenuScreen.c</FilePath>
+              <FilePath>..\Library\screen_mms.c</FilePath>
             </File>
           </Files>
         </Group>

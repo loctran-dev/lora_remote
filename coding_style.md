@@ -15,16 +15,16 @@
 - Không export helper nội bộ qua header.
 - Mọi API được gọi từ file khác phải có tiền tố đại diện module, theo mẫu `<Module>_<Verb><Noun>`.
   - Ví dụ: `Comm_ProcessRxData()`, `RemoteHistory_Handle()`, `MotorHistory_Tick()` và `CmdHandler_Schedule_Tick()`.
-- API của `commandHandlers.c` dùng tiền tố `CmdHandler_`.
+- API của `command_handlers.c` dùng tiền tố `CmdHandler_`.
 - API của `schedule.c` dùng tiền tố `Schedule_`.
 - Khi một hàm đổi từ nội bộ thành API liên-file, bỏ `static`, thêm tiền tố module và thêm declaration vào header trong cùng thay đổi.
 
 ```c
-/* Public API: declared in communicationLora.h. */
+/* Public API: declared in communication_lora.h. */
 LoraPackage_t Comm_CreateNewPackage(...);
 uint8_t Comm_ParsePayloadReqGetStatus(...);
 
-/* Private helper: declared and used only in communicationLora.c. */
+/* Private helper: declared and used only in communication_lora.c. */
 static uint16_t generateTransactionID(void);
 ```
 
@@ -48,7 +48,7 @@ typedef enum CmdHandler_TimerState_e
 
 ## Command handler
 
-- `cmdTable` chỉ dispatch vào các `static handler` trong `commandHandlers.c`.
+- `cmdTable` chỉ dispatch vào các `static handler` trong `command_handlers.c`.
 - Không trỏ trực tiếp từ `cmdTable` đến logic của module khác.
 - Handler là lớp tiếp nhận packet; nó kiểm tra/routing cơ bản rồi gọi hàm xử lý chuyên trách.
 

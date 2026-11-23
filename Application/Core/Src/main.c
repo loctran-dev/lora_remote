@@ -27,24 +27,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "st7735.h"
-#include "fonts.h"
-#include "arial5.h"
-#include "arial6.h"
-#include "arial7B.h"
 #include "button.h"
-#include "Lora.h"
-#include "communicationLora.h"
+#include "lora.h"
+#include "communication_lora.h"
 #include "utility.h"
 #include "flash.h"
 #include "lcd.h"
 #include "screens.h"
-#include "linkMonitor.h"
-#include "powerSleep.h"
-#include "commandHandlers.h"
+#include "link_monitor.h"
+#include "power_sleep.h"
+#include "command_handlers.h"
 #include "schedule.h"
 #include "remote_history.h"
-#include "rtcSetting.h"
+#include "rtc_setting.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

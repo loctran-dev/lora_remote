@@ -78,7 +78,7 @@ deadline and power. No slave USB setter was added.
 ## Reset retention
 
 STM32F1 HAL initializes its RAM calendar to January 2000 at each startup even
-when the RTC hardware counter survives. `rtcSetting.c` preserves the calendar in
+when the RTC hardware counter survives. `rtc_setting.c` preserves the calendar in
 backup registers DR2 (packed date), DR3 (complement), DR4 (commit marker). DR1
 retains the existing initialization marker; bootloader DR10 is not touched.
 The calendar is restored after RTC initialization, including elapsed whole days

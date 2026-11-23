@@ -1,7 +1,7 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
-#include "communicationLora.h"
+#include "communication_lora.h"
 #include "stdint.h"
 
 typedef enum Schedule_State_e

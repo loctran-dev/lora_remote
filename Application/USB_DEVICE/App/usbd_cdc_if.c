@@ -26,18 +26,18 @@
 #include <string.h>
 #include <stdio.h>
 #include "screens.h"
-#include "linkMonitor.h"
-#include "powerSleep.h"
-#include "commandHandlers.h"
+#include "link_monitor.h"
+#include "power_sleep.h"
+#include "command_handlers.h"
 #include "schedule.h"
 #include "remote_history.h"
-#include "rtcSetting.h"
+#include "rtc_setting.h"
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "task.h"
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
-#include "Lora.h"
+#include "lora.h"
 extern LoRa sLoRaCtrl;
 
 /* USER CODE END INCLUDE */
