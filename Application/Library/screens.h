@@ -126,5 +126,6 @@ uint8_t Screen_IsScheduleEditing(void);
 void Screen_DeviceSettingsResetSelection(void);
 void Screen_GeneralSettingsResetSelection(void);
 void Screen_OpenHistory(void);
+uint8_t Screen_OpenDeviceHistory(uint8_t deviceId);
 
 #endif

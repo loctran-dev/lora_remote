@@ -20,6 +20,8 @@ extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 uint8_t historyScreenMode;
 
 static uint8_t chosenDevice;
+/* Opened from the device info screen instead of the main menu. */
+static uint8_t openedFromInfo;
 /* Frozen snapshot of the chosen device's records, newest first. */
 static uint16_t selected;
 static uint16_t count;
@@ -92,12 +94,33 @@ void Screen_OpenHistory(void)
         }
     }
     historyScreenMode = MODE_PICKER;
+    openedFromInfo = 0;
 
     UG_WindowHide(&window_1);
     UG_WindowDelete(&window_1);
     currentScreen = &historyScreen;
     init();
     render();
+}
+
+/* Open the record list of one device directly, skipping the device picker. */
+uint8_t Screen_OpenDeviceHistory(uint8_t id)
+{
+    if (id >= MAXIMUM_DEVICE || !available(id))
+    {
+        return 0;
+    }
+    chosenDevice = id;
+    snapshot();
+    historyScreenMode = MODE_LIST;
+    openedFromInfo = 1;
+
+    UG_WindowHide(&window_1);
+    UG_WindowDelete(&window_1);
+    currentScreen = &historyScreen;
+    init();
+    render();
+    return 1;
 }
 
 /* Screen handlers ========================================================== */
@@ -208,10 +231,21 @@ static void centerClicked(void)
     rebuild();
 }
 
-/* Back one mode; from the picker, back to the main menu. */
+/* Back one mode; from the picker, back to the main menu.
+   Opened from device info: from the list, back to device control. */
 static void rightPressed(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    if (openedFromInfo && historyScreenMode == MODE_LIST)
+    {
+        openedFromInfo = 0;
+        UG_WindowHide(&window_1);
+        UG_WindowDelete(&window_1);
+        currentScreen = &deviceControlScreen;
+        currentScreen->init();
+        currentScreen->render();
+        return;
+    }
     if (historyScreenMode)
     {
         historyScreenMode--;

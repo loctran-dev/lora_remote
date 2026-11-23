@@ -11,11 +11,12 @@ class HistoryUiTests(unittest.TestCase):
         self.hw.globals_for_sync()
         self.text={};self.bg={};self.visible={};self.beeps=[]
         self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("screen_mms.o:init")|1,h.symbol("screen_mms.o:render")|1))
+        self.cpu.mem_write(h.symbol("deviceControlScreen")+4,struct.pack("<II",h.symbol("screen_dcs.o:init")|1,h.symbol("screen_dcs.o:render")|1))
         names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
                "UG_WindowSetBackColor","UG_WindowSetXStart","UG_WindowSetXEnd","UG_WindowSetYStart","UG_WindowSetYEnd",
                "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",
                "UG_TextboxSetForeColor","UG_TextboxSetAlignment","UG_TextboxSetScrollEnabled","UG_TextboxCheckVisible",
-               "UG_TextboxShow","UG_TextboxHide","UG_Update","screen_mms.o:init","screen_mms.o:render",
+               "UG_TextboxShow","UG_TextboxHide","UG_Update","screen_mms.o:init","screen_mms.o:render","screen_dcs.o:init","screen_dcs.o:render",
                "Screen_StatusBarCreate","Screen_StatusBarUpdate","Main_SetBuzzerMode"]
         hooks={h.symbol(n)&~1:n for n in names}
         def intercept(cpu,address,size,data):
@@ -36,6 +37,21 @@ class HistoryUiTests(unittest.TestCase):
             del self.beeps[:]
             self.call("screen_hs.o:"+name)
             self.assertEqual(len(self.beeps),1,name)
+    def screen(self):
+        return struct.unpack("<I",bytes(self.cpu.mem_read(h.symbol("currentScreen"),4)))[0]
+    def test_history_from_device_info_returns_to_control(self):
+        self.hw.append()
+        self.assertEqual(self.call("Screen_OpenDeviceHistory",0),1)
+        self.assertEqual(self.text[5],"M11 History")
+        self.call("screen_hs.o:centerClicked");self.call("screen_hs.o:rightPressed")
+        self.assertEqual(self.screen(),h.symbol("historyScreen"))  # Detail -> list stays in history.
+        self.call("screen_hs.o:rightPressed")
+        self.assertEqual(self.screen(),h.symbol("deviceControlScreen"))
+    def test_history_from_menu_still_returns_to_picker(self):
+        self.hw.append();self.open_list()
+        self.call("screen_hs.o:rightPressed")
+        self.assertEqual(self.screen(),h.symbol("historyScreen"))
+        self.assertEqual(self.text[5],"Select device")
     def open_list(self):
         self.call("Screen_OpenHistory");self.call("screen_hs.o:centerClicked")
     def test_menu_picker_list_details_and_back_preserve_selection(self):

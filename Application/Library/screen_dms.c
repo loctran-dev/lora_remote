@@ -16,11 +16,12 @@ static void init(void);
 static void render(void);
 static void leftClicked(void);
 static void rightClicked(void);
+static void leftPressed(void);
 static void noAction(void);
 static void windowCallback(UG_MESSAGE *message);
 static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye, char *text);
 
-/* Read-only device information. LEFT only beeps; RIGHT (click or hold) goes back. */
+/* Read-only device information. LEFT opens this device's history; RIGHT (click or hold) goes back. */
 Screen_t deviceMonitorScreen = {
     0,
     init,
@@ -30,7 +31,7 @@ Screen_t deviceMonitorScreen = {
     noAction,
     noAction,
     noAction,
-    leftClicked,
+    leftPressed,
     rightClicked,
     noAction,
     noAction,
@@ -71,7 +72,7 @@ static void init(void)
     }
 
     /* Button labels. */
-    createText(&textbox_3, 2, 0, 144, 35, 159, "");
+    createText(&textbox_3, 2, 0, 144, 35, 159, "Hist");
     createText(&textbox_4, 3, 36, 144, 91, 159, "");
     createText(&textbox_5, 4, 92, 144, 127, 159, "Back");
     for (uint8_t id = 2; id <= 4; id++)
@@ -147,7 +148,14 @@ static void render(void)
     UG_Update();
 }
 
+/* Open this device's history list; nothing happens if it has none. */
 static void leftClicked(void)
+{
+    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Screen_OpenDeviceHistory(systemInfo.currentDeviceId);
+}
+
+static void leftPressed(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
 }
