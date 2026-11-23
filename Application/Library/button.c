@@ -1,44 +1,55 @@
 #include "button.h"
 
-void Button_UpdateState(Button_t *btn) {
-	// Read the Button hardware status
+void Button_UpdateState(Button_t *btn)
+{
+    /* Read the button hardware status. */
     uint8_t reading = (HAL_GPIO_ReadPin(btn->GPIOx, btn->GPIO_Pin) == GPIO_PIN_SET);
 
-    switch (btn->state) {
-        case IDLE:
-            if (reading) {
-                btn->state = DEBOUNCE;
+    switch (btn->state)
+    {
+        case eButton_State_Idle:
+            if (reading)
+            {
+                btn->state = eButton_State_Debounce;
                 btn->timer = HAL_GetTick();
             }
             break;
 
-        case DEBOUNCE:
-            if (HAL_GetTick() - btn->timer >= 20) { // debounce 20ms
-                if (reading) {
-                    btn->state = PRESSED;
-                } else {
-                    btn->state = IDLE;
+        case eButton_State_Debounce:
+            if (HAL_GetTick() - btn->timer >= 20) /* debounce 20 ms */
+            {
+                if (reading)
+                {
+                    btn->state = eButton_State_Pressed;
+                }
+                else
+                {
+                    btn->state = eButton_State_Idle;
                 }
             }
             break;
 
-        case PRESSED:
-            if (!reading) { //Pressed
-                btn->isPressed = 1; 
-                btn->state = IDLE;
-            } else if (HAL_GetTick() - btn->timer >= 1000) { // Long pressed > 1s
+        case eButton_State_Pressed:
+            if (!reading) /* Released: short press */
+            {
+                btn->isPressed = 1;
+                btn->state = eButton_State_Idle;
+            }
+            else if (HAL_GetTick() - btn->timer >= 1000) /* Long press > 1 s */
+            {
                 btn->isLongPressed = 1;
-                btn->state = WAIT_RELEASE;
+                btn->state = eButton_State_WaitRelease;
             }
             break;
 
-        case WAIT_RELEASE:
-            if (!reading) {
-                btn->state = IDLE;
+        case eButton_State_WaitRelease:
+            if (!reading)
+            {
+                btn->state = eButton_State_Idle;
             }
             break;
-				default:
-					break;
+
+        default:
+            break;
     }
 }
-

@@ -132,11 +132,11 @@ static osMutexId_t uiMutex;
 static osMutexId_t radioMutex;
 static volatile uint32_t batterySampleSequence;
 //Init interface button
-Button_t leftButton = {BTN1_GPIO_Port, BTN1_Pin, IDLE, 0, 0, 0};
-Button_t centerButton = {BTN3_GPIO_Port, BTN3_Pin, IDLE, 0, 0, 0};
-Button_t rightButton = {BTN4_GPIO_Port, BTN4_Pin, IDLE, 0, 0, 0};
-Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, IDLE, 0, 0, 0};
-Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, IDLE, 0, 0, 0};
+Button_t leftButton = {BTN1_GPIO_Port, BTN1_Pin, eButton_State_Idle, 0, 0, 0};
+Button_t centerButton = {BTN3_GPIO_Port, BTN3_Pin, eButton_State_Idle, 0, 0, 0};
+Button_t rightButton = {BTN4_GPIO_Port, BTN4_Pin, eButton_State_Idle, 0, 0, 0};
+Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};
+Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};
 SystemInfo_t systemInfo;
 DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 LoRa sLoRaCtrl;
