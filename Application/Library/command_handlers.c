@@ -44,8 +44,6 @@ const CmdMapping_t cmdTable[] = {
     {0, NULL}
 };
 
-/* Public API =============================================================== */
-
 /**
  * @brief  Queue a CMD_SET_CONFIG request with the settings of the selected module.
  *
@@ -76,8 +74,6 @@ uint8_t CmdHandler_SendCurrentModuleConfig(void)
     configNode = device->nodeId;
     return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
 }
-
-/* Command handler implementations, ordered as cmdTable ===================== */
 
 static void handleHistory(LoraPackage_t packet)
 {

@@ -43,8 +43,6 @@ Screen_t deviceManagerScreen = {
     noAction
 };
 
-/* Public API =============================================================== */
-
 /**
  * @brief  Device highlighted in the device manager.
  * @return Index in deviceBuff, or MAXIMUM_DEVICE if none.
@@ -53,8 +51,6 @@ uint8_t ScrnDvm_SelectedDevice(void)
 {
     return managerSelected < managerCount ? managerIds[managerSelected] : MAXIMUM_DEVICE;
 }
-
-/* Screen handlers ========================================================== */
 
 static void init(void)
 {
@@ -187,8 +183,6 @@ static void rightPressed(void)
 static void noAction(void)
 {
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

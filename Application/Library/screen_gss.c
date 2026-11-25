@@ -43,15 +43,11 @@ Screen_t generalSettingScreen = {
     noAction
 };
 
-/* Public API =============================================================== */
-
 /** @brief Select the first item next time the general setup menu opens. */
 void ScrnGss_ResetSelection(void)
 {
     currentIndex = 0;
 }
-
-/* Screen handlers ========================================================== */
 
 static void init(void)
 {

@@ -10,8 +10,6 @@ extern SystemInfo_t systemInfo;
 
 static volatile Schedule_RequestState_t scheduleRequest;
 
-/* Request lifecycle ======================================================== */
-
 /**
  * @brief  Start tracking a schedule request that is about to be queued.
  *
@@ -71,8 +69,6 @@ Schedule_State_e Schedule_GetStateForNode(uint8_t node)
 
     return scheduleRequest.state;
 }
-
-/* Transmit path ============================================================ */
 
 /**
  * @brief  Filter stale CMD_SET_SCHEDULE requests before they are sent.
@@ -156,8 +152,6 @@ void Schedule_Tick(void)
     }
 }
 
-/* Receive path ============================================================= */
-
 /**
  * @brief  Confirm the request when a status report shows the same schedule.
  * @param  packet   Received CMD_GET_STATUS response.
@@ -205,8 +199,6 @@ uint8_t Schedule_HandleResponse(const LoraPackage_t *packet, const PayloadCommon
 
     return TRUE;
 }
-
-/* State queries ============================================================ */
 
 /**
  * @brief  Whether a request is still waiting for the device.

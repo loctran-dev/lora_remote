@@ -77,8 +77,6 @@ Screen_t historyScreen = {
     noAction
 };
 
-/* Public API =============================================================== */
-
 /** @brief Open the history at the device picker, on the current device or the first with history. */
 void ScrnHs_OpenHistory(void)
 {
@@ -121,8 +119,6 @@ uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
     ScrnCommon_Switch(&historyScreen);
     return 1;
 }
-
-/* Screen handlers ========================================================== */
 
 static void init(void)
 {
@@ -281,8 +277,6 @@ static void noAction(void)
 {
 }
 
-/* Rendering per mode ======================================================= */
-
 static void renderPicker(char *text, uint16_t size)
 {
     uint8_t page = chosenDevice / ROWS_PER_PAGE * ROWS_PER_PAGE;
@@ -428,8 +422,6 @@ static void renderDetail(char *text, uint16_t size)
         UG_TextboxSetForeColor(&window_1, 8 + i, i == 5 && r->event.error ? C_ORANGE : C_CYAN);
     }
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

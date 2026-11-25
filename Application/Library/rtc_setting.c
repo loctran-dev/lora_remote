@@ -12,8 +12,6 @@ extern RTC_HandleTypeDef hrtc;
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
-/* Backup of the calendar date ============================================== */
-
 /* F1 HAL keeps its calendar in RAM. Preserve it in free BKP DR2..DR4;
    DR1 is the existing RTC-init marker, DR10 belongs to the bootloader. */
 /**
@@ -97,8 +95,6 @@ void Rtc_RestoreDate(void)
     HAL_RTC_SetDate(&hrtc, &date, RTC_FORMAT_BIN);
 }
 
-/* Read and set the RTC ===================================================== */
-
 /**
  * @brief  Read the RTC into systemInfo and save the date.
  * @return Current Unix time, also stored in systemInfo.currentTime.
@@ -168,8 +164,6 @@ uint8_t Rtc_Set(uint32_t timestamp)
     Link_RequestStatusSync();
     return eRtc_SetResult_Ok;
 }
-
-/* USB "TIME <unix>\n" command ============================================== */
 
 /**
  * @brief  Parse a USB "TIME <unix>\n" command.

@@ -38,8 +38,6 @@ Screen_t deviceMonitorScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     UG_TEXTBOX *labels[] = {&textbox_7, &textbox_9, &textbox_11, &textbox_13, &textbox_15, &textbox_17, &textbox_19};
@@ -174,8 +172,6 @@ static void rightClicked(void)
 static void noAction(void)
 {
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

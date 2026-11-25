@@ -76,8 +76,6 @@ Screen_t editGeneralSettingScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     const uint8_t counts[] = {0, 6, 6, 2, 7, 0, 6, 6};
@@ -356,8 +354,6 @@ static void noAction(void)
 {
 }
 
-/* Private helpers: widgets ================================================= */
-
 static void windowCallback(UG_MESSAGE *message)
 {
     (void)message;
@@ -426,8 +422,6 @@ static void createSpreadFactorList(void)
         indexOfSelection = 0;
     }
 }
-
-/* Private helpers: editing ================================================= */
 
 /* Text of exactly length characters starting with digits decimal digits -> value. */
 static uint8_t parseDigits(const char *text, uint8_t length, uint8_t digits, int *value)

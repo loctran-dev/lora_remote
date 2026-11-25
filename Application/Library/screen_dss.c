@@ -40,15 +40,11 @@ Screen_t deviceSettingScreen = {
     noAction
 };
 
-/* Public API =============================================================== */
-
 /** @brief Select the first item next time the device setup menu opens. */
 void ScrnDss_ResetSelection(void)
 {
     menuIndex = 0;
 }
-
-/* Screen handlers ========================================================== */
 
 static void init(void)
 {

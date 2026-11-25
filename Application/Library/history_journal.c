@@ -47,8 +47,6 @@ static HistoryCursor *cursor(uint16_t owner, uint32_t serial, uint8_t create);
 static void remember(const HistoryRecord *r);
 #endif
 
-/* CRC ====================================================================== */
-
 /**
  * @brief  CRC-32 (IEEE 802.3, reflected) of a buffer.
  * @param  data  Bytes to check.
@@ -70,8 +68,6 @@ uint32_t HJ_Crc(const void *data, uint32_t size)
     }
     return ~crc;
 }
-
-/* Initialisation =========================================================== */
 
 /**
  * @brief  Scan the journal pages and rebuild the RAM state.
@@ -171,8 +167,6 @@ void HJ_Init(void)
     }
 #endif
 }
-
-/* Record access ============================================================ */
 
 /**
  * @brief  Read one record.
@@ -305,8 +299,6 @@ uint8_t HJ_Append(HistoryEvent *event, uint16_t owner)
     return 1;
 }
 
-/* Synchronisation ========================================================== */
-
 /**
  * @brief  Oldest record not yet marked as synced.
  * @return The record, or 0 if every record is synced.
@@ -364,8 +356,6 @@ uint8_t HJ_MarkSynced(uint32_t serial, uint32_t id)
     }
     return 0;
 }
-
-/* Private helpers ========================================================== */
 
 static const HJ_PageHeader_t *page(uint16_t p)
 {

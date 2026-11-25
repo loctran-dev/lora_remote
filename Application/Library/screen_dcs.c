@@ -88,8 +88,6 @@ Screen_t deviceControlScreen = {
     bRightPressed
 };
 
-/* Public API =============================================================== */
-
 /**
  * @brief  Report a lost connection: wake the display, beep three times and show the device.
  * @param  id  Device index in deviceBuff.
@@ -134,8 +132,6 @@ uint8_t ScrnDcs_IsScheduleEditing(void)
 {
     return inScheduleSelection != 0;
 }
-
-/* Screen handlers ========================================================== */
 
 static void init(void)
 {
@@ -473,8 +469,6 @@ static void noAction(void)
 {
 }
 
-/* Private helpers: widgets ================================================= */
-
 static void windowCallback(UG_MESSAGE *message)
 {
     (void)message;
@@ -503,8 +497,6 @@ static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye
     UG_TextboxSetAlignment(&window_1, id, ALIGN_CENTER);
     UG_TextboxSetScrollEnabled(&window_1, id, 0);
 }
-
-/* Private helpers: status icon ============================================= */
 
 static void drawIconText(char *text, int16_t xs, int16_t ys, int16_t xe, int16_t ye,
     UG_COLOR color, UG_COLOR background)
@@ -600,8 +592,6 @@ static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module
         statusIconsObject->state |= OBJ_STATE_UPDATE | OBJ_STATE_REDRAW;
     }
 }
-
-/* Private helpers: timer =================================================== */
 
 /* HH:MM digits of the custom duration. */
 static void splitMinutes(uint8_t digits[TIMER_DIGITS])

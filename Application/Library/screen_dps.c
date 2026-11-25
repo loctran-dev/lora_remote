@@ -56,8 +56,6 @@ Screen_t devicePairingScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     /* Window, status bar and title. */
@@ -176,8 +174,6 @@ static void rightPressed(void)
 static void noAction(void)
 {
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

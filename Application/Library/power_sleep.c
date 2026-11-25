@@ -24,8 +24,6 @@ static uint8_t usbActive(void);
 static uint8_t buttonsDown(void);
 static void restoreClock(uint32_t cfgr);
 
-/* RTC clock ================================================================ */
-
 /**
  * @brief  Read the RTC counter as seconds of the day.
  * @return 0 .. 86399. Safe against a CNTH/CNTL rollover between reads.
@@ -43,8 +41,6 @@ uint32_t Power_ReadRtcSecond(void)
     } while (first != second);
     return ((second << 16) | low) % 86400u;
 }
-
-/* Initialisation and activity ============================================== */
 
 /**
  * @brief  Reset the sleep state and enable the OFF button (PC7) as a wake-up.
@@ -91,8 +87,6 @@ void Power_WakeForError(void)
     LCD_Backlight_On();
 }
 
-/* Wake sources (ISR context) =============================================== */
-
 /** @brief Flag an RTC Alarm A wake-up; Power_Tick() schedules a link scan. */
 void Power_RtcWakeISR(void)
 {
@@ -130,8 +124,6 @@ void Power_RxProcessed(void)
     powerSleep.rxPending = 0;
     Link_RequestScan();
 }
-
-/* Sleep policy ============================================================= */
 
 /**
  * @brief  Handle wake flags and enter SLEEP after the idle timeout.
@@ -266,8 +258,6 @@ void Power_TryStop(void)
     HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
     HAL_TIM_Base_Start(&htim8);
 }
-
-/* Private helpers ========================================================== */
 
 static uint8_t usbActive(void)
 {

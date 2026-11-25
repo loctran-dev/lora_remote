@@ -53,8 +53,6 @@ Screen_t mainMenuScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     /* Window and status bar. */
@@ -163,8 +161,6 @@ static void rightPressed(void)
 static void noAction(void)
 {
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

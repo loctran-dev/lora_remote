@@ -60,8 +60,6 @@ static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye
 static void createSettingsMenu(char *title, uint8_t stacked);
 static void saveRadioSettings(void);
 
-/* Screen switching ======================================================== */
-
 /**
  * @brief  Close the current window and open another screen (init() then render()).
  * @param  next  Screen to open.
@@ -76,8 +74,6 @@ void ScrnCommon_Switch(Screen_t *next)
     currentScreen->init();
     currentScreen->render();
 }
-
-/* Device visibility and selection ========================================== */
 
 /**
  * @brief  Whether a device is paired and not hidden.
@@ -143,8 +139,6 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
     }
 }
 
-/* Settings persistence ===================================================== */
-
 /**
  * @brief  Copy the hide and lock flags of a device to storageData if they changed.
  * @param  id  Device index in deviceBuff.
@@ -205,8 +199,6 @@ void ScrnCommon_SaveGeneralSettings(void)
     Main_UpdateStatusPeriod();
 }
 
-/* Status bar =============================================================== */
-
 /**
  * @brief  Create the status bar: clock (textbox 0), battery % (textbox 1) and battery icon (image 0).
  * @note   Every screen reserves these widget ids for the status bar. The
@@ -264,8 +256,6 @@ void ScrnCommon_UpdateBattery(void)
     }
     UG_ImageSetBMP(&window_1, IMG_ID_0, batteryGIF[frame]);
 }
-
-/* Settings menu ============================================================ */
 
 /**
  * @brief  Create a settings menu with label and value on one row.
@@ -358,8 +348,6 @@ void ScrnCommon_SettingsMenuUpdate(void)
     UG_Update();
 }
 
-/* Empty device control screen ============================================== */
-
 /** @brief Build the device control screen shown when no device is visible. */
 void ScrnCommon_EmptyControlInit(void)
 {
@@ -380,8 +368,6 @@ void ScrnCommon_EmptyControlRender(void)
     ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
-
-/* Menu scrolling and character editor ====================================== */
 
 /**
  * @brief  Let only the selected row of a main-style menu scroll its text.
@@ -445,8 +431,6 @@ void ScrnCommon_EditCharactersUpdate(uint8_t position)
     }
     free(text);
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

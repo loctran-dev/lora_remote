@@ -48,8 +48,6 @@ Screen_t dateTimeScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     /* Start from the current RTC; an unset clock starts at the first supported year. */
@@ -165,8 +163,6 @@ static void centerPressed(void)
 static void noAction(void)
 {
 }
-
-/* Private helpers ========================================================== */
 
 static void windowCallback(UG_MESSAGE *message)
 {

@@ -74,8 +74,6 @@ Screen_t editDeviceSettingScreen = {
     noAction
 };
 
-/* Screen handlers ========================================================== */
-
 static void init(void)
 {
     const char *descriptions[] = {
@@ -354,8 +352,6 @@ static void noAction(void)
 {
 }
 
-/* Private helpers: widgets ================================================= */
-
 static void windowCallback(UG_MESSAGE *message)
 {
     (void)message;
@@ -412,8 +408,6 @@ static void createYesNo(char *caption, uint8_t yesSelected)
     }
 }
 
-/* Private helpers: alarm threshold ========================================= */
-
 static void createAlarmThresholdEditor(float value)
 {
     UG_RealEditCreate(&window_1, &real_edit_1, REDT_ID_0, 28, 57, 97, 73, 5, 2);
@@ -453,8 +447,6 @@ static void adjustAlarmThreshold(uint8_t increment)
     UG_RealEditSetValue(&window_1, REDT_ID_0, (float)value / 100.0f);
     UG_Update();
 }
-
-/* Private helpers: seconds and name editors ================================ */
 
 /* "dddd s" -> value; returns 0 if the text is not in that form. */
 static uint8_t parseSeconds(const char *text, int *value)
@@ -569,8 +561,6 @@ static void stepNameCharacter(uint8_t up)
     UG_Update();
     free(valueText);
 }
-
-/* Private helpers: Yes/No items and navigation ============================= */
 
 /* 0 = Yes, 1 = No. */
 static void selectYesNo(uint8_t index)

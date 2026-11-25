@@ -35,8 +35,6 @@ static void beginStatusSync(void);
 static void endProbe(uint8_t failed);
 static void sendProbe(void);
 
-/* Settings ================================================================= */
-
 /**
  * @brief  Idle time before the remote enters SLEEP.
  * @return 1 .. 9999 [s].
@@ -104,8 +102,6 @@ void Link_SetTimeoutSeconds(uint16_t seconds)
         saveSettings();
     }
 }
-
-/* Initialisation and clock ================================================= */
 
 /**
  * @brief  Validate the stored link settings and reset the runtime state.
@@ -198,8 +194,6 @@ void Link_ClockRebase(uint32_t rtcSecond)
     previousRtc = rtcSecond % 86400u;
 }
 
-/* Requests ================================================================= */
-
 /** @brief Ask the next Link_Tick() to look for a device that needs a probe. */
 void Link_RequestScan(void)
 {
@@ -223,8 +217,6 @@ void Link_RequestStatusSync(void)
 {
     syncRequested = 1;
 }
-
-/* Received packets ========================================================= */
 
 /**
  * @brief  Mark the status sync reply of the device being probed as received.
@@ -283,8 +275,6 @@ void Link_RecordNodePacket(uint8_t node, uint8_t status)
     }
 }
 
-/* Transmit path ============================================================ */
-
 /**
  * @brief  Filter stale GET_STATUS requests before they are sent.
  * @param  packet  Packet taken from txMsgQueue.
@@ -318,8 +308,6 @@ void Link_TxFinished(const LoraPackage_t *packet, uint8_t success)
         linkProbe.deadline = HAL_GetTick() + LINK_REPLY_TIMEOUT_SECONDS * 1000u;
     }
 }
-
-/* Periodic processing ====================================================== */
 
 /**
  * @brief  Run the link supervision: continue the probe in progress or start the next one.
@@ -419,8 +407,6 @@ void Link_Tick(void)
         }
     }
 }
-
-/* Private helpers ========================================================== */
 
 static uint8_t extensionChecksum(void)
 {

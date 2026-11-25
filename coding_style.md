@@ -97,7 +97,7 @@ Sắp xếp theo thứ tự sau:
 - Macro/hằng số chỉ dùng trong một file `.c` phải đặt trong file `.c` đó, không đặt trong header. Chỉ đưa vào header các macro được file khác dùng hoặc cần cho khai báo trong header (ví dụ kích thước mảng của struct public).
 
 - Các handler implementation phải cùng thứ tự với `cmdTable`.
-- Gom các hàm cùng trách nhiệm vào một nhóm; dùng comment phân tách nhóm khi cần.
+- Gom các hàm cùng trách nhiệm vào một nhóm. Trong `.c` không dùng comment phân tách nhóm dạng `/* <Nhóm> ===== */`; tên nhóm chỉ ghi trong `.h`.
 - Không đặt implementation lẫn vào giữa các khai báo, public API hoặc dispatch table.
 
 ## Thứ tự trong file `.h`
@@ -190,7 +190,7 @@ static uint8_t isValidPacket(const LoraPackage_t *packet)
   - Tên group theo tiền tố module: `power`, `link`, `comm`, `cmdhandler`, `schedule`, `history`, `rtc`, `button`, `flash`, `util`, `main`, `screen`; kiểu dùng chung trong `define.h` thuộc group `define`.
   - File CubeMX (`main.h`, `main.c`): mô tả file, `@defgroup` và `/** @} */` đặt trong các vùng `USER CODE`; symbol do CubeMX sinh (handle, task, pin) được liệt kê trong `EXCLUDE_SYMBOLS` của `Doxyfile` thay vì viết comment.
 - Comment Doxygen của hàm public đặt trong `.c`, ngay trên định nghĩa hàm; không lặp lại trong `.h`. Thứ tự tag: `@brief`, mô tả thêm, `@param`, `@return`, `@note`, `@warning`.
-- File `.h` giữ phần mô tả module và comment cho struct/enum/macro/biến `extern` public. Khai báo hàm trong `.h` không có comment Doxygen ngay phía trên: nhóm API dùng comment thường `/* <Nhóm> */` cùng tên với nhóm trong `.c`, cách khai báo đầu tiên một dòng trống.
+- File `.h` giữ phần mô tả module và comment cho struct/enum/macro/biến `extern` public. Khai báo hàm trong `.h` không có comment Doxygen ngay phía trên: nhóm API dùng comment thường `/* <Nhóm> */`, cách khai báo đầu tiên một dòng trống.
   - Lý do: IDE (VS Code C/C++) lấy comment nằm sát khai báo trong `.h`; nếu ở đó là `/** @{ */` hay `/** @} */` thì hover hiện các marker đó thay vì mô tả trong `.c`.
   - `@name` + `@{ @}` vẫn dùng được cho nhóm macro hoặc biến `extern`.
 - Struct/enum public có `@brief` cho kiểu và `///<` cho từng field hoặc giá trị; ghi đơn vị trong ngoặc vuông, ví dụ `[s]`, `[ms]`, `[V]`.

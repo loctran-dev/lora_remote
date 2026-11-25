@@ -12,8 +12,6 @@ static uint16_t currentTransactionID = 0;
 static uint16_t generateTransactionID(void);
 static void executeCommand(LoraPackage_t package);
 
-/* Package builders ========================================================= */
-
 /**
  * @brief  Replace the payload of a built frame and recompute length and checksum.
  * @param  packageOut     Frame to update in place; header fields are kept.
@@ -142,8 +140,6 @@ LoraPackage_t Comm_CreateReqConfigConnection(uint8_t netId, uint8_t nodeId, Payl
     return Comm_CreateNewPackage(netId, nodeId, CMD_CONFIG_CONNECTION, LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&payload, sizeof(payload), 0);
 }
 
-/* Receive path ============================================================= */
-
 /**
  * @brief  Find, validate and dispatch one received frame.
  *
@@ -203,8 +199,6 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length)
 
     executeCommand(fwPackage);
 }
-
-/* Payload parsers ========================================================== */
 
 /**
  * @brief  Copy the payload of a CMD_CONTROL_POWER request.
@@ -381,8 +375,6 @@ uint8_t Comm_ParsePayloadResConfigConnection(LoraPackage_t package, PayloadRespo
     memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
     return TRUE;
 }
-
-/* Private helpers ========================================================== */
 
 static uint16_t generateTransactionID(void)
 {

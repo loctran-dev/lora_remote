@@ -922,8 +922,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/* HAL callbacks ============================================================ */
-
 /**
  * @brief  Count a finished battery sample (ADC1 by DMA, triggered by TIM8).
  * @param  adc  ADC that finished.
@@ -971,8 +969,6 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
   Power_RtcWakeISR();
 }
-
-/* Public API =============================================================== */
 
 /**
  * @brief  Ask buzzerTask to play a pattern.
@@ -1142,8 +1138,6 @@ void Main_SetRtcAlarmRelative(uint32_t seconds)
   sAlarm.Alarm = RTC_ALARM_A;
   HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BIN);
 }
-
-/* Private helpers ========================================================== */
 
 static void updateBattery(void)
 {

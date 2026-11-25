@@ -32,8 +32,6 @@ static RemoteHistory_Pending_t pending[PENDING_SLOTS];
 
 static void enqueue(const HistoryEvent *event, uint16_t owner, uint16_t transaction);
 
-/* Initialisation =========================================================== */
-
 /** @brief Initialise the journal and clear the pending queue. Call once from main(). */
 void RemoteHistory_Init(void)
 {
@@ -50,8 +48,6 @@ uint16_t RemoteHistory_Owner(uint8_t id)
 {
     return ((uint16_t)systemInfo.netId << 8) | deviceBuff[id].nodeId;
 }
-
-/* Event sources ============================================================ */
 
 /**
  * @brief  Validate a CMD_HISTORY push from a device and queue its event.
@@ -131,8 +127,6 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
     enqueue(&event, RemoteHistory_Owner(id), 0);
 }
 
-/* Storage and acknowledgement ============================================== */
-
 /**
  * @brief  Whether events are waiting to be stored.
  * @return 1 while busy; the remote does not sleep then.
@@ -207,8 +201,6 @@ void RemoteHistory_Tick(void)
         p->ready = 0;
     }
 }
-
-/* Private helpers ========================================================== */
 
 static void enqueue(const HistoryEvent *event, uint16_t owner, uint16_t transaction)
 {
