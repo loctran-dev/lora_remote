@@ -34,12 +34,18 @@ static void enqueue(const HistoryEvent *event, uint16_t owner, uint16_t transact
 
 /* Initialisation =========================================================== */
 
+/** @brief Initialise the journal and clear the pending queue. Call once from main(). */
 void RemoteHistory_Init(void)
 {
     HJ_Init();
     memset(pending, 0, sizeof(pending));
 }
 
+/**
+ * @brief  Journal owner of a paired device.
+ * @param  id  Device index in deviceBuff.
+ * @return (netId << 8) | nodeId.
+ */
 uint16_t RemoteHistory_Owner(uint8_t id)
 {
     return ((uint16_t)systemInfo.netId << 8) | deviceBuff[id].nodeId;
@@ -47,6 +53,12 @@ uint16_t RemoteHistory_Owner(uint8_t id)
 
 /* Event sources ============================================================ */
 
+/**
+ * @brief  Validate a CMD_HISTORY push from a device and queue its event.
+ * @param  packet  Received frame.
+ * @note   Called from the receive path; the event is only accepted from the
+ *         paired device with the same node id and serial number.
+ */
 void RemoteHistory_Handle(LoraPackage_t packet)
 {
     HistoryPush push;
@@ -89,6 +101,11 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     remoteHistoryRejected++;
 }
 
+/**
+ * @brief  Queue a link lost/restored event for a device.
+ * @param  id        Device index in deviceBuff.
+ * @param  restored  1 = link restored, 0 = link lost.
+ */
 void RemoteHistory_Link(uint8_t id, uint8_t restored)
 {
     HistoryEvent event = {0};
@@ -116,6 +133,10 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
 
 /* Storage and acknowledgement ============================================== */
 
+/**
+ * @brief  Whether events are waiting to be stored.
+ * @return 1 while busy; the remote does not sleep then.
+ */
 uint8_t RemoteHistory_Busy(void)
 {
     for (uint8_t i = 0; i < PENDING_SLOTS; i++)
@@ -128,6 +149,10 @@ uint8_t RemoteHistory_Busy(void)
     return 0;
 }
 
+/**
+ * @brief  Store the queued events and acknowledge the device events.
+ * @note   Call from systemTask; writes flash.
+ */
 void RemoteHistory_Tick(void)
 {
     RemoteHistory_Pending_t *p;
