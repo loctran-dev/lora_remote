@@ -47,7 +47,7 @@ class FirmwareHarness(unittest.TestCase):
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
         cls.device, size = symbol("deviceBuff")
-        assert size == 20 * 468
+        assert size == 20 * 396
         cls.system = symbol("systemInfo")[0]
         cls.storage = symbol("storageData")[0]
         cls.fields = {}
@@ -61,7 +61,7 @@ class FirmwareHarness(unittest.TestCase):
         self.cpu.mem_write(0x08008000, (ROOT / "dist/application.bin").read_bytes())
         self.cpu.mem_map(0x20000000, 0x10000)
         for i in range(20):
-            self.put(self.device + i * 468 + 20, 1)
+            self.put(self.device + i * 396 + 20, 1)
 
     def put(self, address, value):
         self.cpu.mem_write(address, bytes([value]))
@@ -70,8 +70,8 @@ class FirmwareHarness(unittest.TestCase):
         return self.cpu.mem_read(address, 1)[0]
 
     def add(self, index, hidden=False):
-        self.put(self.device + index * 468 + 20, 0)
-        self.put(self.device + index * 468 + 36 + 69, int(hidden))
+        self.put(self.device + index * 396 + 20, 0)
+        self.put(self.device + index * 396 + 36 + 57, int(hidden))
 
     def select(self, index, module=0):
         self.put(self.system + 80, index)
@@ -150,7 +150,7 @@ class VisibilityTests(FirmwareHarness):
 
     def test_save_flags_updates_only_flags_and_marks_dirty(self):
         self.add(2, True)
-        self.put(self.device + 2 * 468 + 36 + 68, 1)
+        self.put(self.device + 2 * 396 + 36 + 56, 1)
         before = bytes(self.cpu.mem_read(self.storage, 836))
         self.call("ScrnCommon_SaveDeviceFlags", 2)
         expected = bytearray(before)
@@ -169,11 +169,11 @@ class VisibilityTests(FirmwareHarness):
 
     def test_device_name_delete_and_alarm_staged_for_flash(self):
         self.add(2)
-        base = self.device + 2 * 468
+        base = self.device + 2 * 396
         # MotorData name/alarm offsets are fixed by the current checked layout.
-        self.cpu.mem_write(base + 36 + 40, b"Pump test\x00" + bytes(10))
-        self.cpu.mem_write(base + 36 + 60, struct.pack("<f", 12.34))
-        self.cpu.mem_write(base + 36 + 64, struct.pack("<I", 30))
+        self.cpu.mem_write(base + 36 + 28, b"Pump test\x00" + bytes(10))
+        self.cpu.mem_write(base + 36 + 48, struct.pack("<f", 12.34))
+        self.cpu.mem_write(base + 36 + 52, struct.pack("<I", 30))
         self.put(base + 20, 1)
         self.call("ScrnCommon_SaveDeviceSettings", 2)
         target = self.storage + 15 + 2 * 41
@@ -216,7 +216,7 @@ class VisibilityTests(FirmwareHarness):
 
     def test_manager_can_restore_hidden_without_changing_selection_or_lock(self):
         self.add(2, True)
-        self.put(self.device + 2 * 468 + 36 + 68, 1)
+        self.put(self.device + 2 * 396 + 36 + 56, 1)
         self.select(0)
         self.put(symbol("managerCount")[0], 1)
         self.put(symbol("managerSelected")[0], 0)
@@ -224,7 +224,7 @@ class VisibilityTests(FirmwareHarness):
         self.call("screen_dvm.o:centerClicked")
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
         self.assertEqual(self.get(self.system + 80), 0)
-        self.assertEqual(self.get(self.device + 2 * 468 + 36 + 68), 1)
+        self.assertEqual(self.get(self.device + 2 * 396 + 36 + 56), 1)
         self.assertEqual(self.get(self.storage + 15 + 2 * 41 + 39), 0)
         self.assertEqual(self.get(self.system + 82), 1)
 

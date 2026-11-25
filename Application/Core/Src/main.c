@@ -141,7 +141,6 @@ SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
 DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
 LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
 SystemStorageData_t storageData;         ///< RAM copy of the configuration block in flash.
-uint32_t timefillScreen = 0;             ///< Not used.
 uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
 uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
 

@@ -33,7 +33,7 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.call("Link_SetIdleSeconds", 5)
         self.cpu.mem_write(self.system + self.fields["tSleepUpdate"], struct.pack("<I", 5))
         self.put(self.system + self.fields["sleepMode"], 1)
-        self.put(self.system + 92, 2)
+        self.put(self.system + 88, 2)
         self.put(self.system + 82, 0)  # Simulate the completed settings save.
 
     def at(self, second):
@@ -45,16 +45,16 @@ class PowerPolicyTests(harness.FirmwareHarness):
 
     def test_idle_enters_logical_sleep_without_user_activity(self):
         self.at(4)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
         self.at(5)
-        self.assertEqual(self.get(self.system + 92), 1)
+        self.assertEqual(self.get(self.system + 88), 1)
         self.assertEqual(self.value(20), 10)
 
     def test_radio_activity_does_not_reset_user_idle_or_rtc_deadline(self):
         self.at(5)
         self.call("Power_RadioWakeISR")
         self.at(7)
-        self.assertEqual(self.get(self.system + 92), 1)
+        self.assertEqual(self.get(self.system + 88), 1)
         self.assertEqual(self.value(16), 0)
         self.assertEqual(self.value(20), 10)
         self.assertEqual(self.get(self.power + 29), 1)
@@ -66,52 +66,52 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.call("Power_RtcWakeISR")
         self.at(10)
         self.assertEqual(self.value(20), 15)
-        self.assertEqual(self.get(self.system + 92), 1)
+        self.assertEqual(self.get(self.system + 88), 1)
         self.assertEqual(self.value(16), 0)
 
     def test_button_wakes_normal_mode(self):
         self.at(5)
         self.call("Power_ButtonWakeISR")
         self.at(7)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
         self.assertEqual(self.value(16), 7)
 
     def test_confirmed_fault_stays_awake_until_user_acknowledges(self):
         self.at(5)
         self.call("Power_WakeForError")
         self.at(100)
-        self.assertEqual(self.get(self.system + 92), 3)
+        self.assertEqual(self.get(self.system + 88), 3)
         self.call("Power_UserActivity")
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
 
     def test_disabled_sleep_and_pending_flash_do_not_sleep(self):
         self.put(self.system + self.fields["sleepMode"], 0)
         self.at(100)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
         self.put(self.system + self.fields["sleepMode"], 1)
         self.put(self.system + 82, 1)
         self.at(101)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
 
     def test_active_usb_keeps_remote_awake(self):
         self.put(harness.symbol("hUsbDeviceFS")[0] + self.usb_state, 3)
         self.cpu.mem_write(harness.symbol("uwTick")[0], struct.pack("<I", 1000))
         self.call("Power_UsbSofISR")
         self.at(100)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
 
     def test_timer_editor_keeps_remote_awake_without_usb(self):
         self.put(harness.symbol("inScheduleSelection")[0], 1)
         self.at(100)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
 
     def test_pending_timer_command_keeps_remote_awake_without_usb(self):
         self.put(harness.symbol("scheduleRequest")[0] + 17, 1)
         self.at(100)
-        self.assertEqual(self.get(self.system + 92), 2)
+        self.assertEqual(self.get(self.system + 88), 2)
 
     def test_stop_is_blocked_during_confirmation_or_radio_work(self):
-        self.put(self.system + 92, 1)
+        self.put(self.system + 88, 1)
         self.put(harness.symbol("linkProbe")[0] + 22, 0)
         self.call("Power_TryStop")
         self.assertEqual(self.value(0), 0)

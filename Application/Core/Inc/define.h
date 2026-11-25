@@ -114,9 +114,6 @@ typedef struct
 
     Motor_PowerState_e pwrState; ///< Last reported power state.
     float phaseCurrent[3];       ///< Last reported phase currents [A].
-    uint16_t countdownMinutes;   ///< Not used.
-    uint32_t startTime;          ///< Not used.
-    uint32_t stopTime;           ///< Not used.
     uint32_t scheduleTime;       ///< Pending switch-off time (Unix); 0 = none.
 
     /* Settings */
@@ -183,7 +180,6 @@ typedef struct
 
     uint8_t isNeedSaveConfig;    ///< storageData changed; systemTask writes it to flash.
     uint32_t lastActionTick;     ///< RTOS tick of the last user action [ms].
-    uint32_t lastReceiveMsgTick; ///< Not used.
     System_RunMode_e runMode;    ///< Power mode.
 } SystemInfo_t;
 

@@ -26,7 +26,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.cpu.mem_write(self.device+1,b'\x01')
         self.cpu.mem_write(self.device+4,struct.pack('<IBBB',0xabcdef01,1,ord('M'),1))
         self.cpu.mem_write(self.device+16,struct.pack('<i',-120))
-        self.cpu.mem_write(self.device+36+40,b'Pump very long name\0')
+        self.cpu.mem_write(self.device+36+28,b'Pump very long name\0')
         self.cpu.mem_write(self.system+self.members['time'],bytes([23,58,59]))
         self.cpu.mem_write(self.system+self.members['date'],bytes([4,11,19,26]))
         self.cpu.mem_write(self.system+self.members['currentTime'],struct.pack('<I',1795132739))

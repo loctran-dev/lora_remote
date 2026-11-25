@@ -145,9 +145,9 @@ class TimerUiTests(h.FirmwareHarness):
         self.cpu.mem_write(self.system + self.offset["currentTime"], struct.pack("<I", now))
         self.put(self.module + self.offset["pwrState"], power)
         self.put(self.device + 32, int(offline))
-        before = bytes(self.cpu.mem_read(self.module, 72))
+        before = bytes(self.cpu.mem_read(self.module, 60))
         self.call("screen_dcs.o:countdownUpdate", self.device, self.module)
-        self.assertEqual(bytes(self.cpu.mem_read(self.module, 72)), before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.module, 60)), before)
 
     def test_active_countdown_separates_time_left_from_deadline(self):
         self.countdown(1060)
