@@ -26,6 +26,10 @@ static void restoreClock(uint32_t cfgr);
 
 /* RTC clock ================================================================ */
 
+/**
+ * @brief  Read the RTC counter as seconds of the day.
+ * @return 0 .. 86399. Safe against a CNTH/CNTL rollover between reads.
+ */
 uint32_t Power_ReadRtcSecond(void)
 {
     uint32_t first;
@@ -42,6 +46,11 @@ uint32_t Power_ReadRtcSecond(void)
 
 /* Initialisation and activity ============================================== */
 
+/**
+ * @brief  Reset the sleep state and enable the OFF button (PC7) as a wake-up.
+ * @note   Call once from main() before the scheduler starts. A LoRa packet
+ *         already signalled on DIO0 is marked pending.
+ */
 void Power_Init(void)
 {
     GPIO_InitTypeDef gpio = {0};
@@ -60,6 +69,10 @@ void Power_Init(void)
     }
 }
 
+/**
+ * @brief  Record user activity: back to NORMAL, backlight on, idle timer reset.
+ * @note   Called for every button press, USB command and RTC change.
+ */
 void Power_UserActivity(void)
 {
     powerSleep.lastUser = Link_Now();
@@ -68,6 +81,10 @@ void Power_UserActivity(void)
     LCD_Backlight_On();
 }
 
+/**
+ * @brief  Wake the display for a device error (ALARM mode, backlight on).
+ * @note   ALARM blocks sleep until the next Power_UserActivity().
+ */
 void Power_WakeForError(void)
 {
     systemInfo.runMode = eSystem_RunMode_Alarm;
@@ -76,26 +93,38 @@ void Power_WakeForError(void)
 
 /* Wake sources (ISR context) =============================================== */
 
+/** @brief Flag an RTC Alarm A wake-up; Power_Tick() schedules a link scan. */
 void Power_RtcWakeISR(void)
 {
     powerSleep.rtcPending = 1;
 }
 
+/**
+ * @brief  Flag a pending LoRa packet (DIO0 rising edge).
+ * @note   While STOP is being entered, the receive task is notified by
+ *         Power_TryStop() after wake-up instead of from the ISR.
+ */
 void Power_RadioWakeISR(void)
 {
     powerSleep.rxPending = 1;
 }
 
+/** @brief Flag a LEFT, RIGHT or OFF button wake-up; Power_Tick() wakes the UI. */
 void Power_ButtonWakeISR(void)
 {
     powerSleep.buttonPending = 1;
 }
 
+/** @brief Record a USB start-of-frame; USB counts as active for 2 s after it. */
 void Power_UsbSofISR(void)
 {
     powerSleep.lastUsbSof = HAL_GetTick();
 }
 
+/**
+ * @brief  Clear the pending LoRa packet and request a link scan.
+ * @note   Called by loraReceiveTask after the packet is processed.
+ */
 void Power_RxProcessed(void)
 {
     powerSleep.rxPending = 0;
@@ -104,6 +133,15 @@ void Power_RxProcessed(void)
 
 /* Sleep policy ============================================================= */
 
+/**
+ * @brief  Handle wake flags and enter SLEEP after the idle timeout.
+ *
+ * Sleep is blocked while sleep mode is off, USB is active, the remote is in
+ * ALARM, an editor/pairing screen or schedule edit is open, a schedule or
+ * history request is waiting, configuration is unsaved or a button is held.
+ *
+ * @note   Call from systemTask with uiMutex held.
+ */
 void Power_Tick(void)
 {
     if (powerSleep.buttonPending)
@@ -138,6 +176,17 @@ void Power_Tick(void)
     }
 }
 
+/**
+ * @brief  Enter STOP mode if the remote is in SLEEP and fully idle.
+ *
+ * Arms the RTC alarm for the next sleep scan, stops battery sampling,
+ * suspends the scheduler and SysTick, enters STOP, then restores HSE/PLL
+ * and resumes everything.
+ *
+ * @note    Call from systemTask with uiMutex held. RTOS ticks do not advance
+ *          while stopped; use Link_Now() (RTC uptime) for time.
+ * @warning Resets the MCU if HSE or the PLL fail to start after wake-up.
+ */
 void Power_TryStop(void)
 {
     uint32_t now;

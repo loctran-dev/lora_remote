@@ -182,6 +182,47 @@ static uint8_t isValidPacket(const LoraPackage_t *packet)
 }
 ```
 
+## Doxygen
+
+- Viết comment Doxygen bằng tiếng Anh, dùng `/** ... */` cho khối và `///<` cho field; dùng lệnh dạng `@brief`, không dùng `\brief` hay `/*!`.
+- Chỉ ghi điều mà tên hàm chưa nói: ngữ cảnh gọi (ISR, task nào, mutex nào), điều kiện, đơn vị, side effect. Không viết lại tên hàm thành câu.
+- Đầu mỗi file `.h` của module có `@file`, `@brief`, đoạn mô tả ngắn và một `@defgroup`; đóng nhóm bằng `/** @} */` sau `#endif`.
+  - Tên group theo tiền tố module: `power`, `link`, `comm`, `cmdhandler`, `schedule`, `history`, `rtc`, `button`, `main`, `screen`.
+- Comment Doxygen của hàm public đặt trong `.c`, ngay trên định nghĩa hàm; không lặp lại trong `.h`. Thứ tự tag: `@brief`, mô tả thêm, `@param`, `@return`, `@note`, `@warning`.
+- File `.h` giữ phần mô tả module, struct/enum/biến `extern` public và nhóm API: `/** @name <Nhóm> */` + `/** @{ */` ... `/** @} */` bao quanh các khai báo, cùng tên với comment phân nhóm trong `.c`.
+- Struct/enum public có `@brief` cho kiểu và `///<` cho từng field hoặc giá trị; ghi đơn vị trong ngoặc vuông, ví dụ `[s]`, `[ms]`, `[V]`.
+- Hàm `static` trong `.c` chỉ cần một dòng comment ngắn khi tên chưa đủ rõ; handler chung của screen (`init`, `render`, ...) không cần comment.
+- Không thêm Doxygen vào code CubeMX/vendor (`lcd.*`, `lora.*`, `UGUI`, HAL); `Doxyfile` loại các file này khỏi tài liệu.
+- Chạy `doxygen` ở thư mục gốc repo; output nằm trong `output/doxygen/` (không commit). Public API mới không được sinh thêm cảnh báo `is not documented`.
+
+```c
+/* screen_hs.c */
+/**
+ * @brief  Open the history list of one device, skipping the picker.
+ * @param  deviceId  Index in deviceBuff (0 .. MAXIMUM_DEVICE-1).
+ * @return 1 if the list opened, 0 if the id is invalid or has no history.
+ */
+uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
+{
+    ...
+}
+```
+
+```c
+/* power_sleep.h */
+/** @name Wake sources (ISR context) */
+/** @{ */
+void Power_RtcWakeISR(void);
+void Power_RadioWakeISR(void);
+/** @} */
+
+typedef struct
+{
+    uint32_t lastUser;          ///< Link_Now() of the last user action [s].
+    volatile uint8_t rxPending; ///< Set by the DIO0 ISR, cleared by Power_RxProcessed().
+} Power_SleepState_t;
+```
+
 ## Thay đổi code
 
 - Khi đổi tên public API, cập nhật đồng thời definition, header và toàn bộ call site.

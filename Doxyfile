@@ -1,0 +1,35 @@
+# Doxygen configuration for the LoRa remote application.
+# Run from the repository root: doxygen
+# Only settings that differ from the Doxygen defaults are listed.
+
+PROJECT_NAME           = "LoRa Remote"
+PROJECT_BRIEF          = "STM32F103 LoRa remote application firmware"
+OUTPUT_DIRECTORY       = output/doxygen
+
+INPUT                  = Application/Library \
+                         Application/Core/Inc/define.h \
+                         Application/Core/Inc/main.h
+FILE_PATTERNS          = *.h *.c
+RECURSIVE              = NO
+# Vendor and third-party code keep their own comments.
+EXCLUDE                = Application/Library/UGUI \
+                         Application/Library/lora.c \
+                         Application/Library/lora.h \
+                         Application/Library/lcd.c \
+                         Application/Library/lcd.h \
+                         Application/Library/image_data.c \
+                         Application/Library/image_data.h
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = NO
+TYPEDEF_HIDES_STRUCT   = YES
+SORT_MEMBER_DOCS       = NO
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
