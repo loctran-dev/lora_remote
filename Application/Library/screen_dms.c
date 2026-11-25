@@ -148,11 +148,15 @@ static void render(void)
     UG_Update();
 }
 
-/* Open this device's history list; nothing happens if it has none. */
+/* Open this device's history list; long beep and stay here if it has none. */
 static void leftClicked(void)
 {
+    if (!Screen_OpenDeviceHistory(systemInfo.currentDeviceId))
+    {
+        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        return;
+    }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    Screen_OpenDeviceHistory(systemInfo.currentDeviceId);
 }
 
 static void leftPressed(void)

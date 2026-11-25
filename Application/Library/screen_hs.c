@@ -105,13 +105,13 @@ void Screen_OpenHistory(void)
 }
 
 /* Open the record list of one device directly, skipping the device picker. */
-uint8_t Screen_OpenDeviceHistory(uint8_t id)
+uint8_t Screen_OpenDeviceHistory(uint8_t deviceId)
 {
-    if (id >= MAXIMUM_DEVICE || !available(id))
+    if (deviceId >= MAXIMUM_DEVICE || !available(deviceId))
     {
         return 0;
     }
-    chosenDevice = id;
+    chosenDevice = deviceId;
     snapshot();
     historyScreenMode = MODE_LIST;
     openedFromInfo = 1;
