@@ -37,21 +37,39 @@ static void sendProbe(void);
 
 /* Settings ================================================================= */
 
+/**
+ * @brief  Idle time before the remote enters SLEEP.
+ * @return 1 .. 9999 [s].
+ */
 uint16_t Link_GetIdleSeconds(void)
 {
     return storageData.sleepAfterIdleSeconds;
 }
 
+/**
+ * @brief  Silence after which a device is probed, and the back-off after a failed probe.
+ * @return 1 .. 9999 [s].
+ */
 uint16_t Link_GetTimeoutSeconds(void)
 {
     return storageData.connectionTimeoutSeconds;
 }
 
+/**
+ * @brief  Auto-status period of a device, sent to it in SET_CONFIG.
+ * @param  id  Device index in deviceBuff.
+ * @return 0 .. 9999 [s], or 0 for an invalid id.
+ */
 uint16_t Link_GetAutoStatus(uint8_t id)
 {
     return id < MAXIMUM_DEVICE ? storageData.autoStatusSeconds[id] : 0;
 }
 
+/**
+ * @brief  Set the auto-status period of a device and mark the settings for saving.
+ * @param  id       Device index in deviceBuff; ignored if out of range.
+ * @param  seconds  0 .. 9999 [s]; larger values are ignored.
+ */
 void Link_SetAutoStatus(uint8_t id, uint16_t seconds)
 {
     if (id < MAXIMUM_DEVICE && seconds <= 9999)
@@ -61,6 +79,10 @@ void Link_SetAutoStatus(uint8_t id, uint16_t seconds)
     }
 }
 
+/**
+ * @brief  Set the idle time before SLEEP and mark the settings for saving.
+ * @param  seconds  1 .. 9999 [s]; other values are ignored.
+ */
 void Link_SetIdleSeconds(uint16_t seconds)
 {
     if (seconds && seconds <= 9999)
@@ -70,6 +92,10 @@ void Link_SetIdleSeconds(uint16_t seconds)
     }
 }
 
+/**
+ * @brief  Set the connection timeout and mark the settings for saving.
+ * @param  seconds  1 .. 9999 [s]; other values are ignored.
+ */
 void Link_SetTimeoutSeconds(uint16_t seconds)
 {
     if (seconds && seconds <= 9999)
@@ -81,6 +107,15 @@ void Link_SetTimeoutSeconds(uint16_t seconds)
 
 /* Initialisation and clock ================================================= */
 
+/**
+ * @brief  Validate the stored link settings and reset the runtime state.
+ *
+ * Restores the defaults (idle 60 s, timeout 180 s, auto-status 60 s) when
+ * the magic, checksum or a value is invalid, and starts the uptime at 0.
+ *
+ * @param  rtcSecond  Current RTC value, from Power_ReadRtcSecond().
+ * @note   Call once from main() after deviceBuff is loaded.
+ */
 void Link_Init(uint32_t rtcSecond)
 {
     uint8_t valid = storageData.linkSettingsMagic == LINK_MAGIC &&
@@ -123,7 +158,14 @@ void Link_Init(uint32_t rtcSecond)
     }
 }
 
-/* RTC seconds-of-day survives STOP; no RTOS tick or adjustable wall date needed. */
+/**
+ * @brief  Advance the uptime by the RTC seconds elapsed since the last call.
+ *
+ * Steps of 12 h or more are treated as a clock change and ignored.
+ *
+ * @param  rtcSecond  Current RTC value, from Power_ReadRtcSecond().
+ * @note   Called every systemTask loop and right after waking from STOP.
+ */
 void Link_ClockStep(uint32_t rtcSecond)
 {
     uint32_t delta;
@@ -137,11 +179,20 @@ void Link_ClockStep(uint32_t rtcSecond)
     previousRtc = rtcSecond;
 }
 
+/**
+ * @brief  Uptime from the RTC; unlike the RTOS tick it keeps counting in STOP.
+ * @return Seconds since Link_Init().
+ */
 uint32_t Link_Now(void)
 {
     return uptimeSeconds;
 }
 
+/**
+ * @brief  Take a new RTC value as reference without advancing the uptime.
+ * @param  rtcSecond  RTC value just written, from Power_ReadRtcSecond().
+ * @note   Call after the RTC time is set.
+ */
 void Link_ClockRebase(uint32_t rtcSecond)
 {
     previousRtc = rtcSecond % 86400u;
@@ -149,17 +200,25 @@ void Link_ClockRebase(uint32_t rtcSecond)
 
 /* Requests ================================================================= */
 
+/** @brief Ask the next Link_Tick() to look for a device that needs a probe. */
 void Link_RequestScan(void)
 {
     scanRequested = 1;
 }
 
+/**
+ * @brief  Whether a probe or status sync is in progress.
+ * @return 1 while busy; Power_TryStop() does not enter STOP then.
+ */
 uint8_t Link_IsBusy(void)
 {
     return linkProbe.device >= 0 || syncPending != 0 || syncRequested;
 }
 
-/* The USB RTC setter may run in IRQ context: defer state/queue changes to Tick. */
+/**
+ * @brief  Ask the next Link_Tick() to probe every paired device once.
+ * @note   Safe from IRQ context (USB RTC setter); the work is done in Link_Tick().
+ */
 void Link_RequestStatusSync(void)
 {
     syncRequested = 1;
@@ -167,6 +226,11 @@ void Link_RequestStatusSync(void)
 
 /* Received packets ========================================================= */
 
+/**
+ * @brief  Mark the status sync reply of the device being probed as received.
+ * @param  id           Device index in deviceBuff.
+ * @param  transaction  Transaction id of the reply; must match the probe.
+ */
 void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
 {
     if (linkProbe.device == id && linkProbe.state && transaction == linkProbe.transaction)
@@ -175,6 +239,12 @@ void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
     }
 }
 
+/**
+ * @brief  Record a packet from a device and clear its connection error.
+ * @param  id      Device index in deviceBuff; deleted devices are ignored.
+ * @param  status  1 if the packet carried device status, 0 otherwise.
+ * @note   Requests a scan so other silent devices are checked too.
+ */
 void Link_RecordPacket(uint8_t id, uint8_t status)
 {
     if (id >= MAXIMUM_DEVICE || deviceBuff[id].isDelete)
@@ -196,6 +266,11 @@ void Link_RecordPacket(uint8_t id, uint8_t status)
     scanRequested = 1; /* Check OTHER devices too, including hidden ones. */
 }
 
+/**
+ * @brief  Link_RecordPacket() for the paired device with the given node id.
+ * @param  node    LoRa node id of the sender.
+ * @param  status  1 if the packet carried device status, 0 otherwise.
+ */
 void Link_RecordNodePacket(uint8_t node, uint8_t status)
 {
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
@@ -210,6 +285,13 @@ void Link_RecordNodePacket(uint8_t node, uint8_t status)
 
 /* Transmit path ============================================================ */
 
+/**
+ * @brief  Filter stale GET_STATUS requests before they are sent.
+ * @param  packet  Packet taken from txMsgQueue.
+ * @return 1 to send it: every packet except a GET_STATUS request that does
+ *         not belong to the probe in progress.
+ * @note   Called by loraSendTask.
+ */
 uint8_t Link_ShouldTransmit(const LoraPackage_t *packet)
 {
     if (packet->code != CMD_GET_STATUS || packet->type != LORA_PACKAGE_TYPE_REQUEST)
@@ -220,6 +302,13 @@ uint8_t Link_ShouldTransmit(const LoraPackage_t *packet)
         packet->nodeId == deviceBuff[linkProbe.device].nodeId && packet->netId == systemInfo.netId;
 }
 
+/**
+ * @brief  Start the reply timeout once the probe request has been sent.
+ * @param  packet   Packet just transmitted.
+ * @param  success  Radio result; unused, a failed send and a missing reply
+ *                  both use up an attempt.
+ * @note   Called by loraSendTask.
+ */
 void Link_TxFinished(const LoraPackage_t *packet, uint8_t success)
 {
     (void)success; /* Both failed TX and missing reply consume an attempt, spaced by 10 s. */
@@ -232,6 +321,17 @@ void Link_TxFinished(const LoraPackage_t *packet, uint8_t success)
 
 /* Periodic processing ====================================================== */
 
+/**
+ * @brief  Run the link supervision: continue the probe in progress or start the next one.
+ *
+ * Resets devices that were re-paired or deleted, retries a probe whose reply
+ * timed out (up to 3 attempts) and marks the device as a connection error
+ * when all attempts fail. Outside SLEEP a scan starts every tUpdate seconds.
+ * Does nothing while the pairing screen is open.
+ *
+ * @note   Call from systemTask with uiMutex held; skipped while a LoRa packet
+ *         is pending.
+ */
 void Link_Tick(void)
 {
     uint8_t id;
