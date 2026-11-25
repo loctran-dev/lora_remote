@@ -56,14 +56,12 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void Main_SetBuzzerMode(BuzzerMode_t mode);
-uint32_t Main_GetSystemCountMs(void);
 void Main_SetMotorPower(uint8_t motorPower);
 void Main_UpdateStatusPeriod(void);
 void Main_SetScheduleTimeToCurrentModule(int32_t time);
 void Main_ScanNewDevice(void);
 void Main_ConnectToDevice(void);
 void Main_SetRtcAlarmRelative(uint32_t seconds);
-uint8_t Main_GetNotUsedNodeId(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

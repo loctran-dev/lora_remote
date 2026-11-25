@@ -5,6 +5,8 @@
 - Bắt buộc áp dụng tài liệu này cho mọi code tự viết trong project.
 - Không áp dụng để sửa format của code mặc định do STM32CubeMX tạo, STM32 HAL/CMSIS, middleware ST hoặc các thư viện vendor khác cung cấp.
 - Phần code tự viết bên trong `/* USER CODE BEGIN */` và `/* USER CODE END */` của file CubeMX vẫn phải tuân theo style này.
+  - Ngoại lệ: trong file CubeMX (ví dụ `main.c`), code tự viết thụt lề 2 spaces cho khớp với code CubeMX sinh ra, thay vì 4 spaces.
+  - Mọi code tự viết phải nằm trong vùng `USER CODE`; code đặt ngoài vùng này sẽ bị xóa khi CubeMX generate lại.
 - Không sửa hoặc format lại vùng code generated nếu không thật sự cần thiết cho chức năng.
 
 ## Phạm vi và API
@@ -148,6 +150,7 @@ void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
 - Mỗi khai báo biến hoặc field của struct nằm trên một dòng riêng; không gộp nhiều biến trong một khai báo như `uint32_t a, b, c;`.
 - Biến cục bộ của function khai báo ở đầu thân function, trước câu lệnh đầu tiên; không khai báo biến giữa function hoặc trong block `if`/`while`. Khi cần dùng thì gán giá trị tại chỗ.
   - Ngoại lệ: biến đếm của vòng `for` được khai báo trong câu lệnh `for`, ví dụ `for (uint8_t id = 0; ...)`.
+  - Ngoại lệ: struct lớn nhận giá trị trả về từ hàm (ví dụ `LoraPackage_t` từ `Comm_Create...()`) được khai báo và khởi tạo ngay tại chỗ dùng, ví dụ `LoraPackage_t packageOut = Comm_CreateReqSetSchedule(...);`. Khai báo ở đầu hàm rồi gán sau làm compiler tạo thêm một bản tạm trên stack (khoảng 280 byte với `LoraPackage_t`).
 - Trong function dài, tách các đoạn có nhiệm vụ khác nhau (kiểm tra đầu vào, chuẩn bị dữ liệu, xử lý, cập nhật trạng thái...) bằng một dòng trống.
 
 ```c

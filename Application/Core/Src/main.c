@@ -168,7 +168,8 @@ void StartLoraReceiveTask(void *argument);
 void GetDevStatusTimerCallback(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+static void updateBattery(void);
+static uint8_t getNotUsedNodeId(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -185,7 +186,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   SCB->VTOR = 0x08008000u;
-  __DSB(); __ISB();
+  __DSB();
+  __ISB();
 
   /* USER CODE END 1 */
 
@@ -215,126 +217,151 @@ int main(void)
   MX_RTC_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
-	LCD_Backlight_On();
-	LCD_init();
+  LCD_Backlight_On();
+  LCD_init();
 
-	//Start battery voltage's adc
-	HAL_GPIO_WritePin(BAT_CTRL_GPIO_Port, BAT_CTRL_Pin, GPIO_PIN_SET);
+  /* Start battery voltage's ADC. */
+  HAL_GPIO_WritePin(BAT_CTRL_GPIO_Port, BAT_CTRL_Pin, GPIO_PIN_SET);
   HAL_Delay(5);
-  if (HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK) Error_Handler();
+  if (HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* Sample the high-impedance divider with a long acquisition time. */
   ADC_ChannelConfTypeDef batteryChannel = {0};
   batteryChannel.Channel = ADC_CHANNEL_2;
   batteryChannel.Rank = ADC_REGULAR_RANK_1;
   batteryChannel.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
-  if (HAL_ADC_ConfigChannel(&hadc1, &batteryChannel) != HAL_OK) Error_Handler();
+  if (HAL_ADC_ConfigChannel(&hadc1, &batteryChannel) != HAL_OK)
+  {
+    Error_Handler();
+  }
   __HAL_TIM_SET_AUTORELOAD(&htim8, 999);
   __HAL_TIM_SET_COUNTER(&htim8, 0);
-	HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
-	HAL_TIM_Base_Start(&htim8);
-	
-	memcpy(&storageData, (uint32_t *)CONFIG_DATA_ADDRESS, sizeof(SystemStorageData_t));
-	if (storageData.lastWriteSuccess != TRUE)
-	{
-		memset(&storageData, 0, sizeof(storageData));
-		//Load default value
-		storageData.netIdConfig = 0x01;
-		storageData.frequencyConfig = 433;
-		storageData.sfConfig = SF_7;
-		storageData.lastWriteSuccess = TRUE;
-		for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) 
-		{
-			storageData.DeviceConfig[devNo].isDelete = TRUE;
-		}
-		Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t));
-	}
-	
-	if (storageData.netIdConfig == 0 || storageData.netIdConfig == 255) storageData.netIdConfig = 1;
-	if (storageData.frequencyConfig < 137 || storageData.frequencyConfig > 1020) storageData.frequencyConfig = 433;
-	if (storageData.sfConfig < SF_7 || storageData.sfConfig > SF_12) storageData.sfConfig = SF_7;
-	// MODULE SETTINGS ----------------------------------------------
-	sLoRaCtrl = newLoRa();
-	
-	sLoRaCtrl.hSPIx                 = &hspi1;
-	sLoRaCtrl.CS_port               = LORA_NSS_GPIO_Port;
-	sLoRaCtrl.CS_pin                = LORA_NSS_Pin;
-	sLoRaCtrl.reset_port            = LORA_RST_GPIO_Port;
-	sLoRaCtrl.reset_pin             = LORA_RST_Pin;
-	sLoRaCtrl.DIO0_port						 	= LORA_DIO_GPIO_Port;
-	sLoRaCtrl.DIO0_pin							= LORA_DIO_Pin;
-	
-	sLoRaCtrl.frequency             = storageData.frequencyConfig;
-	sLoRaCtrl.spredingFactor        = storageData.sfConfig;
-	sLoRaCtrl.bandWidth			       	= BW_125KHz;				  // default = BW_125KHz
-	sLoRaCtrl.crcRate				       	= CR_4_5;						// default = CR_4_5
-	sLoRaCtrl.power					       	= POWER_17db;				// default = 20db
-	sLoRaCtrl.overCurrentProtection = 120; 							// default = 100 mA
-	sLoRaCtrl.preamble				      = 10;	
-	
-	LoRa_reset(&sLoRaCtrl);
-	errorCode = LoRa_init(&sLoRaCtrl);
-	LoRa_startReceiving(&sLoRaCtrl);
+  HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
+  HAL_TIM_Base_Start(&htim8);
 
-	systemInfo.batteryVoltageMin = 3.0f;
-	systemInfo.batteryVoltageMax = 4.2f;
-	systemInfo.netId = storageData.netIdConfig;
-	systemInfo.netIdConfig = storageData.netIdConfig;
-	systemInfo.frequencyConfig = storageData.frequencyConfig;
-	systemInfo.sfConfig = storageData.sfConfig;
-	systemInfo.sleepMode = storageData.sleepMode == TRUE;
-	systemInfo.tUpdate = storageData.tUpdate >= 1 && storageData.tUpdate <= 9999 ? storageData.tUpdate : 5;
-	systemInfo.tSleepUpdate = storageData.tSleepUpdate >= 1 && storageData.tSleepUpdate <= 9999 ? storageData.tSleepUpdate : 300;
-	systemInfo.runMode = SYS_MODE_NORMAL;
-	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) 
-	{
-		deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
-		deviceBuff[devNo].nodeId = storageData.DeviceConfig[devNo].nodeIdConfig;		
-		deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
-		deviceBuff[devNo].motorData[0].alarmDelayTime = storageData.DeviceConfig[devNo].alarmDelayTime;
-		deviceBuff[devNo].motorData[0].alarmThreshold = storageData.DeviceConfig[devNo].alarmThreshold;
-		deviceBuff[devNo].motorData[0].isHide = storageData.DeviceConfig[devNo].isHide == TRUE;
-		deviceBuff[devNo].motorData[0].isLock = storageData.DeviceConfig[devNo].isLock == TRUE;
-		deviceBuff[devNo].motorData[0].moduleIndex = storageData.DeviceConfig[devNo].moduleIndex;
-		deviceBuff[devNo].factoryInfo = storageData.DeviceConfig[devNo].factoryInfo;
-		switch (deviceBuff[devNo].factoryInfo.deviceType)
-		{
-			case DEV_TYPE_MOTOR:
-				deviceBuff[devNo].factoryInfo.deviceTypeChar = 'M';
-				break;
-			case DEV_TYPE_PRESSURE:
-				deviceBuff[devNo].factoryInfo.deviceTypeChar = 'P';
-				break;
-			case DEV_TYPE_ENCODER:
-				deviceBuff[devNo].factoryInfo.deviceTypeChar = 'E';
-				break;
-			default:
-				deviceBuff[devNo].factoryInfo.deviceTypeChar = 'x';
-				break;
-		}
-		memcpy(deviceBuff[devNo].motorData[0].name, storageData.DeviceConfig[devNo].name, sizeof(deviceBuff[devNo].motorData[0].name));
-		if (deviceBuff[devNo].motorData[0].name[0] == '\0')
-		{
-			sprintf(deviceBuff[devNo].motorData[0].name, "Default");
-		}
-		deviceBuff[devNo].deviceIndex = devNo;
-	}
-	
-	HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-	systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
-	for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) {
-		if (deviceBuff[devNo].isDelete == FALSE) {
-			deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
-			systemInfo.currentDeviceId = devNo;
-			systemInfo.currentModuleId = 0;
-			break;
-		}
-	}
-    RemoteHistory_Init();
-	currentScreen->init();
-    Link_Init(Power_ReadRtcSecond());
-    Link_RequestStatusSync();
-    Power_Init();
+  /* Load the stored configuration, or defaults on first boot. */
+  memcpy(&storageData, (uint32_t *)CONFIG_DATA_ADDRESS, sizeof(SystemStorageData_t));
+  if (storageData.lastWriteSuccess != TRUE)
+  {
+    memset(&storageData, 0, sizeof(storageData));
+    storageData.netIdConfig = 0x01;
+    storageData.frequencyConfig = 433;
+    storageData.sfConfig = SF_7;
+    storageData.lastWriteSuccess = TRUE;
+    for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+    {
+      storageData.DeviceConfig[devNo].isDelete = TRUE;
+    }
+    Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t *)&storageData, sizeof(SystemStorageData_t));
+  }
+
+  if (storageData.netIdConfig == 0 || storageData.netIdConfig == 255)
+  {
+    storageData.netIdConfig = 1;
+  }
+  if (storageData.frequencyConfig < 137 || storageData.frequencyConfig > 1020)
+  {
+    storageData.frequencyConfig = 433;
+  }
+  if (storageData.sfConfig < SF_7 || storageData.sfConfig > SF_12)
+  {
+    storageData.sfConfig = SF_7;
+  }
+
+  /* LoRa module settings. */
+  sLoRaCtrl = newLoRa();
+
+  sLoRaCtrl.hSPIx = &hspi1;
+  sLoRaCtrl.CS_port = LORA_NSS_GPIO_Port;
+  sLoRaCtrl.CS_pin = LORA_NSS_Pin;
+  sLoRaCtrl.reset_port = LORA_RST_GPIO_Port;
+  sLoRaCtrl.reset_pin = LORA_RST_Pin;
+  sLoRaCtrl.DIO0_port = LORA_DIO_GPIO_Port;
+  sLoRaCtrl.DIO0_pin = LORA_DIO_Pin;
+
+  sLoRaCtrl.frequency = storageData.frequencyConfig;
+  sLoRaCtrl.spredingFactor = storageData.sfConfig;
+  sLoRaCtrl.bandWidth = BW_125KHz;          /* default = BW_125KHz */
+  sLoRaCtrl.crcRate = CR_4_5;               /* default = CR_4_5 */
+  sLoRaCtrl.power = POWER_17db;             /* default = 20db */
+  sLoRaCtrl.overCurrentProtection = 120;    /* default = 100 mA */
+  sLoRaCtrl.preamble = 10;
+
+  LoRa_reset(&sLoRaCtrl);
+  errorCode = LoRa_init(&sLoRaCtrl);
+  LoRa_startReceiving(&sLoRaCtrl);
+
+  /* System settings. */
+  systemInfo.batteryVoltageMin = 3.0f;
+  systemInfo.batteryVoltageMax = 4.2f;
+  systemInfo.netId = storageData.netIdConfig;
+  systemInfo.netIdConfig = storageData.netIdConfig;
+  systemInfo.frequencyConfig = storageData.frequencyConfig;
+  systemInfo.sfConfig = storageData.sfConfig;
+  systemInfo.sleepMode = storageData.sleepMode == TRUE;
+  systemInfo.tUpdate = storageData.tUpdate >= 1 && storageData.tUpdate <= 9999 ? storageData.tUpdate : 5;
+  systemInfo.tSleepUpdate = storageData.tSleepUpdate >= 1 && storageData.tSleepUpdate <= 9999 ?
+    storageData.tSleepUpdate : 300;
+  systemInfo.runMode = SYS_MODE_NORMAL;
+
+  /* Device list. */
+  for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+  {
+    deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
+    deviceBuff[devNo].nodeId = storageData.DeviceConfig[devNo].nodeIdConfig;
+    deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
+    deviceBuff[devNo].motorData[0].alarmDelayTime = storageData.DeviceConfig[devNo].alarmDelayTime;
+    deviceBuff[devNo].motorData[0].alarmThreshold = storageData.DeviceConfig[devNo].alarmThreshold;
+    deviceBuff[devNo].motorData[0].isHide = storageData.DeviceConfig[devNo].isHide == TRUE;
+    deviceBuff[devNo].motorData[0].isLock = storageData.DeviceConfig[devNo].isLock == TRUE;
+    deviceBuff[devNo].motorData[0].moduleIndex = storageData.DeviceConfig[devNo].moduleIndex;
+    deviceBuff[devNo].factoryInfo = storageData.DeviceConfig[devNo].factoryInfo;
+    switch (deviceBuff[devNo].factoryInfo.deviceType)
+    {
+      case DEV_TYPE_MOTOR:
+        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'M';
+        break;
+      case DEV_TYPE_PRESSURE:
+        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'P';
+        break;
+      case DEV_TYPE_ENCODER:
+        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'E';
+        break;
+      default:
+        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'x';
+        break;
+    }
+    memcpy(deviceBuff[devNo].motorData[0].name, storageData.DeviceConfig[devNo].name,
+      sizeof(deviceBuff[devNo].motorData[0].name));
+    if (deviceBuff[devNo].motorData[0].name[0] == '\0')
+    {
+      sprintf(deviceBuff[devNo].motorData[0].name, "Default");
+    }
+    deviceBuff[devNo].deviceIndex = devNo;
+  }
+
+  /* Select the first paired device. */
+  HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
+  systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
+  for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+  {
+    if (deviceBuff[devNo].isDelete == FALSE)
+    {
+      deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+      systemInfo.currentDeviceId = devNo;
+      systemInfo.currentModuleId = 0;
+      break;
+    }
+  }
+
+  RemoteHistory_Init();
+  currentScreen->init();
+  Link_Init(Power_ReadRtcSecond());
+  Link_RequestStatusSync();
+  Power_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -342,11 +369,18 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_MUTEX */
   const osMutexAttr_t uiMutexAttributes = { .name = "UI", .attr_bits = osMutexPrioInherit };
-  uiMutex = osMutexNew(&uiMutexAttributes);
-  if (!uiMutex) Error_Handler();
   const osMutexAttr_t radioMutexAttributes = { .name = "LoRa", .attr_bits = osMutexPrioInherit };
+
+  uiMutex = osMutexNew(&uiMutexAttributes);
+  if (!uiMutex)
+  {
+    Error_Handler();
+  }
   radioMutex = osMutexNew(&radioMutexAttributes);
-  if (!radioMutex) Error_Handler();
+  if (!radioMutex)
+  {
+    Error_Handler();
+  }
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -560,8 +594,9 @@ static void MX_RTC_Init(void)
   }
 
   /* USER CODE BEGIN Check_RTC_BKUP */
-	if (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x3210) 
-	{
+  /* Only set the default time/date when the RTC was not configured before. */
+  if (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x3210)
+  {
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
@@ -585,9 +620,9 @@ static void MX_RTC_Init(void)
   }
   /* USER CODE BEGIN RTC_Init 2 */
     HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x3210);
-	}
+  }
+  Rtc_RestoreDate();
   /* USER CODE END RTC_Init 2 */
-    Rtc_RestoreDate();
 }
 
 /**
@@ -887,22 +922,196 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/* HAL callbacks ============================================================ */
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *adc)
 {
-  if (adc->Instance == ADC1) batterySampleSequence++;
+  if (adc->Instance == ADC1)
+  {
+    batterySampleSequence++;
+  }
 }
 
-static void Main_UpdateBattery(void)
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  BaseType_t higherPriorityTaskWoken = pdFALSE;
+
+  if (GPIO_Pin == BTN1_Pin || GPIO_Pin == BTN4_Pin || GPIO_Pin == BTN5_Pin)
+  {
+    Power_ButtonWakeISR();
+  }
+  else if (GPIO_Pin == sLoRaCtrl.DIO0_pin)
+  {
+    Power_RadioWakeISR();
+    if (loraReceiveTaskHandle && !powerSleep.stopping)
+    {
+      vTaskNotifyGiveFromISR(loraReceiveTaskHandle, &higherPriorityTaskWoken);
+    }
+    portYIELD_FROM_ISR(higherPriorityTaskWoken);
+  }
+}
+
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
+{
+  Power_RtcWakeISR();
+}
+
+/* Public API =============================================================== */
+
+void Main_SetBuzzerMode(BuzzerMode_t mode)
+{
+  osMessageQueuePut(buzzerQueueHandle, &mode, 0, 0);
+}
+
+void Main_SetMotorPower(uint8_t motorPower)
+{
+  /* Guard the common send path for both physical and USB-injected buttons. */
+  if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE ||
+    systemInfo.currentModuleId >= sizeof(deviceBuff[0].motorData) / sizeof(deviceBuff[0].motorData[0]))
+  {
+    return;
+  }
+  if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+  {
+    return;
+  }
+  if (deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId].isLock)
+  {
+    ScrnDcs_ShowMotorLocked(motorPower);
+    Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+    return;
+  }
+
+  if (deviceBuff[systemInfo.currentDeviceId].isDelete == FALSE)
+  {
+    Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
+    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId,
+      systemInfo.currentModuleId, motorPower);
+    osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
+  }
+}
+
+void Main_UpdateStatusPeriod(void)
+{
+  /* Compatibility entry point: scanning is local, never unconditional RF polling. */
+  if (GetDevStatusTimerHandle)
+  {
+    osTimerStop(GetDevStatusTimerHandle);
+  }
+  Link_RequestScan();
+}
+
+void Main_SetScheduleTimeToCurrentModule(int32_t time)
+{
+  PayloadRequestSetSchedule_t payload;
+
+  if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+  {
+    return;
+  }
+
+  payload.moduleIndex = systemInfo.currentModuleId;
+  payload.syncTime = systemInfo.currentTime;
+  if (time < 0)
+  {
+    payload.scheduleTime = 0;
+  }
+  else
+  {
+    payload.scheduleTime = systemInfo.currentTime + time;
+  }
+
+  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
+  Schedule_Track(&packageOut, &payload);
+  if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
+  {
+    Schedule_QueueFailed();
+  }
+}
+
+void Main_ScanNewDevice(void)
+{
+  FactoryInfo_t factoryInfo;
+
+  osMutexAcquire(radioMutex, osWaitForever);
+  systemInfo.findDeviceTick = xTaskGetTickCount();
+  systemInfo.findDeviceStep = STEP_PROCESSING;
+  systemInfo.findDeviceResult = PROCESS_FAILED;
+  systemInfo.findDevicefactoryInfo = factoryInfo;
+  systemInfo.netId = LORA_NET_ID_DEFAULT;
+  sLoRaCtrl.frequency = 433;
+  sLoRaCtrl.spredingFactor = SF_7;
+  LoRa_init(&sLoRaCtrl);
+  LoRa_startReceiving(&sLoRaCtrl);
+  osMutexRelease(radioMutex);
+
+  LoraPackage_t packageOut = Comm_CreateReqGetFactoryInfo(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT);
+  osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
+}
+
+void Main_ConnectToDevice(void)
+{
+  PayloadRequestConfigConnection_t payload;
+
+  systemInfo.configDeviceTick = xTaskGetTickCount();
+  systemInfo.configDeviceStep = STEP_PROCESSING;
+  systemInfo.configDeviceResult = PROCESS_FAILED;
+  systemInfo.nextNodeId = getNotUsedNodeId();
+
+  payload.serial = systemInfo.findDevicefactoryInfo.serial;
+  payload.netId = systemInfo.netIdConfig;
+  payload.nodeId = systemInfo.nextNodeId;
+  payload.frequency = systemInfo.frequencyConfig;
+  payload.sf = systemInfo.sfConfig;
+
+  LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
+  osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
+}
+
+void Main_SetRtcAlarmRelative(uint32_t seconds)
+{
+  RTC_AlarmTypeDef sAlarm = {0};
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+  uint32_t alarmSeconds;
+  uint32_t alarmMinutes;
+  uint32_t alarmHours;
+
+  HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+  alarmSeconds = sTime.Seconds + seconds;
+  alarmMinutes = sTime.Minutes + (alarmSeconds / 60);
+  alarmHours = sTime.Hours + (alarmMinutes / 60);
+
+  sAlarm.AlarmTime.Seconds = alarmSeconds % 60;
+  sAlarm.AlarmTime.Minutes = alarmMinutes % 60;
+  sAlarm.AlarmTime.Hours = alarmHours % 24;
+  sAlarm.Alarm = RTC_ALARM_A;
+  HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BIN);
+}
+
+/* Private helpers ========================================================== */
+
+static void updateBattery(void)
 {
   static uint32_t lastSequence;
   static float filtered;
   static const float volts[] = {3.0f, 3.3f, 3.5f, 3.6f, 3.7f, 3.8f, 3.9f, 4.0f, 4.1f, 4.2f};
   static const uint8_t levels[] = {0, 5, 10, 20, 40, 60, 75, 85, 95, 100};
-  uint32_t sequence = batterySampleSequence;
-  if (sequence == lastSequence) return;
+  uint32_t sequence;
+  float measured;
+  float percent;
+
+  sequence = batterySampleSequence;
+  if (sequence == lastSequence)
+  {
+    return;
+  }
   lastSequence = sequence;
+
   /* R15 = R18 = 10k, nominal VDDA from the regulated 3.3V rail. */
-  float measured = (float)(systemInfo.batteryAdc & 0xFFFFu) * 3.3f * 2.0f / 4095.0f;
+  measured = (float)(systemInfo.batteryAdc & 0xFFFFu) * 3.3f * 2.0f / 4095.0f;
   if (measured < 2.5f || measured > 4.5f)
   {
     filtered = 0;
@@ -912,179 +1121,65 @@ static void Main_UpdateBattery(void)
   }
   filtered = filtered == 0 ? measured : filtered + 0.1f * (measured - filtered);
   systemInfo.batteryVoltage = filtered;
-  float percent = 0;
-  if (filtered >= volts[9]) percent = 100;
-  else for (uint8_t i = 1; i < 10; i++)
+
+  percent = 0;
+  if (filtered >= volts[9])
   {
-    if (filtered <= volts[i])
+    percent = 100;
+  }
+  else
+  {
+    for (uint8_t i = 1; i < 10; i++)
     {
-      percent = levels[i - 1] + (filtered - volts[i - 1]) *
-        (levels[i] - levels[i - 1]) / (volts[i] - volts[i - 1]);
-      break;
+      if (filtered <= volts[i])
+      {
+        percent = levels[i - 1] + (filtered - volts[i - 1]) *
+          (levels[i] - levels[i - 1]) / (volts[i] - volts[i - 1]);
+        break;
+      }
     }
   }
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  if (systemInfo.isFullBattery && !systemInfo.isChanging && filtered >= 4.05f) percent = 100;
+  if (percent < 0)
+  {
+    percent = 0;
+  }
+  if (percent > 100)
+  {
+    percent = 100;
+  }
+  if (systemInfo.isFullBattery && !systemInfo.isChanging && filtered >= 4.05f)
+  {
+    percent = 100;
+  }
   systemInfo.batteryUsage = (uint8_t)(percent + 0.5f);
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+static uint8_t getNotUsedNodeId(void)
 {
-	if (GPIO_Pin == BTN1_Pin || GPIO_Pin == BTN4_Pin || GPIO_Pin == BTN5_Pin)
-	{
-		Power_ButtonWakeISR();
-	}
-	else if (GPIO_Pin == sLoRaCtrl.DIO0_pin) 
-	{			
-		Power_RadioWakeISR();
-		
-		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-		if (loraReceiveTaskHandle && !powerSleep.stopping)
-			vTaskNotifyGiveFromISR(loraReceiveTaskHandle, &xHigherPriorityTaskWoken);
+  uint8_t nodeIdValid = 0x00;
+  uint16_t wasNodeIdUsed;
 
-		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-	} 
-}
-void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
-{
-	Power_RtcWakeISR();
-}
-
-void Main_SetBuzzerMode(BuzzerMode_t mode) 
-{
-	osMessageQueuePut(buzzerQueueHandle, &mode, 0, 0);
-}
-
-uint32_t Main_GetSystemCountMs(void)
-{
-	return xTaskGetTickCount()/pdMS_TO_TICKS(1);
-}
-
-void Main_SetMotorPower(uint8_t motorPower)
-{
-	/* Guard the common send path for both physical and USB-injected buttons. */
-	if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE ||
-		systemInfo.currentModuleId >= sizeof(deviceBuff[0].motorData) / sizeof(deviceBuff[0].motorData[0])) {
-		return;
-	}
-	if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId)) return;
-	if (deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId].isLock) {
-		ScrnDcs_ShowMotorLocked(motorPower);
-		Main_SetBuzzerMode(BUZZER_LONG_BEEP);
-		return;
-	}
-	if (deviceBuff[systemInfo.currentDeviceId].isDelete == FALSE) {
-		Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
-		LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, systemInfo.currentModuleId, motorPower);
-		osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
-	} 
-}
-void Main_UpdateStatusPeriod(void)
-{
-	/* Compatibility entry point: scanning is local, never unconditional RF polling. */
-	if (GetDevStatusTimerHandle) osTimerStop(GetDevStatusTimerHandle);
-	Link_RequestScan();
-}
-void Main_SetScheduleTimeToCurrentModule(int32_t time)
-{
-	if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId)) return;
-	PayloadRequestSetSchedule_t payload;
-	payload.moduleIndex = systemInfo.currentModuleId;
-	payload.syncTime = systemInfo.currentTime;
-	if (time < 0)
-	{
-		payload.scheduleTime = 0;
-	}
-	else 
-	{
-		payload.scheduleTime = systemInfo.currentTime + time;
-	}
-	LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
-	Schedule_Track(&packageOut, &payload);
-	if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
-        Schedule_QueueFailed();
-}
-
-void Main_ScanNewDevice(void)
-{
-	osMutexAcquire(radioMutex, osWaitForever);
-	systemInfo.findDeviceTick = xTaskGetTickCount();
-	systemInfo.findDeviceStep = STEP_PROCESSING;
-	systemInfo.findDeviceResult = PROCESS_FAILED;
-	
-	FactoryInfo_t factoryInfo;
-	systemInfo.findDevicefactoryInfo = factoryInfo;
-	systemInfo.netId = LORA_NET_ID_DEFAULT;
-	sLoRaCtrl.frequency             = 433;							  
-	sLoRaCtrl.spredingFactor        = SF_7;							
-	LoRa_init(&sLoRaCtrl);
-	LoRa_startReceiving(&sLoRaCtrl);
-	osMutexRelease(radioMutex);
-	
-	LoraPackage_t packageOut = Comm_CreateReqGetFactoryInfo(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT);
-	osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
-}
-void Main_ConnectToDevice(void)
-{
-	systemInfo.configDeviceTick = xTaskGetTickCount();
-	systemInfo.configDeviceStep = STEP_PROCESSING;
-	systemInfo.configDeviceResult = PROCESS_FAILED;
-	
-	systemInfo.nextNodeId = Main_GetNotUsedNodeId();
-	PayloadRequestConfigConnection_t payload;
-	payload.serial = systemInfo.findDevicefactoryInfo.serial;
-	payload.netId = systemInfo.netIdConfig;
-	payload.nodeId = systemInfo.nextNodeId;
-	payload.frequency = systemInfo.frequencyConfig;
-	payload.sf = systemInfo.sfConfig;
-
-	LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
-	osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));	
-}
-void Main_SetRtcAlarmRelative(uint32_t seconds) {
-	RTC_AlarmTypeDef sAlarm = {0};
-	RTC_TimeTypeDef sTime = {0};
-	RTC_DateTypeDef sDate = {0};
-	
-	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); 
-
-	uint32_t alarmSeconds = sTime.Seconds + seconds;
-	uint32_t alarmMinutes = sTime.Minutes + (alarmSeconds / 60);
-	uint32_t alarmHours = sTime.Hours + (alarmMinutes / 60);
-
-	sAlarm.AlarmTime.Seconds = alarmSeconds % 60;
-	sAlarm.AlarmTime.Minutes = alarmMinutes % 60;
-	sAlarm.AlarmTime.Hours = alarmHours % 24;
-	sAlarm.Alarm = RTC_ALARM_A;
-
-	HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BIN);
-}
-uint8_t Main_GetNotUsedNodeId(void) 
-{
-	uint8_t nodeIdValid = 0x00;
-	
-	for (uint8_t nodeId = 0x01; nodeId <= 255; nodeId ++)
-	{
-		uint16_t wasNodeIdUsed = FALSE;
-		if (nodeId == LORA_NODE_ID_BROADCAST || nodeId == LORA_NET_ID_DEFAULT) {
-			continue;
-		}
-		for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++) 
-		{
-			if (deviceBuff[devNo].isDelete == 0x00 && deviceBuff[devNo].nodeId == nodeId) 
-			{ 
-				wasNodeIdUsed = TRUE;
-				break;
-			}
-		}
-		if (wasNodeIdUsed == FALSE) 
-		{
-			nodeIdValid = nodeId;
-			break;
-		}
-	}
+  for (uint8_t nodeId = 0x01; nodeId <= 255; nodeId++)
+  {
+    wasNodeIdUsed = FALSE;
+    if (nodeId == LORA_NODE_ID_BROADCAST || nodeId == LORA_NET_ID_DEFAULT)
+    {
+      continue;
+    }
+    for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+    {
+      if (deviceBuff[devNo].isDelete == 0x00 && deviceBuff[devNo].nodeId == nodeId)
+      {
+        wasNodeIdUsed = TRUE;
+        break;
+      }
+    }
+    if (wasNodeIdUsed == FALSE)
+    {
+      nodeIdValid = nodeId;
+      break;
+    }
+  }
   return nodeIdValid;
 }
 /* USER CODE END 4 */
@@ -1101,184 +1196,196 @@ void StartSystemTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-	
-  for(;;)
-  {
-		Link_ClockStep(Power_ReadRtcSecond());
-		/* Screen changes, redraws and LCD readback share the same widgets/SPI.
-		   Never delete a window while lcdTask is inside its render callback. */
-		osMutexAcquire(uiMutex, osWaitForever);
-		Power_Tick();
-		CDC_ProcessEcho_FS();
-		// Read the date time value
-		HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
-		HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-		systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
-        Rtc_SaveDate();
-		
-    Main_UpdateBattery();
+  uint8_t isFullDev;
+  uint8_t devIndexValid;
 
-        if (leftButton.isPressed || leftButton.isLongPressed || rightButton.isPressed ||
-            rightButton.isLongPressed || centerButton.isPressed || centerButton.isLongPressed ||
-            onButton.isPressed || onButton.isLongPressed || offButton.isPressed || offButton.isLongPressed)
-            Power_UserActivity();
-		if(leftButton.isPressed)
-		{
-			leftButton.isPressed = 0;
-			currentScreen->leftButtonClickedCallback();
-		}
-		else if(leftButton.isLongPressed)
-		{
-			leftButton.isLongPressed = 0;		
-			currentScreen->leftButtonPressedCallback();			
-		}
-		
-		if(rightButton.isPressed) 
-		{
-			rightButton.isPressed = 0;
-			currentScreen->rightButtonClickedCallback();
-		}
-		else if(rightButton.isLongPressed)
-		{
-			rightButton.isLongPressed = 0;	
-			currentScreen->rightButtonPressedCallback();			
-		}
-		if(centerButton.isPressed)
-		{
-			centerButton.isPressed = 0;
-			currentScreen->centerButtonClickedCallback();
-			
-		}
-		else if(centerButton.isLongPressed)
-		{
-			centerButton.isLongPressed = 0;		
-			currentScreen->centerButtonPressedCallback();
-		}
-		
-		if(onButton.isPressed) 
-		{
-			onButton.isPressed = 0;
-			currentScreen->bleftButtonClickedCallback();
-		}
-		else if(onButton.isLongPressed)
-		{
-			onButton.isLongPressed = 0;			
-			currentScreen->bleftButtonPressedCallback();
-		}
-		
-		if(offButton.isPressed) 
-		{
-			offButton.isPressed = 0;
-			currentScreen->brightButtonClickedCallback();
-		}
-		else if(offButton.isLongPressed)
-		{
-			offButton.isLongPressed = 0;		
-			currentScreen->brightButtonPressedCallback();
-		}	
-		
-		if (systemInfo.findDeviceStep == STEP_DONE) 
-		{
-			if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING
-				&& systemInfo.findDeviceResult == PROCESS_PASSED) 
-			{
-				pairingUI_Step = PAIRING_STATE_FOUND;
-				currentScreen = &devicePairingScreen;
-				currentScreen->init();
-			}
-			systemInfo.findDeviceStep = STEP_NONE;
-		}
-		else if (systemInfo.findDeviceStep == STEP_PROCESSING) 
-		{
-			if (xTaskGetTickCount() - systemInfo.findDeviceTick > pdMS_TO_TICKS(5000))
-			{
-				if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING)
-				{
-					pairingUI_Step = PAIRING_STATE_NOT_FOUND;
-					currentScreen = &devicePairingScreen;
-					currentScreen->init();
-				}
-				systemInfo.findDeviceStep = STEP_NONE;
-			}
-		}			
-		
-		if (systemInfo.configDeviceStep == STEP_DONE) 
-		{
-			if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING
-				&& systemInfo.configDeviceResult == PROCESS_PASSED) 
-			{
-				
-				uint8_t isFullDev = TRUE;
-				uint8_t devIndexValid;
-				for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++) 
-				{
-					if (deviceBuff[devNo].isDelete == TRUE) 
-					{ 
-						devIndexValid = devNo;
-						isFullDev = FALSE;
-						break;
-					}
-				}
-				if (isFullDev == FALSE) 
-				{
-					deviceBuff[devIndexValid].factoryInfo = systemInfo.findDevicefactoryInfo;
-					deviceBuff[devIndexValid].nodeId = systemInfo.nextNodeId;
-					deviceBuff[devIndexValid].motorData[0].isHide = FALSE;
-					deviceBuff[devIndexValid].motorData[0].isLock = FALSE;
-					deviceBuff[devIndexValid].isDelete = FALSE;
-					deviceBuff[devIndexValid].lastCommTime = systemInfo.currentTime;
-					
-					storageData.DeviceConfig[devIndexValid].factoryInfo = deviceBuff[devIndexValid].factoryInfo;
-					storageData.DeviceConfig[devIndexValid].nodeIdConfig = deviceBuff[devIndexValid].nodeId;
-					storageData.DeviceConfig[devIndexValid].isHide = deviceBuff[devIndexValid].motorData[0].isHide;
-					storageData.DeviceConfig[devIndexValid].isLock = deviceBuff[devIndexValid].motorData[0].isLock;
-					storageData.DeviceConfig[devIndexValid].isDelete = deviceBuff[devIndexValid].isDelete;
-					
-					systemInfo.isNeedSaveConfig = TRUE;
-					
-					pairingUI_Step = PAIRING_STATE_SUCCESS;
-					currentScreen = &devicePairingScreen;
-					currentScreen->init();
-				}
-				else 
-				{
-					pairingUI_Step = PAIRING_STATE_FAILED;
-					currentScreen = &devicePairingScreen;
-					currentScreen->init();
-				}		
-			}
-			systemInfo.configDeviceStep = STEP_NONE;
-		}
-		else if (systemInfo.configDeviceStep == STEP_PROCESSING) 
-		{
-			if (xTaskGetTickCount() - systemInfo.configDeviceTick > pdMS_TO_TICKS(5000))
-			{
-				if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING)
-				{
-					pairingUI_Step = PAIRING_STATE_FAILED;
-					currentScreen = &devicePairingScreen;
-					currentScreen->init();
-				}
-				systemInfo.configDeviceStep = STEP_NONE;
-			}
-		}	
-		
-		/* Connection state is owned by Link_Tick(), including sleep-aware retries. */
-		
-		if (systemInfo.isNeedSaveConfig == TRUE) 
-		{
-			storageData.lastWriteSuccess = TRUE;
-			systemInfo.isNeedSaveConfig = FALSE;
-			if (Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t*) &storageData, sizeof(SystemStorageData_t)) ||
-				memcmp((void *)CONFIG_DATA_ADDRESS, &storageData, sizeof(storageData)))
-				Main_SetBuzzerMode(BUZZER_LONG_BEEP);
-		}
-        RemoteHistory_Tick();
-        Schedule_Tick();
-        if (!powerSleep.rxPending) Link_Tick();
-        Power_TryStop();
-        osMutexRelease(uiMutex);
+  /* Infinite loop */
+  for (;;)
+  {
+    Link_ClockStep(Power_ReadRtcSecond());
+    /* Screen changes, redraws and LCD readback share the same widgets/SPI.
+       Never delete a window while lcdTask is inside its render callback. */
+    osMutexAcquire(uiMutex, osWaitForever);
+    Power_Tick();
+    CDC_ProcessEcho_FS();
+
+    /* Read the date time value. */
+    HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
+    HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
+    systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
+    Rtc_SaveDate();
+    updateBattery();
+
+    /* Buttons. */
+    if (leftButton.isPressed || leftButton.isLongPressed || rightButton.isPressed ||
+      rightButton.isLongPressed || centerButton.isPressed || centerButton.isLongPressed ||
+      onButton.isPressed || onButton.isLongPressed || offButton.isPressed || offButton.isLongPressed)
+    {
+      Power_UserActivity();
+    }
+    if (leftButton.isPressed)
+    {
+      leftButton.isPressed = 0;
+      currentScreen->leftButtonClickedCallback();
+    }
+    else if (leftButton.isLongPressed)
+    {
+      leftButton.isLongPressed = 0;
+      currentScreen->leftButtonPressedCallback();
+    }
+
+    if (rightButton.isPressed)
+    {
+      rightButton.isPressed = 0;
+      currentScreen->rightButtonClickedCallback();
+    }
+    else if (rightButton.isLongPressed)
+    {
+      rightButton.isLongPressed = 0;
+      currentScreen->rightButtonPressedCallback();
+    }
+
+    if (centerButton.isPressed)
+    {
+      centerButton.isPressed = 0;
+      currentScreen->centerButtonClickedCallback();
+    }
+    else if (centerButton.isLongPressed)
+    {
+      centerButton.isLongPressed = 0;
+      currentScreen->centerButtonPressedCallback();
+    }
+
+    if (onButton.isPressed)
+    {
+      onButton.isPressed = 0;
+      currentScreen->bleftButtonClickedCallback();
+    }
+    else if (onButton.isLongPressed)
+    {
+      onButton.isLongPressed = 0;
+      currentScreen->bleftButtonPressedCallback();
+    }
+
+    if (offButton.isPressed)
+    {
+      offButton.isPressed = 0;
+      currentScreen->brightButtonClickedCallback();
+    }
+    else if (offButton.isLongPressed)
+    {
+      offButton.isLongPressed = 0;
+      currentScreen->brightButtonPressedCallback();
+    }
+
+    /* Device search. */
+    if (systemInfo.findDeviceStep == STEP_DONE)
+    {
+      if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
+        systemInfo.findDeviceResult == PROCESS_PASSED)
+      {
+        pairingUI_Step = PAIRING_STATE_FOUND;
+        currentScreen = &devicePairingScreen;
+        currentScreen->init();
+      }
+      systemInfo.findDeviceStep = STEP_NONE;
+    }
+    else if (systemInfo.findDeviceStep == STEP_PROCESSING)
+    {
+      if (xTaskGetTickCount() - systemInfo.findDeviceTick > pdMS_TO_TICKS(5000))
+      {
+        if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING)
+        {
+          pairingUI_Step = PAIRING_STATE_NOT_FOUND;
+          currentScreen = &devicePairingScreen;
+          currentScreen->init();
+        }
+        systemInfo.findDeviceStep = STEP_NONE;
+      }
+    }
+
+    /* Device connection. */
+    if (systemInfo.configDeviceStep == STEP_DONE)
+    {
+      if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING &&
+        systemInfo.configDeviceResult == PROCESS_PASSED)
+      {
+        isFullDev = TRUE;
+        for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+        {
+          if (deviceBuff[devNo].isDelete == TRUE)
+          {
+            devIndexValid = devNo;
+            isFullDev = FALSE;
+            break;
+          }
+        }
+        if (isFullDev == FALSE)
+        {
+          deviceBuff[devIndexValid].factoryInfo = systemInfo.findDevicefactoryInfo;
+          deviceBuff[devIndexValid].nodeId = systemInfo.nextNodeId;
+          deviceBuff[devIndexValid].motorData[0].isHide = FALSE;
+          deviceBuff[devIndexValid].motorData[0].isLock = FALSE;
+          deviceBuff[devIndexValid].isDelete = FALSE;
+          deviceBuff[devIndexValid].lastCommTime = systemInfo.currentTime;
+
+          storageData.DeviceConfig[devIndexValid].factoryInfo = deviceBuff[devIndexValid].factoryInfo;
+          storageData.DeviceConfig[devIndexValid].nodeIdConfig = deviceBuff[devIndexValid].nodeId;
+          storageData.DeviceConfig[devIndexValid].isHide = deviceBuff[devIndexValid].motorData[0].isHide;
+          storageData.DeviceConfig[devIndexValid].isLock = deviceBuff[devIndexValid].motorData[0].isLock;
+          storageData.DeviceConfig[devIndexValid].isDelete = deviceBuff[devIndexValid].isDelete;
+
+          systemInfo.isNeedSaveConfig = TRUE;
+
+          pairingUI_Step = PAIRING_STATE_SUCCESS;
+          currentScreen = &devicePairingScreen;
+          currentScreen->init();
+        }
+        else
+        {
+          pairingUI_Step = PAIRING_STATE_FAILED;
+          currentScreen = &devicePairingScreen;
+          currentScreen->init();
+        }
+      }
+      systemInfo.configDeviceStep = STEP_NONE;
+    }
+    else if (systemInfo.configDeviceStep == STEP_PROCESSING)
+    {
+      if (xTaskGetTickCount() - systemInfo.configDeviceTick > pdMS_TO_TICKS(5000))
+      {
+        if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING)
+        {
+          pairingUI_Step = PAIRING_STATE_FAILED;
+          currentScreen = &devicePairingScreen;
+          currentScreen->init();
+        }
+        systemInfo.configDeviceStep = STEP_NONE;
+      }
+    }
+
+    /* Connection state is owned by Link_Tick(), including sleep-aware retries. */
+
+    /* Persist configuration. */
+    if (systemInfo.isNeedSaveConfig == TRUE)
+    {
+      storageData.lastWriteSuccess = TRUE;
+      systemInfo.isNeedSaveConfig = FALSE;
+      if (Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t *)&storageData, sizeof(SystemStorageData_t)) ||
+        memcmp((void *)CONFIG_DATA_ADDRESS, &storageData, sizeof(storageData)))
+      {
+        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+      }
+    }
+
+    RemoteHistory_Tick();
+    Schedule_Tick();
+    if (!powerSleep.rxPending)
+    {
+      Link_Tick();
+    }
+    Power_TryStop();
+    osMutexRelease(uiMutex);
     osDelay(pdMS_TO_TICKS(100));
   }
   /* USER CODE END 5 */
@@ -1295,17 +1402,17 @@ void StartSensorTask(void *argument)
 {
   /* USER CODE BEGIN StartSensorTask */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-		Button_UpdateState(&rightButton);
-		Button_UpdateState(&centerButton);
-		Button_UpdateState(&leftButton);
-		Button_UpdateState(&onButton);
-		Button_UpdateState(&offButton);
-		
-			//Read batery voltage
-		systemInfo.isChanging = HAL_GPIO_ReadPin(BAT_CHARGING_GPIO_Port, BAT_CHARGING_Pin) == GPIO_PIN_RESET ? 1 : 0;
-		systemInfo.isFullBattery = HAL_GPIO_ReadPin(BAT_STDBY_GPIO_Port, BAT_STDBY_Pin) == GPIO_PIN_RESET ? 1 : 0;
+    Button_UpdateState(&rightButton);
+    Button_UpdateState(&centerButton);
+    Button_UpdateState(&leftButton);
+    Button_UpdateState(&onButton);
+    Button_UpdateState(&offButton);
+
+    /* Read battery charger status. */
+    systemInfo.isChanging = HAL_GPIO_ReadPin(BAT_CHARGING_GPIO_Port, BAT_CHARGING_Pin) == GPIO_PIN_RESET ? 1 : 0;
+    systemInfo.isFullBattery = HAL_GPIO_ReadPin(BAT_STDBY_GPIO_Port, BAT_STDBY_Pin) == GPIO_PIN_RESET ? 1 : 0;
     osDelay(1);
   }
   /* USER CODE END StartSensorTask */
@@ -1322,13 +1429,20 @@ void StartLcdTask(void *argument)
 {
   /* USER CODE BEGIN StartLcdTask */
   /* Infinite loop */
-  for(;;)
-  {	
-		osMutexAcquire(uiMutex, osWaitForever);
-		if (systemInfo.runMode != SYS_MODE_SLEEP) currentScreen->render();
-		if (LCD_Recover()) UG_WindowShow(&window_1); /* Redraw existing widgets on next tick. */
-		LCD_ProcessProbe();
-		osMutexRelease(uiMutex);
+  for (;;)
+  {
+    osMutexAcquire(uiMutex, osWaitForever);
+    if (systemInfo.runMode != SYS_MODE_SLEEP)
+    {
+      currentScreen->render();
+    }
+    if (LCD_Recover())
+    {
+      /* Redraw existing widgets on next tick. */
+      UG_WindowShow(&window_1);
+    }
+    LCD_ProcessProbe();
+    osMutexRelease(uiMutex);
     osDelay(200);
   }
   /* USER CODE END StartLcdTask */
@@ -1344,62 +1458,63 @@ void StartLcdTask(void *argument)
 void StartBuzzerTask(void *argument)
 {
   /* USER CODE BEGIN StartBuzzerTask */
-	TIM_HandleTypeDef *buzzerTimer = &htim3;
-	const uint32_t BUZZER_TIMER_CHANNEL = TIM_CHANNEL_3;
-	const float MAX_CC_VALUE = 183.0f;
-	
-	BuzzerMode_t mode;
+  TIM_HandleTypeDef *buzzerTimer = &htim3;
+  const uint32_t BUZZER_TIMER_CHANNEL = TIM_CHANNEL_3;
+  const float MAX_CC_VALUE = 183.0f;
+  BuzzerMode_t mode;
+
   /* Infinite loop */
-	for(;;)
-	{
-		if (osMessageQueueGet(buzzerQueueHandle, &mode, NULL, osWaitForever) == osOK) 
-		{
-			switch(mode) {
-				case BUZZER_OFF: 
-					HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					break;
-				case BUZZER_SHORT_BEEP:
-					__HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
-					HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					osDelay(100);
-					HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					break;
-				case BUZZER_2_SHORT_BEEP:
-					__HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
-					for (int i = 0; i < 2; i++) 
-					{
-						HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
-						osDelay(100);
-						HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
-						osDelay(100);
-					}
-					break;
-				case BUZZER_3_SHORT_BEEP:
-					__HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
-					for(int i = 0; i < 3; i++) 
-					{
-						HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
-						osDelay(100);
-						HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
-						osDelay(100);
-					}
-					break;
-				case BUZZER_LONG_BEEP:
-					__HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.8f);
-					HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					osDelay(300);
-					HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					break;
-				case BUZZER_ALARM_LONG:
-					__HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 1.0f);
-					HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
-					break;
-				default:
-					break;
-			}
-		}
-		osDelay(100);
-	}
+  for (;;)
+  {
+    if (osMessageQueueGet(buzzerQueueHandle, &mode, NULL, osWaitForever) == osOK)
+    {
+      switch (mode)
+      {
+        case BUZZER_OFF:
+          HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          break;
+        case BUZZER_SHORT_BEEP:
+          __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
+          HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          osDelay(100);
+          HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          break;
+        case BUZZER_2_SHORT_BEEP:
+          __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
+          for (int i = 0; i < 2; i++)
+          {
+            HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
+            osDelay(100);
+            HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
+            osDelay(100);
+          }
+          break;
+        case BUZZER_3_SHORT_BEEP:
+          __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
+          for (int i = 0; i < 3; i++)
+          {
+            HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
+            osDelay(100);
+            HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
+            osDelay(100);
+          }
+          break;
+        case BUZZER_LONG_BEEP:
+          __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.8f);
+          HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          osDelay(300);
+          HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          break;
+        case BUZZER_ALARM_LONG:
+          __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 1.0f);
+          HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
+          break;
+        default:
+          break;
+      }
+    }
+    osDelay(100);
+  }
   /* USER CODE END StartBuzzerTask */
 }
 
@@ -1413,26 +1528,32 @@ void StartBuzzerTask(void *argument)
 void StartLoraSendTask(void *argument)
 {
   /* USER CODE BEGIN StartLoraSendTask */
-	osStatus_t queueStatus;
-	LoraPackage_t txPackage;
-	
-	/* Link supervisor is the sole source of automatic GET_STATUS requests. */
+  osStatus_t queueStatus;
+  LoraPackage_t txPackage;
+  uint8_t sent;
+
+  /* Link supervisor is the sole source of automatic GET_STATUS requests. */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-		queueStatus = osMessageQueueGet(txMsgQueueHandle, &txPackage, NULL, osWaitForever); 
-		if (queueStatus == osOK) {
-			if (!Link_ShouldTransmit(&txPackage) || !Schedule_ShouldTransmit(&txPackage)) continue;
-			osMutexAcquire(radioMutex, osWaitForever);
-			powerSleep.txBusy = 1;
-			uint8_t sent = LoRa_transmit(&sLoRaCtrl, txPackage.rawData, txPackage.byteCount, 5000);
-			LoRa_startReceiving(&sLoRaCtrl);
-			powerSleep.txBusy = 0;
-			osMutexRelease(radioMutex);
-			Link_TxFinished(&txPackage, sent);
-			Schedule_TxFinished(&txPackage, sent);
-			osDelay(pdMS_TO_TICKS(200));
-		}
+    queueStatus = osMessageQueueGet(txMsgQueueHandle, &txPackage, NULL, osWaitForever);
+    if (queueStatus == osOK)
+    {
+      if (!Link_ShouldTransmit(&txPackage) || !Schedule_ShouldTransmit(&txPackage))
+      {
+        continue;
+      }
+      osMutexAcquire(radioMutex, osWaitForever);
+      powerSleep.txBusy = 1;
+      sent = LoRa_transmit(&sLoRaCtrl, txPackage.rawData, txPackage.byteCount, 5000);
+      LoRa_startReceiving(&sLoRaCtrl);
+      powerSleep.txBusy = 0;
+      osMutexRelease(radioMutex);
+
+      Link_TxFinished(&txPackage, sent);
+      Schedule_TxFinished(&txPackage, sent);
+      osDelay(pdMS_TO_TICKS(200));
+    }
   }
   /* USER CODE END StartLoraSendTask */
 }
@@ -1447,19 +1568,21 @@ void StartLoraSendTask(void *argument)
 void StartLoraReceiveTask(void *argument)
 {
   /* USER CODE BEGIN StartLoraReceiveTask */
-	uint32_t ulNotificationValue;
+  uint32_t notificationValue;
+  uint8_t rxLength;
+
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-		ulNotificationValue = powerSleep.rxPending ? 1 : ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
-		if (ulNotificationValue > 0)
-		{
-			osMutexAcquire(radioMutex, osWaitForever);
-			uint8_t rxLength = LoRa_receive(&sLoRaCtrl, rxBuffer, 128);
-			Comm_ProcessRxData(rxBuffer, rxLength);
-			Power_RxProcessed();
-			osMutexRelease(radioMutex);
-		}
+    notificationValue = powerSleep.rxPending ? 1 : ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
+    if (notificationValue > 0)
+    {
+      osMutexAcquire(radioMutex, osWaitForever);
+      rxLength = LoRa_receive(&sLoRaCtrl, rxBuffer, 128);
+      Comm_ProcessRxData(rxBuffer, rxLength);
+      Power_RxProcessed();
+      osMutexRelease(radioMutex);
+    }
   }
   /* USER CODE END StartLoraReceiveTask */
 }
@@ -1468,7 +1591,7 @@ void StartLoraReceiveTask(void *argument)
 void GetDevStatusTimerCallback(void *argument)
 {
   /* USER CODE BEGIN GetDevStatusTimerCallback */
-	Link_RequestScan();
+  Link_RequestScan();
   /* USER CODE END GetDevStatusTimerCallback */
 }
 
