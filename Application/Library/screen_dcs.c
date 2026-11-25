@@ -187,9 +187,10 @@ static void init(void)
 
     /* Title, RSSI and the three phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
-    module = device.motorData[systemInfo.currentModuleId];
+    module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, module.moduleIndex + 1, ScrnCommon_MotorName(device.deviceIndex, module.moduleIndex));
+        device.deviceIndex + 1, systemInfo.currentModuleId + 1,
+        ScrnCommon_MotorName(device.deviceIndex, systemInfo.currentModuleId));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -237,9 +238,10 @@ static void render(void)
 
     /* Title (or lock notice) and phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
-    module = device.motorData[systemInfo.currentModuleId];
+    module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, module.moduleIndex + 1, ScrnCommon_MotorName(device.deviceIndex, module.moduleIndex));
+        device.deviceIndex + 1, systemInfo.currentModuleId + 1,
+        ScrnCommon_MotorName(device.deviceIndex, systemInfo.currentModuleId));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);

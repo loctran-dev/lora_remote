@@ -24,7 +24,7 @@ class TimerUiTests(h.FirmwareHarness):
         super().setUp()
         self.add(0)
         self.select(0)
-        self.module = self.dev(0, h.DEV_MODULE)
+        self.module = self.state_of(0)
         self.texts, self.backgrounds, self.rectangles = {}, {}, {}
         self.visible = {8: True}
         self.sent = []

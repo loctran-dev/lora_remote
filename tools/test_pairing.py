@@ -228,6 +228,14 @@ class PairingTests(h.FirmwareHarness):
         self.assertEqual(self.call("Link_GetAutoStatus", 0) & 0xFFFF, 2)
         self.assertEqual(self.call("Link_GetAutoStatus", 3) & 0xFFFF, 0)
 
+    def test_pairing_clears_runtime_state_left_in_reused_pool_slots(self):
+        # motorBuff[i] follows MotorConfig[i]; a freed slot still holds the old motor's state.
+        self.cpu.mem_write(self.state_of(0), b"\x01" * h.MODULE_STRIDE)
+        self.found(SERIAL_B, 2)
+        self.assertEqual(self.call("main.o:storePairedDevice") & 0xFF, 0)
+        self.assertEqual(self.motors(0), {0: 0})
+        self.assertEqual(bytes(self.cpu.mem_read(self.state_of(0), h.MODULE_STRIDE)), bytes(h.MODULE_STRIDE))
+
     def test_device_buffer_holds_runtime_state_only(self):
         self.assertEqual(h.symbol("deviceBuff")[1], 20 * DEVICE_STRIDE)
 

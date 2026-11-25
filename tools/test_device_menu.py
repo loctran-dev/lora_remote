@@ -20,7 +20,7 @@ class DeviceMenuTests(MenuHarness):
         numeric = self.call("_get_lc_numeric", 0, 0)
         self.cpu.mem_write(locale + 12, struct.pack("<I", numeric))
         self.call("Link_SetAutoStatus", 0, 2)
-        self.module = self.dev(0, harness.DEV_MODULE)
+        self.module = self.state_of(0)
         self.cpu.mem_write(self.mot(0, harness.MOT_NAME), b"ABCDEFGHIJKLMNOPQRS\0")
         self.cpu.mem_write(self.mot(0, harness.MOT_THRESHOLD), struct.pack("<fI", 12.34, 30))
         self.put(self.mot(0, harness.MOT_LOCK), 1)

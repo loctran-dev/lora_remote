@@ -139,6 +139,7 @@ Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};    
 Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};    ///< OFF (PC7), wakes from STOP.
 SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
 DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
+MotorData_t motorBuff[MAXIMUM_MOTOR];    ///< Motor runtime state, indexed like storageData.MotorConfig.
 LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
 uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
 uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
@@ -281,10 +282,6 @@ int main(void)
   {
     storageData.DeviceConfig[devNo].factoryInfo.deviceTypeChar =
       deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.deviceType);
-    for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
-    {
-      deviceBuff[devNo].motorData[module].moduleIndex = module;
-    }
     deviceBuff[devNo].deviceIndex = devNo;
   }
 
@@ -1038,6 +1035,19 @@ void Main_ScanNewDevice(void)
 }
 
 /**
+ * @brief  Runtime state of a motor (status, currents, timer, alarm).
+ * @param  device  Index in deviceBuff.
+ * @param  module  Module index on that device.
+ * @return Its motorBuff entry, or NULL if the motor has no MotorConfig slot.
+ */
+MotorData_t *Main_MotorState(uint8_t device, uint8_t module)
+{
+  int8_t slot = Config_MotorSlot(device, module);
+
+  return slot < 0 ? NULL : &motorBuff[slot];
+}
+
+/**
  * @brief  Leave pairing: put the radio back on the stored network and drop pending pairing steps.
  *
  * Main_ScanNewDevice() moves the radio to the default network; without this
@@ -1282,6 +1292,15 @@ static int8_t storePairedDevice(void)
   memset(&deviceBuff[slot], 0, sizeof(deviceBuff[slot]));
   deviceBuff[slot].deviceIndex = slot;
   deviceBuff[slot].lastCommTime = systemInfo.currentTime;
+  for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
+  {
+    MotorData_t *motor = Main_MotorState(slot, module);
+
+    if (motor)
+    {
+      memset(motor, 0, sizeof(*motor)); /* the pool slot may have held another motor */
+    }
+  }
 
   memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
   storageData.DeviceConfig[slot].factoryInfo = systemInfo.findDevicefactoryInfo;

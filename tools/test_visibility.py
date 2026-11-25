@@ -35,11 +35,11 @@ def symbol(name):
     return int(match[1], 16), int(match[2])
 
 
-# DeviceInfo_t (runtime state only) and its first MotorData_t.
-DEVICE_STRIDE = 192       # sizeof(DeviceInfo_t)
+# DeviceInfo_t: runtime state of a device.
+DEVICE_STRIDE = 24        # sizeof(DeviceInfo_t)
 DEV_CONNECTION_ERROR = 20
 DEV_RSSI = 8
-DEV_MODULE = 24           # motorData[0]
+# MotorData_t: runtime state of a motor, motorBuff[i] belongs to MotorConfig[i].
 MODULE_STRIDE = 28        # sizeof(MotorData_t)
 # DeviceStorageData_t (packed), storageData.DeviceConfig[] at storage + 15: device identity.
 CFG_BASE, CFG_STRIDE = 15, 10
@@ -57,7 +57,7 @@ class FirmwareHarness(unittest.TestCase):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
         # autoStatusSeconds also sits at offset 5 of PayloadRequestSetConfig_t.
         for field, offsets in {"isHide": {MOT_HIDE}, "isLock": {MOT_LOCK},
-                               "isDelete": {CFG_DELETE}, "motorData": {DEV_MODULE},
+                               "isDelete": {CFG_DELETE},
                                "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, AUTO_STATUS},
                                "isConnectionError": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "currentDeviceId": {60}, "currentModuleId": {61},
@@ -67,6 +67,8 @@ class FirmwareHarness(unittest.TestCase):
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
         cls.device, size = symbol("deviceBuff")
         assert size == 20 * DEVICE_STRIDE
+        cls.motor_state, size = symbol("motorBuff")
+        assert size == MOTOR_SLOTS * MODULE_STRIDE
         cls.system = symbol("systemInfo")[0]
         cls.storage = symbol("storageData")[0]
         cls.fields = {}
@@ -101,6 +103,10 @@ class FirmwareHarness(unittest.TestCase):
     def mot(self, slot, offset=0):
         """Address in storageData.MotorConfig[slot]; add(i) gives device i's module 0 slot i."""
         return self.storage + MOTOR_BASE + slot * MOTOR_STRIDE + offset
+
+    def state_of(self, slot, offset=0):
+        """Address in motorBuff[slot], the runtime state of the motor in MotorConfig[slot]."""
+        return self.motor_state + slot * MODULE_STRIDE + offset
 
     def add(self, index, hidden=False):
         """Pair device index with one motor, held in motor slot index."""

@@ -38,6 +38,7 @@ uint32_t Config_Save(void);
 /* Motor settings pool */
 
 MotorStorageData_t *Config_Motor(uint8_t device, uint8_t module);
+int8_t Config_MotorSlot(uint8_t device, uint8_t module);
 uint8_t Config_ModuleCount(uint8_t numberOfModule);
 uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count);
 uint8_t Config_AllocateMotors(uint8_t device, uint8_t count);

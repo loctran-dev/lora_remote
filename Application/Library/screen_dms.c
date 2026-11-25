@@ -105,7 +105,7 @@ static void render(void)
     /* Title and identity. */
     device = &deviceBuff[id];
     module = systemInfo.currentModuleId;
-    if (module >= sizeof(device->motorData) / sizeof(device->motorData[0]))
+    if (module >= MAXIMUM_MODULE)
     {
         module = 0;
     }

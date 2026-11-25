@@ -122,14 +122,27 @@ uint32_t Config_Save(void)
  */
 MotorStorageData_t *Config_Motor(uint8_t device, uint8_t module)
 {
-    for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
+    int8_t slot = Config_MotorSlot(device, module);
+
+    return slot < 0 ? NULL : &storageData.MotorConfig[slot];
+}
+
+/**
+ * @brief  Pool index of a motor; motorBuff uses the same index for its runtime state.
+ * @param  device  Index in DeviceConfig.
+ * @param  module  Module index on that device.
+ * @return 0 .. MAXIMUM_MOTOR-1, or -1 if the motor has no slot.
+ */
+int8_t Config_MotorSlot(uint8_t device, uint8_t module)
+{
+    for (int8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
         if (storageData.MotorConfig[slot].device == device && storageData.MotorConfig[slot].module == module)
         {
-            return &storageData.MotorConfig[slot];
+            return slot;
         }
     }
-    return NULL;
+    return -1;
 }
 
 /**

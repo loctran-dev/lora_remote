@@ -496,7 +496,7 @@ void CDC_ProcessEcho_FS(void)
     if (!responsePrepared && !probePending && echoLength == 6 &&
         memcmp(UserRxBufferFS, "TIMER\n", 6) == 0)
     {
-      MotorData_t *motor = &deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId];
+      const MotorData_t *motor = ScrnCommon_CurrentMotorState();
       Schedule_RequestState_t scheduleState;
       Schedule_GetRequestState(&scheduleState);
       echoLength = snprintf((char*)UserRxBufferFS, APP_RX_DATA_SIZE,

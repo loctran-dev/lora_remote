@@ -129,15 +129,20 @@ static void handleGetStatus(LoraPackage_t fwPackage)
     {
         if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
+            MotorData_t *motor = Main_MotorState(devNo, 0);
+
             Link_RecordPacket(devNo, 1);
             Link_RecordStatusReply(devNo, fwPackage.transactionID);
-            deviceBuff[devNo].motorData[0].pwrState = (Motor_PowerState_e)payloadResponse.powerState;
             deviceBuff[devNo].localTime = payloadResponse.localTime;
-            deviceBuff[devNo].motorData[0].scheduleTime = payloadResponse.scheduleTime;
             Schedule_HandleStatus(&fwPackage, &payloadResponse);
-            deviceBuff[devNo].motorData[0].phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
-            deviceBuff[devNo].motorData[0].phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
-            deviceBuff[devNo].motorData[0].phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
+            if (motor)
+            {
+                motor->pwrState = (Motor_PowerState_e)payloadResponse.powerState;
+                motor->scheduleTime = payloadResponse.scheduleTime;
+                motor->phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
+                motor->phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
+                motor->phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
+            }
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
             deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
@@ -204,9 +209,9 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
         if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             /* ACK confirms this exact deadline; STATUS remains authoritative afterwards. */
-            if (accepted && payloadResponse.moduleIndex < sizeof(deviceBuff[devNo].motorData) / sizeof(deviceBuff[devNo].motorData[0]))
+            if (accepted && Main_MotorState(devNo, payloadResponse.moduleIndex))
             {
-                deviceBuff[devNo].motorData[payloadResponse.moduleIndex].scheduleTime = deadline;
+                Main_MotorState(devNo, payloadResponse.moduleIndex)->scheduleTime = deadline;
             }
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -335,10 +340,15 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
     {
         if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
-            deviceBuff[devNo].motorData[0].isAlarmOccurred = TRUE;
+            MotorData_t *motor = Main_MotorState(devNo, 0);
+
             Power_WakeForError();
-            deviceBuff[devNo].motorData[0].alarm = (Alarm_Name_e)payloadRequest.alarmCode;
-            deviceBuff[devNo].motorData[0].alarmTime = payloadRequest.alarmTime;
+            if (motor)
+            {
+                motor->isAlarmOccurred = TRUE;
+                motor->alarm = (Alarm_Name_e)payloadRequest.alarmCode;
+                motor->alarmTime = payloadRequest.alarmTime;
+            }
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
             deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);

@@ -68,18 +68,20 @@ class RtcSettingTests(h.FirmwareHarness):
         self.assertEqual(self.writes,[])
     def test_rejects_active_timer_on_any_supported_module(self):
         self.add(0)
-        # motorData[5] of device 0; scheduleTime offset 24, power state offset 8.
-        base=self.dev(0, h.DEV_MODULE+h.MODULE_STRIDE*5)
+        # Module 5 of device 0 in pool slot 39; scheduleTime offset 24, power state offset 8.
+        self.put(self.mot(39, h.MOT_DEVICE), 0)
+        self.put(self.mot(39, h.MOT_MODULE), 5)
+        base=self.state_of(39)
         self.put(base+8,1)
         self.cpu.mem_write(base+24,struct.pack("<I",1000))
         self.assertEqual(self.call("Rtc_Set",self.stamp),2)
         self.assertEqual(self.writes,[])
     def test_motor_on_without_timer_is_not_changed_or_commanded(self):
         self.add(0)
-        self.put(self.dev(0, h.DEV_MODULE)+8,1)
-        before=bytes(self.cpu.mem_read(self.device,h.DEVICE_STRIDE*20))
+        self.put(self.state_of(0)+8,1)
+        before=bytes(self.cpu.mem_read(self.state_of(0),h.MODULE_STRIDE*h.MOTOR_SLOTS))
         self.assertEqual(self.call("Rtc_Set",self.stamp),0)
-        self.assertEqual(bytes(self.cpu.mem_read(self.device,h.DEVICE_STRIDE*20)),before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.state_of(0),h.MODULE_STRIDE*h.MOTOR_SLOTS)),before)
         self.assertEqual(self.txs,[])
     def test_midnight_calendar_update_is_saved_for_next_boot(self):
         self.call("Rtc_Set",self.stamp)

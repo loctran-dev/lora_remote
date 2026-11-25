@@ -107,11 +107,14 @@ typedef struct
     uint8_t numberOfModule; ///< Motor modules on the device.
 } FactoryInfo_t;
 
-/** @brief Runtime state of one motor module; its settings are in storageData.DeviceConfig. */
+/**
+ * @brief Runtime state of one motor, an entry of motorBuff.
+ *
+ * motorBuff[i] belongs to the motor that owns storageData.MotorConfig[i]
+ * (device, module); find it with Main_MotorState().
+ */
 typedef struct
 {
-    uint8_t moduleIndex; ///< Module index on the device.
-
     uint8_t isAlarmOccurred; ///< An alarm was reported.
     Alarm_Name_e alarm;      ///< Last alarm code.
     uint32_t alarmTime;      ///< Device Unix time of the last alarm.
@@ -124,8 +127,8 @@ typedef struct
 /**
  * @brief Runtime state of one device slot.
  *
- * Identity and settings (node id, factory info, name, alarm, lock, hide,
- * deleted) live only in storageData.DeviceConfig[] at the same index.
+ * Identity lives in storageData.DeviceConfig[] at the same index; each motor
+ * has its settings in storageData.MotorConfig and its state in motorBuff.
  */
 typedef struct
 {
@@ -136,8 +139,6 @@ typedef struct
     uint32_t lastCommTick;     ///< RTOS tick of the last packet [ms].
     uint32_t lastCommTime;     ///< Remote Unix time of the last packet.
     uint8_t isConnectionError; ///< Set by the link monitor when probes fail.
-
-    MotorData_t motorData[MAXIMUM_MODULE]; ///< Motor modules; only module 0 is used.
 } DeviceInfo_t;
 
 /** @brief Runtime state of the remote. */

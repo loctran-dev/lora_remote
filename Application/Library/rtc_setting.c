@@ -11,7 +11,7 @@
 
 extern RTC_HandleTypeDef hrtc;
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern MotorData_t motorBuff[MAXIMUM_MOTOR];
 
 /* F1 HAL keeps its calendar in RAM. Preserve it in free BKP DR2..DR4;
    DR1 is the existing RTC-init marker, DR10 belongs to the bootloader. */
@@ -131,15 +131,13 @@ uint8_t Rtc_Set(uint32_t timestamp)
     {
         return eRtc_SetResult_Busy;
     }
-    for (uint8_t i = 0; i < MAXIMUM_DEVICE; i++)
+    /* Every allocated pool slot belongs to a paired motor; its state shares the index. */
+    for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        for (uint8_t module = 0; module < sizeof(deviceBuff[i].motorData) / sizeof(deviceBuff[i].motorData[0]); module++)
+        if (storageData.MotorConfig[slot].device != MOTOR_SLOT_FREE &&
+            motorBuff[slot].pwrState == eMotor_PowerState_On && motorBuff[slot].scheduleTime)
         {
-            if (!storageData.DeviceConfig[i].isDelete && deviceBuff[i].motorData[module].pwrState == eMotor_PowerState_On &&
-                deviceBuff[i].motorData[module].scheduleTime)
-            {
-                return eRtc_SetResult_Busy;
-            }
+            return eRtc_SetResult_Busy;
         }
     }
 

@@ -158,6 +158,24 @@ MotorStorageData_t *ScrnCommon_CurrentMotor(void)
 }
 
 /**
+ * @brief  Runtime state of the selected motor (systemInfo.currentDeviceId/currentModuleId).
+ * @return Its motorBuff entry, or a blank placeholder if the motor has no slot,
+ *         so screens never dereference NULL; writes to the placeholder are discarded.
+ */
+MotorData_t *ScrnCommon_CurrentMotorState(void)
+{
+    static MotorData_t noMotor;
+    MotorData_t *motor = Main_MotorState(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+
+    if (motor)
+    {
+        return motor;
+    }
+    memset(&noMotor, 0, sizeof(noMotor));
+    return &noMotor;
+}
+
+/**
  * @brief  Display name of a motor.
  * @return Its stored name, or "Default" if it has no MotorConfig slot.
  */

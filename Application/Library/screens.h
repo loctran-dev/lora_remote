@@ -122,6 +122,7 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction);
 /* screens.c: settings persistence */
 
 MotorStorageData_t *ScrnCommon_CurrentMotor(void);
+MotorData_t *ScrnCommon_CurrentMotorState(void);
 const char *ScrnCommon_MotorName(uint8_t device, uint8_t module);
 void ScrnCommon_SaveDeviceSettings(void);
 void ScrnCommon_SaveGeneralSettings(void);

@@ -70,6 +70,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time);
 void Main_ScanNewDevice(void);
 uint8_t Main_ConnectToDevice(void);
 void Main_RestoreRadio(void);
+MotorData_t *Main_MotorState(uint8_t device, uint8_t module);
 void Main_SetRtcAlarmRelative(uint32_t seconds);
 /* USER CODE END EFP */
 
