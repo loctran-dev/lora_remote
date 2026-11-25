@@ -83,6 +83,9 @@ extern uint8_t indexOfGeneralSettingMenu;
 extern uint8_t pairingUI_Step;
 extern uint8_t historyScreenMode;
 
+/* screens.c: screen switching */
+void ScrnCommon_Switch(Screen_t *next);
+
 /* screens.c: device visibility and selection */
 uint8_t ScrnCommon_DeviceVisible(uint8_t deviceId);
 uint8_t ScrnCommon_EnsureVisibleDevice(void);
@@ -116,7 +119,6 @@ void ScrnCommon_EditCharactersCreate(uint8_t count);
 void ScrnCommon_EditCharactersUpdate(uint8_t position);
 
 /* Implemented by individual screens (screen_*.c). */
-void ScrnDvm_OpenDeviceManager(void);
 uint8_t ScrnDvm_SelectedDevice(void);
 void ScrnDcs_ShowMotorLocked(uint8_t motorPower);
 void ScrnDcs_ShowConnectionError(uint8_t deviceId);

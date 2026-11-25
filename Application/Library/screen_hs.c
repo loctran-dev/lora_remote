@@ -97,11 +97,7 @@ void ScrnHs_OpenHistory(void)
     historyScreenMode = MODE_PICKER;
     openedFromInfo = 0;
 
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &historyScreen;
-    init();
-    render();
+    ScrnCommon_Switch(&historyScreen);
 }
 
 /* Open the record list of one device directly, skipping the device picker. */
@@ -116,11 +112,7 @@ uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
     historyScreenMode = MODE_LIST;
     openedFromInfo = 1;
 
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &historyScreen;
-    init();
-    render();
+    ScrnCommon_Switch(&historyScreen);
     return 1;
 }
 
@@ -240,11 +232,7 @@ static void rightPressed(void)
     if (openedFromInfo && historyScreenMode == MODE_LIST)
     {
         openedFromInfo = 0;
-        UG_WindowHide(&window_1);
-        UG_WindowDelete(&window_1);
-        currentScreen = &deviceControlScreen;
-        currentScreen->init();
-        currentScreen->render();
+        ScrnCommon_Switch(&deviceControlScreen);
         return;
     }
     if (historyScreenMode)
@@ -254,11 +242,7 @@ static void rightPressed(void)
     }
     else
     {
-        UG_WindowHide(&window_1);
-        UG_WindowDelete(&window_1);
-        currentScreen = &mainMenuScreen;
-        currentScreen->init();
-        currentScreen->render();
+        ScrnCommon_Switch(&mainMenuScreen);
     }
 }
 

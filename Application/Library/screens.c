@@ -59,6 +59,18 @@ static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye
     char *text, UG_COLOR background);
 static void createSettingsMenu(char *title, uint8_t stacked);
 static void saveRadioSettings(void);
+/* Screen switching ======================================================== */
+
+/* Close the current window and open the next screen. */
+void ScrnCommon_Switch(Screen_t *next)
+{
+    UG_WindowHide(&window_1);
+    UG_WindowDelete(&window_1);
+    currentScreen = next;
+    currentScreen->init();
+    currentScreen->render();
+}
+
 /* Device visibility and selection ========================================== */
 
 /* Hide is device-level in the current single-module storage layout. */

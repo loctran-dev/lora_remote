@@ -69,7 +69,6 @@ static void adjustScheduleDigit(uint8_t increase);
 static void returnFromTimer(void);
 static void formatRemaining(uint32_t seconds, char *text);
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module);
-static void openScreen(Screen_t *screen);
 
 /* LEFT/RIGHT: previous/next device (timer: up/down or +/-), CENTER: timer.
    Hold LEFT: monitor, RIGHT: settings, CENTER: menu; hold bottom buttons: motor ON/OFF. */
@@ -355,7 +354,7 @@ static void centerClicked(void)
 
     if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
-        ScrnDvm_OpenDeviceManager();
+        ScrnCommon_Switch(&deviceManagerScreen);
         return;
     }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
@@ -397,7 +396,7 @@ static void leftPressed(void)
         return;
     }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    openScreen(&deviceMonitorScreen);
+    ScrnCommon_Switch(&deviceMonitorScreen);
 }
 
 /* Leave the timer, or open the device settings. */
@@ -411,16 +410,12 @@ static void rightPressed(void)
     }
     if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
-        ScrnDvm_OpenDeviceManager();
+        ScrnCommon_Switch(&deviceManagerScreen);
         return;
     }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &deviceSettingScreen;
     ScrnDss_ResetSelection();
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&deviceSettingScreen);
 }
 
 /* Main menu; in the timer: back from presets, or apply the custom time. */
@@ -429,7 +424,7 @@ static void centerPressed(void)
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (!inScheduleSelection)
     {
-        openScreen(&mainMenuScreen);
+        ScrnCommon_Switch(&mainMenuScreen);
     }
     else if (!adjustingScheduleValue)
     {
@@ -755,13 +750,9 @@ static void adjustScheduleDigit(uint8_t increase)
 
 static void returnFromTimer(void)
 {
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
     inScheduleSelection = adjustingScheduleValue = 0;
     timerZeroError = 0;
-    currentScreen = &deviceControlScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&deviceControlScreen);
 }
 
 static void formatRemaining(uint32_t seconds, char *text)
@@ -822,13 +813,4 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
     {
         UG_TextboxShow(&window_1, TXB_ID_8);
     }
-}
-
-static void openScreen(Screen_t *screen)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = screen;
-    currentScreen->init();
-    currentScreen->render();
 }

@@ -246,18 +246,10 @@ static void createDeviceInfo(uint8_t withLoraId)
 static void restart(uint8_t step)
 {
     pairingUI_Step = step;
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &devicePairingScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&devicePairingScreen);
 }
 
 static void openMainMenu(void)
 {
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &mainMenuScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&mainMenuScreen);
 }

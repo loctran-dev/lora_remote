@@ -55,7 +55,6 @@ static char previousNameCharacter(char c);
 static void stepNameCharacter(uint8_t up);
 static void selectYesNo(uint8_t index);
 static void applySelection(void);
-static void leaveTo(Screen_t *screen);
 
 /* LEFT/RIGHT: inc/dec (or Yes/No), CENTER: next digit (or select).
    Hold CENTER: save, hold RIGHT: cancel. */
@@ -257,13 +256,13 @@ static void centerClicked(void)
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
         ScrnCommon_SaveDeviceFlags(systemInfo.currentDeviceId);
-        leaveTo(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
         ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
-        leaveTo(&deviceControlScreen);
+        ScrnCommon_Switch(&deviceControlScreen);
     }
 }
 
@@ -271,7 +270,7 @@ static void centerClicked(void)
 static void rightPressed(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    leaveTo(&deviceSettingScreen);
+    ScrnCommon_Switch(&deviceSettingScreen);
 }
 
 /* Save the edited value, store it and send the module config when needed. */
@@ -342,12 +341,12 @@ static void centerPressed(void)
     /* A hidden or deleted device leaves the settings menu. */
     if (indexOfSettingMenu != ITEM_DELETE)
     {
-        leaveTo(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else
     {
-        leaveTo(&deviceControlScreen);
+        ScrnCommon_Switch(&deviceControlScreen);
     }
 }
 
@@ -596,13 +595,4 @@ static void applySelection(void)
     {
         deviceBuff[systemInfo.currentDeviceId].isDelete = (indexOfSelection + 1) % 2;
     }
-}
-
-static void leaveTo(Screen_t *screen)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = screen;
-    currentScreen->init();
-    currentScreen->render();
 }

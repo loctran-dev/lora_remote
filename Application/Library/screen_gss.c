@@ -137,22 +137,14 @@ static void centerClicked(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     indexOfGeneralSettingMenu = menuOrder[currentIndex];
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = indexOfGeneralSettingMenu == DATE_TIME_ITEM ? &dateTimeScreen : &editGeneralSettingScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(indexOfGeneralSettingMenu == DATE_TIME_ITEM ? &dateTimeScreen : &editGeneralSettingScreen);
 }
 
 /* Long press on RIGHT returns to the main menu. */
 static void rightPressed(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &mainMenuScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&mainMenuScreen);
 }
 
 static void noAction(void)

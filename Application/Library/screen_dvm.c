@@ -45,15 +45,6 @@ Screen_t deviceManagerScreen = {
 
 /* Public API =============================================================== */
 
-void ScrnDvm_OpenDeviceManager(void)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &deviceManagerScreen;
-    currentScreen->init();
-    currentScreen->render();
-}
-
 uint8_t ScrnDvm_SelectedDevice(void)
 {
     return managerSelected < managerCount ? managerIds[managerSelected] : MAXIMUM_DEVICE;
@@ -186,11 +177,7 @@ static void centerClicked(void)
 /* Back to the main menu (also used for long LEFT and CENTER). */
 static void rightPressed(void)
 {
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &mainMenuScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&mainMenuScreen);
 }
 
 static void noAction(void)

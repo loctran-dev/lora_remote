@@ -73,8 +73,11 @@ static void handleHistory(LoraPackage_t packet)
 - Mỗi file `screen_<xxx>.c` định nghĩa một `Screen_t`; các handler trong bảng là `static` và dùng tên chung giống nhau ở mọi screen: `init`, `render`, `leftClicked`, `rightClicked`, `centerClicked`, `bLeftClicked`, `bRightClicked`, `leftPressed`, `rightPressed`, `centerPressed`, `bLeftPressed`, `bRightPressed`.
 - Handler không làm gì thì trỏ tới một hàm `static void noAction(void)` chung của file.
 - API public định nghĩa trong `screen_<xxx>.c` dùng tiền tố `Scrn<Xxx>_`, với `<Xxx>` là tên viết tắt của screen, viết hoa chữ đầu, ví dụ `ScrnDms_`, `ScrnHs_`, `ScrnDcs_`.
-  - Ví dụ: `ScrnHs_OpenDeviceHistory()` định nghĩa trong `screen_hs.c`, `ScrnDvm_OpenDeviceManager()` định nghĩa trong `screen_dvm.c`.
+  - Ví dụ: `ScrnHs_OpenDeviceHistory()` định nghĩa trong `screen_hs.c`, `ScrnDvm_SelectedDevice()` định nghĩa trong `screen_dvm.c`.
 - Helper dùng chung cho mọi screen, định nghĩa trong `screens.c`, dùng tiền tố `ScrnCommon_`, ví dụ `ScrnCommon_SaveDeviceFlags()`, `ScrnCommon_StatusBarCreate()`.
+- Chuyển sang screen khác luôn dùng `ScrnCommon_Switch(&<xxx>Screen)`; không tự viết lại chuỗi `UG_WindowHide`/`UG_WindowDelete`/gán `currentScreen`/`init`/`render`, và không tạo wrapper riêng cho việc chuyển screen.
+  - Nếu screen đích cần reset trạng thái, gọi API reset của nó ngay trước `ScrnCommon_Switch`, ví dụ `ScrnDss_ResetSelection(); ScrnCommon_Switch(&deviceSettingScreen);`.
+  - Chỉ tạo hàm `Scrn<Xxx>_Open...()` khi screen đích phải chuẩn bị nhiều trạng thái `static` trước `init()`, ví dụ `ScrnHs_OpenDeviceHistory()`.
 - Test giả lập gọi các hàm `static` này bằng tên kèm object file, ví dụ `symbol("screen_dss.o:init")`.
 
 ## Thứ tự trong file `.c`

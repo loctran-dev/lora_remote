@@ -598,9 +598,5 @@ static void adjust(uint8_t direction)
 
 static void back(void)
 {
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &generalSettingScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&generalSettingScreen);
 }

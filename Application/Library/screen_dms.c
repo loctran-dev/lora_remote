@@ -168,11 +168,7 @@ static void leftPressed(void)
 static void rightClicked(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = &deviceControlScreen;
-    currentScreen->init();
-    currentScreen->render();
+    ScrnCommon_Switch(&deviceControlScreen);
 }
 
 static void noAction(void)

@@ -36,7 +36,6 @@ static void windowCallback(UG_MESSAGE *message);
 static void createButton(UG_TEXTBOX *box, uint8_t id, int x, int xe, char *text, uint8_t alignment);
 static void createMenuItem(UG_TEXTBOX *box, uint8_t item, char *text);
 static void highlightSelection(void);
-static void openScreen(Screen_t *screen);
 
 Screen_t mainMenuScreen = {
     0,
@@ -137,25 +136,21 @@ static void centerClicked(void)
     }
     else if (menuIndex == ITEM_DEVICE_MANAGER)
     {
-        ScrnDvm_OpenDeviceManager();
+        ScrnCommon_Switch(&deviceManagerScreen);
     }
     else if (menuIndex == ITEM_DEVICE_CONTROL)
     {
-        openScreen(&deviceControlScreen);
+        ScrnCommon_Switch(&deviceControlScreen);
     }
     else if (menuIndex == ITEM_GENERAL)
     {
-        UG_WindowHide(&window_1);
-        UG_WindowDelete(&window_1);
-        currentScreen = &generalSettingScreen;
         ScrnGss_ResetSelection();
-        currentScreen->init();
-        currentScreen->render();
+        ScrnCommon_Switch(&generalSettingScreen);
     }
     else if (menuIndex == ITEM_FIND_DEVICE)
     {
         pairingUI_Step = PAIRING_STATE_SEARCHING;
-        openScreen(&devicePairingScreen);
+        ScrnCommon_Switch(&devicePairingScreen);
         Main_ScanNewDevice();
     }
 }
@@ -212,13 +207,4 @@ static void highlightSelection(void)
     }
     ScrnCommon_MenuScrollUpdate(ITEM_COUNT, menuIndex);
     UG_Update();
-}
-
-static void openScreen(Screen_t *screen)
-{
-    UG_WindowHide(&window_1);
-    UG_WindowDelete(&window_1);
-    currentScreen = screen;
-    currentScreen->init();
-    currentScreen->render();
 }
