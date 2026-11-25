@@ -49,6 +49,12 @@ static void remember(const HistoryRecord *r);
 
 /* CRC ====================================================================== */
 
+/**
+ * @brief  CRC-32 (IEEE 802.3, reflected) of a buffer.
+ * @param  data  Bytes to check.
+ * @param  size  Number of bytes.
+ * @return The CRC.
+ */
 uint32_t HJ_Crc(const void *data, uint32_t size)
 {
     const uint8_t *p = data;
@@ -67,6 +73,14 @@ uint32_t HJ_Crc(const void *data, uint32_t size)
 
 /* Initialisation =========================================================== */
 
+/**
+ * @brief  Scan the journal pages and rebuild the RAM state.
+ *
+ * Finds the valid pages, the active page and its next free slot, the highest
+ * event id and, on the remote, the per-owner cursors.
+ *
+ * @note   Call once at start-up (RemoteHistory_Init()).
+ */
 void HJ_Init(void)
 {
     const HistoryRecord *r;
@@ -160,6 +174,11 @@ void HJ_Init(void)
 
 /* Record access ============================================================ */
 
+/**
+ * @brief  Read one record.
+ * @param  slot  0 .. HJ_SLOTS-1, in flash order (not time order).
+ * @return The record in flash, or 0 if the slot is empty or invalid.
+ */
 const HistoryRecord *HJ_Get(uint16_t slot)
 {
     const HistoryRecord *r;
@@ -172,6 +191,13 @@ const HistoryRecord *HJ_Get(uint16_t slot)
     return valid(r) ? r : 0;
 }
 
+/**
+ * @brief  Check whether an event from a device is already stored.
+ * @param  event  Event with its id set.
+ * @param  owner  Owner of the device.
+ * @return 0 = not stored, 1 = stored with the same content (or already
+ *         stored and overwritten since), 2 = stored with different content.
+ */
 uint8_t HJ_Contains(const HistoryEvent *event, uint16_t owner)
 {
     const HistoryRecord *r;
@@ -208,6 +234,14 @@ uint8_t HJ_Contains(const HistoryEvent *event, uint16_t owner)
     return 0;
 }
 
+/**
+ * @brief  Store an event, opening a new page when the active one is full.
+ * @param  event  Event to store; an id of 0 is replaced by the next free id.
+ * @param  owner  Owner of the device.
+ * @return 1 if stored or an identical copy exists, 0 on a flash error, a
+ *         conflicting copy or an exhausted id space.
+ * @warning Opening a new page erases the oldest page of the ring.
+ */
 uint8_t HJ_Append(HistoryEvent *event, uint16_t owner)
 {
     uint8_t found;
@@ -273,6 +307,10 @@ uint8_t HJ_Append(HistoryEvent *event, uint16_t owner)
 
 /* Synchronisation ========================================================== */
 
+/**
+ * @brief  Oldest record not yet marked as synced.
+ * @return The record, or 0 if every record is synced.
+ */
 const HistoryRecord *HJ_Pending(void)
 {
     const HistoryRecord *found = 0;
@@ -293,6 +331,12 @@ const HistoryRecord *HJ_Pending(void)
     return found;
 }
 
+/**
+ * @brief  Mark a record as synced by programming its synced field to 0.
+ * @param  serial  Event serial.
+ * @param  id      Event id.
+ * @return 1 if the record is now marked, 0 if it was not found or the flash write failed.
+ */
 uint8_t HJ_MarkSynced(uint32_t serial, uint32_t id)
 {
     const HistoryRecord *r;
