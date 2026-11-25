@@ -46,6 +46,16 @@ const CmdMapping_t cmdTable[] = {
 
 /* Public API =============================================================== */
 
+/**
+ * @brief  Queue a CMD_SET_CONFIG request with the settings of the selected module.
+ *
+ * Sends the alarm threshold and delay of the current device/module and its
+ * auto-status period. The reply gives two short beeps if accepted, a long
+ * beep if rejected.
+ *
+ * @return TRUE if the request was queued; FALSE for a deleted device, a value
+ *         out of range or a full queue.
+ */
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
     DeviceInfo_t *device = &deviceBuff[systemInfo.currentDeviceId];
