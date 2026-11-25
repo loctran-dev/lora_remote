@@ -71,7 +71,7 @@ static void returnFromTimer(void);
 static void formatRemaining(uint32_t seconds, char *text);
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module);
 
-/* LEFT/RIGHT: previous/next device (timer: up/down or +/-), CENTER: timer.
+/* LEFT/RIGHT: previous/next motor, M11 M12 .. M21 .. (timer: up/down or +/-), CENTER: timer.
    Hold LEFT: monitor, RIGHT: settings, CENTER: menu; hold bottom buttons: motor ON/OFF. */
 Screen_t deviceControlScreen = {
     0,
@@ -107,6 +107,7 @@ void ScrnDcs_ShowConnectionError(uint8_t id)
         UG_WindowDelete(&window_1);
         systemInfo.currentDeviceId = id;
         systemInfo.currentModuleId = 0;
+        ScrnCommon_EnsureVisibleDevice(); /* first visible motor of the device */
         currentScreen = &deviceControlScreen;
         currentScreen->init();
     }
@@ -225,7 +226,7 @@ static void render(void)
     char lost[16];
     UG_COLOR rssiColor;
 
-    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_SelectionVisible())
     {
         ScrnCommon_EmptyControlRender();
         return;
@@ -313,7 +314,7 @@ static void render(void)
 static void leftClicked(void)
 {
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
-    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_SelectionVisible())
     {
         return;
     }
@@ -338,7 +339,7 @@ static void leftClicked(void)
 static void rightClicked(void)
 {
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
-    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_SelectionVisible())
     {
         return;
     }
@@ -365,7 +366,7 @@ static void centerClicked(void)
 {
     int32_t seconds;
 
-    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_SelectionVisible())
     {
         ScrnCommon_Switch(&deviceManagerScreen);
         return;
@@ -404,7 +405,7 @@ static void centerClicked(void)
 /* Open the device monitor. */
 static void leftPressed(void)
 {
-    if (inScheduleSelection || !ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (inScheduleSelection || !ScrnCommon_SelectionVisible())
     {
         return;
     }
@@ -421,7 +422,7 @@ static void rightPressed(void)
         returnFromTimer();
         return;
     }
-    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_SelectionVisible())
     {
         ScrnCommon_Switch(&deviceManagerScreen);
         return;

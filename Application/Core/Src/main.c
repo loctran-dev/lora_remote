@@ -941,7 +941,7 @@ void Main_SetMotorPower(uint8_t motorPower)
   {
     return;
   }
-  if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+  if (!ScrnCommon_SelectionVisible())
   {
     return;
   }
@@ -985,7 +985,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
 {
   PayloadRequestSetSchedule_t payload;
 
-  if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
+  if (!ScrnCommon_SelectionVisible())
   {
     return;
   }

@@ -58,6 +58,9 @@ static void createWindow(void);
 static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye,
     char *text, UG_COLOR background);
 static void createSettingsMenu(char *title, uint8_t stacked);
+static int selectionPosition(void);
+static uint8_t selectPosition(int position);
+static int nearestVisible(int position, int8_t direction);
 
 /**
  * @brief  Close the current window and open another screen (init() then render()).
@@ -75,9 +78,9 @@ void ScrnCommon_Switch(Screen_t *next)
 }
 
 /**
- * @brief  Whether a device is paired and not hidden.
+ * @brief  Whether a device is paired and has at least one visible motor.
  * @param  id  Device index in deviceBuff.
- * @return 1 if visible. Hiding is per device in the single-module storage layout.
+ * @return 1 if visible (device lists: history picker, connection notices).
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
@@ -85,31 +88,49 @@ uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 }
 
 /**
- * @brief  Make systemInfo.currentDeviceId point to a visible device.
+ * @brief  Whether a motor is paired, has a settings slot and is not hidden.
+ * @param  device  Device index in deviceBuff.
+ * @param  module  Module index on that device.
+ */
+uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module)
+{
+    const MotorStorageData_t *motor;
+
+    if (device >= MAXIMUM_DEVICE || storageData.DeviceConfig[device].isDelete)
+    {
+        return 0;
+    }
+    motor = Config_Motor(device, module);
+    return motor != NULL && !motor->isHide;
+}
+
+/** @brief Whether the selected motor (currentDeviceId/currentModuleId) is visible. */
+uint8_t ScrnCommon_SelectionVisible(void)
+{
+    return ScrnCommon_MotorVisible(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+}
+
+/**
+ * @brief  Make the selection point to a visible motor.
  *
- * Keeps the current device if visible, else picks the next one, else the
- * closest preceding one. The module index resets when the device changes.
+ * Motors are ordered flat by device, then module (M11, M12, ..., M21, ...).
+ * Keeps the selected motor if visible, else picks the next visible one, else
+ * the closest preceding one.
  *
- * @return 1 if a visible device is selected, 0 if there is none (indices set to 0).
+ * @return 1 if a visible motor is selected, 0 if there is none (indices set to 0).
  */
 uint8_t ScrnCommon_EnsureVisibleDevice(void)
 {
-    uint8_t start = systemInfo.currentDeviceId < MAXIMUM_DEVICE ? systemInfo.currentDeviceId : 0;
-    uint8_t id;
+    int position;
 
-    /* Prefer the next device, then the closest preceding visible device. */
-    for (int offset = 0; offset < MAXIMUM_DEVICE; offset++)
+    if (ScrnCommon_SelectionVisible())
     {
-        id = start + offset < MAXIMUM_DEVICE ? start + offset : MAXIMUM_DEVICE - offset - 1;
-        if (ScrnCommon_DeviceVisible(id))
-        {
-            if (id != systemInfo.currentDeviceId || systemInfo.currentModuleId >= 6)
-            {
-                systemInfo.currentModuleId = 0;
-            }
-            systemInfo.currentDeviceId = id;
-            return 1;
-        }
+        return 1;
+    }
+    position = selectionPosition();
+    if (selectPosition(nearestVisible(position, 1)) || selectPosition(nearestVisible(position, -1)))
+    {
+        return 1;
     }
 
     /* Keep indices in range even when the control screen has no selection. */
@@ -119,22 +140,13 @@ uint8_t ScrnCommon_EnsureVisibleDevice(void)
 }
 
 /**
- * @brief  Select the next or previous visible device; stays put at the end of the list.
- * @param  direction  +1 for the next device, -1 for the previous one.
+ * @brief  Select the next or previous visible motor in the flat device/module
+ *         order; stays put at the end of the list.
+ * @param  direction  +1 for the next motor, -1 for the previous one.
  */
 void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 {
-    int id = systemInfo.currentDeviceId;
-
-    for (id += direction; id >= 0 && id < MAXIMUM_DEVICE; id += direction)
-    {
-        if (ScrnCommon_DeviceVisible((uint8_t)id))
-        {
-            systemInfo.currentDeviceId = id;
-            systemInfo.currentModuleId = 0;
-            return;
-        }
-    }
+    selectPosition(nearestVisible(selectionPosition(), direction));
 }
 
 /**
@@ -511,4 +523,55 @@ static void createSettingsMenu(char *title, uint8_t stacked)
     createText(&textbox_4, 3, 36, 144, 91, 159, "Change", C_RED);
     createText(&textbox_5, 4, 92, 144, 127, 159, "Down", C_RED);
     UG_WindowShow(&window_1);
+}
+
+/* Flat position of the selection: device * MAXIMUM_MODULE + module. */
+static int selectionPosition(void)
+{
+    if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE || systemInfo.currentModuleId >= MAXIMUM_MODULE)
+    {
+        return -1;
+    }
+    return systemInfo.currentDeviceId * MAXIMUM_MODULE + systemInfo.currentModuleId;
+}
+
+/* Select the motor at a flat position; FALSE (nothing changed) for a negative position. */
+static uint8_t selectPosition(int position)
+{
+    if (position < 0)
+    {
+        return 0;
+    }
+    systemInfo.currentDeviceId = position / MAXIMUM_MODULE;
+    systemInfo.currentModuleId = position % MAXIMUM_MODULE;
+    return 1;
+}
+
+/*
+ * Flat position of the visible motor closest to position: the smallest one
+ * after it (direction +1) or the largest one before it (-1); -1 if none.
+ * Scans the motor pool, so a step costs MAXIMUM_MOTOR lookups.
+ */
+static int nearestVisible(int position, int8_t direction)
+{
+    int best = -1;
+    int candidate;
+
+    for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
+    {
+        const MotorStorageData_t *motor = &storageData.MotorConfig[slot];
+
+        if (motor->device >= MAXIMUM_DEVICE || motor->module >= MAXIMUM_MODULE ||
+            storageData.DeviceConfig[motor->device].isDelete || motor->isHide)
+        {
+            continue;
+        }
+        candidate = motor->device * MAXIMUM_MODULE + motor->module;
+        if (direction > 0 ? candidate > position && (best < 0 || candidate < best) :
+                            candidate < position && (best < 0 || candidate > best))
+        {
+            best = candidate;
+        }
+    }
+    return best;
 }

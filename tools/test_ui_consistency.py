@@ -139,6 +139,16 @@ class UiConsistencyTests(h.FirmwareHarness):
             self.assertLess(left[2],right[0])
             self.assertLessEqual(len(self.text[label])*6,left[2]-left[0]+1)
             self.assertLessEqual(len(self.text[label+1])*6,right[2]-right[0]+1)
+    def test_second_module_shows_its_own_number_and_name(self):
+        # Device 0 also drives module 1 (pool slot 20) named "Fan".
+        self.put(self.mot(20,h.MOT_DEVICE),0);self.put(self.mot(20,h.MOT_MODULE),1)
+        self.cpu.mem_write(self.mot(20,h.MOT_NAME),b'Fan\0')
+        self.select(0,1)
+        self.call('screen_dcs.o:init');self.call('screen_dcs.o:render')
+        self.assertIn(' M12.Fan',self.text.values())
+        self.call('screen_dms.o:init');self.call('screen_dms.o:render')
+        self.assertIn('M12 Info: Fan',self.text.values())
+        self.assertEqual(self.text[15],'2')
     def test_monitor_last_rx_uses_uptime_not_editable_wall_time(self):
         self.call('Link_ClockStep',61)
         self.call('Link_RecordPacket',0,1)

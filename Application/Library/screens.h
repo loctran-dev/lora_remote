@@ -116,6 +116,8 @@ void ScrnCommon_Switch(Screen_t *next);
 /* screens.c: device visibility and selection */
 
 uint8_t ScrnCommon_DeviceVisible(uint8_t id);
+uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module);
+uint8_t ScrnCommon_SelectionVisible(void);
 uint8_t ScrnCommon_EnsureVisibleDevice(void);
 void ScrnCommon_SelectAdjacentVisible(int8_t direction);
 
