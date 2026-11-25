@@ -8,9 +8,9 @@ from test_general_menu import MenuHarness
 class DeviceMenuTests(MenuHarness):
     def setUp(self):
         super().setUp()
-        self.mocks(["Screen_SettingsMenuCreateStacked", "Screen_SettingsMenuBegin",
-                    "Screen_SettingsMenuPage", "Screen_SettingsMenuRow",
-                    "Screen_SettingsMenuUpdate", "Main_SetBuzzerMode",
+        self.mocks(["ScrnCommon_SettingsMenuCreateStacked", "ScrnCommon_SettingsMenuBegin",
+                    "ScrnCommon_SettingsMenuPage", "ScrnCommon_SettingsMenuRow",
+                    "ScrnCommon_SettingsMenuUpdate", "Main_SetBuzzerMode",
                     "UG_WindowHide", "UG_WindowDelete", "screen_edss.o:init", "screen_edss.o:render"])
         self.add(0)
         self.select(0)
@@ -29,13 +29,13 @@ class DeviceMenuTests(MenuHarness):
             self.cpu.mem_write(harness.symbol(screen)[0] + 4,
                                struct.pack("<II", harness.symbol(init)[0] | 1,
                                            harness.symbol(render)[0] | 1))
-        self.call("Screen_DeviceSettingsResetSelection")
+        self.call("ScrnDss_ResetSelection")
         self.call("screen_dss.o:init")
 
     def render(self):
         self.calls.clear()
         self.call("screen_dss.o:render")
-        return [call for call in self.calls if call[0] == "Screen_SettingsMenuRow"]
+        return [call for call in self.calls if call[0] == "ScrnCommon_SettingsMenuRow"]
 
     def advance(self, count):
         for _ in range(count):
@@ -54,7 +54,7 @@ class DeviceMenuTests(MenuHarness):
         self.assertEqual([row[3][0] for row in rows],
                          ["Delete device", "Device name", "Auto status interval", ""])
         self.assertEqual([row[3][1] for row in rows], ["No", "ABCDEFGHIJKLMNOPQRS", "2 s", ""])
-        self.assertIn((4, 7), [call[1][:2] for call in self.calls if call[0] == "Screen_SettingsMenuPage"])
+        self.assertIn((4, 7), [call[1][:2] for call in self.calls if call[0] == "ScrnCommon_SettingsMenuPage"])
 
     def test_all_seven_editors_keep_selection_on_actual_cancel_path(self):
         storage = bytes(self.cpu.mem_read(self.storage, 885))
@@ -72,7 +72,7 @@ class DeviceMenuTests(MenuHarness):
     def test_bounds_and_new_control_entry_reset(self):
         self.advance(20)
         self.assertEqual([row[1][3] for row in self.render()], [0, 0, 1, 0])
-        self.call("Screen_DeviceSettingsResetSelection")
+        self.call("ScrnDss_ResetSelection")
         self.call("screen_dss.o:init")
         self.assertTrue(self.render()[0][1][3])
         for _ in range(20):

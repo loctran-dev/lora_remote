@@ -69,7 +69,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
 
     /* Button labels. */
     createButton(&textbox_3, TXB_ID_2, 0, 43, " Up", ALIGN_CENTER_LEFT);
@@ -93,15 +93,15 @@ static void init(void)
     UG_TextboxSetBackColor(&window_1, itemIds[0], C_DIM_GRAY);
     menuIndex = 0;
 
-    Screen_MenuScrollUpdate(ITEM_COUNT, menuIndex);
+    ScrnCommon_MenuScrollUpdate(ITEM_COUNT, menuIndex);
     UG_WindowShow(&window_1);
     UG_Update();
 }
 
 static void render(void)
 {
-    Screen_MenuScrollUpdate(ITEM_COUNT, menuIndex);
-    Screen_StatusBarUpdate();
+    ScrnCommon_MenuScrollUpdate(ITEM_COUNT, menuIndex);
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
@@ -133,11 +133,11 @@ static void centerClicked(void)
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     if (menuIndex == ITEM_HISTORY)
     {
-        Screen_OpenHistory();
+        ScrnHs_OpenHistory();
     }
     else if (menuIndex == ITEM_DEVICE_MANAGER)
     {
-        Screen_OpenDeviceManager();
+        ScrnDvm_OpenDeviceManager();
     }
     else if (menuIndex == ITEM_DEVICE_CONTROL)
     {
@@ -148,7 +148,7 @@ static void centerClicked(void)
         UG_WindowHide(&window_1);
         UG_WindowDelete(&window_1);
         currentScreen = &generalSettingScreen;
-        Screen_GeneralSettingsResetSelection();
+        ScrnGss_ResetSelection();
         currentScreen->init();
         currentScreen->render();
     }
@@ -210,7 +210,7 @@ static void highlightSelection(void)
     {
         UG_TextboxSetBackColor(&window_1, itemIds[menuIndex] - 2, C_BLACK);
     }
-    Screen_MenuScrollUpdate(ITEM_COUNT, menuIndex);
+    ScrnCommon_MenuScrollUpdate(ITEM_COUNT, menuIndex);
     UG_Update();
 }
 

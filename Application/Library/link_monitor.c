@@ -371,7 +371,7 @@ static void endProbe(uint8_t failed)
         deviceBuff[id].isConnectionError = 1;
         linkDevices[id].retryAt = uptimeSeconds + Link_GetTimeoutSeconds();
         linkProbe.failures++;
-        Screen_ShowConnectionError(id);
+        ScrnDcs_ShowConnectionError(id);
     }
     else
     {

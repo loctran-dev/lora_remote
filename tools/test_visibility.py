@@ -92,13 +92,13 @@ class VisibilityTests(FirmwareHarness):
     def test_visible_hidden_deleted_and_invalid(self):
         self.add(0)
         self.add(1, True)
-        self.assertEqual([self.call("Screen_DeviceVisible", i) for i in [0, 1, 2, 20, 255]], [1, 0, 0, 0, 0])
+        self.assertEqual([self.call("ScrnCommon_DeviceVisible", i) for i in [0, 1, 2, 20, 255]], [1, 0, 0, 0, 0])
 
     def test_hide_m11_selects_m21(self):
         self.add(0, True)
         self.add(1)
         self.select(0, 2)
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 1)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
         self.assertEqual(self.get(self.system + 80), 1)
         self.assertEqual(self.get(self.system + 81), 0)
 
@@ -107,21 +107,21 @@ class VisibilityTests(FirmwareHarness):
         self.add(7)
         self.add(19, True)
         self.select(19)
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 1)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
         self.assertEqual(self.get(self.system + 80), 7)
 
     def test_all_hidden_safe_indices(self):
         self.add(0, True)
         self.add(1, True)
         self.select(1)
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 0)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 0)
         self.assertEqual(self.get(self.system + 80), 0)
         self.assertEqual(self.get(self.system + 81), 0)
 
     def test_empty_and_restore_visibility(self):
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 0)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 0)
         self.add(3)
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 1)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
         self.assertEqual(self.get(self.system + 80), 3)
 
     def test_next_previous_skip_hidden_and_deleted(self):
@@ -129,41 +129,41 @@ class VisibilityTests(FirmwareHarness):
         self.add(1, True)
         self.add(3)
         self.select(0)
-        self.call("Screen_SelectAdjacentVisible", 1)
+        self.call("ScrnCommon_SelectAdjacentVisible", 1)
         self.assertEqual(self.get(self.system + 80), 3)
-        self.call("Screen_SelectAdjacentVisible", -1)
+        self.call("ScrnCommon_SelectAdjacentVisible", -1)
         self.assertEqual(self.get(self.system + 80), 0)
 
     def test_navigation_boundaries_no_underflow(self):
         self.add(0)
         self.select(0)
-        self.call("Screen_SelectAdjacentVisible", -1)
+        self.call("ScrnCommon_SelectAdjacentVisible", -1)
         self.assertEqual(self.get(self.system + 80), 0)
-        self.call("Screen_SelectAdjacentVisible", 1)
+        self.call("ScrnCommon_SelectAdjacentVisible", 1)
         self.assertEqual(self.get(self.system + 80), 0)
 
     def test_invalid_start_recovered(self):
         self.add(2)
         self.select(255)
-        self.assertEqual(self.call("Screen_EnsureVisibleDevice"), 1)
+        self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
         self.assertEqual(self.get(self.system + 80), 2)
 
     def test_save_flags_updates_only_flags_and_marks_dirty(self):
         self.add(2, True)
         self.put(self.device + 2 * 468 + 36 + 68, 1)
         before = bytes(self.cpu.mem_read(self.storage, 836))
-        self.call("Screen_SaveDeviceFlags", 2)
+        self.call("ScrnCommon_SaveDeviceFlags", 2)
         expected = bytearray(before)
         expected[15 + 2 * 41 + 38:15 + 2 * 41 + 40] = b"\x01\x01"
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), bytes(expected))
         self.assertEqual(self.get(self.system + 82), 1)
         self.put(self.system + 82, 0)
-        self.call("Screen_SaveDeviceFlags", 2)
+        self.call("ScrnCommon_SaveDeviceFlags", 2)
         self.assertEqual(self.get(self.system + 82), 0)
 
     def test_save_invalid_id_does_not_modify_storage(self):
         before = bytes(self.cpu.mem_read(self.storage, 836))
-        self.call("Screen_SaveDeviceFlags", 255)
+        self.call("ScrnCommon_SaveDeviceFlags", 255)
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
         self.assertEqual(self.get(self.system + 82), 0)
 
@@ -175,14 +175,14 @@ class VisibilityTests(FirmwareHarness):
         self.cpu.mem_write(base + 36 + 60, struct.pack("<f", 12.34))
         self.cpu.mem_write(base + 36 + 64, struct.pack("<I", 30))
         self.put(base + 20, 1)
-        self.call("Screen_SaveDeviceSettings", 2)
+        self.call("ScrnCommon_SaveDeviceSettings", 2)
         target = self.storage + 15 + 2 * 41
         self.assertEqual(bytes(self.cpu.mem_read(target + 10, 10)), b"Pump test\x00")
         self.assertEqual(bytes(self.cpu.mem_read(target + 30, 4)), struct.pack("<f", 12.34))
         self.assertEqual(bytes(self.cpu.mem_read(target + 34, 4)), struct.pack("<I", 30))
         self.assertEqual(self.get(target + 40), 1)
         self.assertEqual(self.get(self.system + 82), 1)
-        self.assertEqual(self.call("Screen_DeviceVisible", 2), 0)
+        self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 0)
 
     def test_hidden_blocks_power_and_schedule_send(self):
         self.add(0, True)
@@ -208,7 +208,7 @@ class VisibilityTests(FirmwareHarness):
             cpu.reg_write(UC_ARM_REG_PC, cpu.reg_read(UC_ARM_REG_LR))
         address = symbol("osTimerStop")[0] & ~1
         self.cpu.hook_add(UC_HOOK_CODE, timer, begin=address, end=address)
-        self.call("Screen_SaveGeneralSettings")
+        self.call("ScrnCommon_SaveGeneralSettings")
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 15)), struct.pack("<BIBBII", 2, 434, 8, 1, 6, 301))
         self.assertEqual(self.get(self.system + 82), 1)
         self.assertEqual(calls, [0x20008000])
@@ -222,7 +222,7 @@ class VisibilityTests(FirmwareHarness):
         self.put(symbol("managerSelected")[0], 0)
         self.put(symbol("managerIds")[0], 2)
         self.call("screen_dvm.o:centerClicked")
-        self.assertEqual(self.call("Screen_DeviceVisible", 2), 1)
+        self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
         self.assertEqual(self.get(self.system + 80), 0)
         self.assertEqual(self.get(self.device + 2 * 468 + 36 + 68), 1)
         self.assertEqual(self.get(self.storage + 15 + 2 * 41 + 39), 0)

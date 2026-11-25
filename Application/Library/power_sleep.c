@@ -124,7 +124,7 @@ void Power_Tick(void)
     if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == SYS_MODE_ALARM ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
-        Screen_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
+        ScrnDcs_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
         currentScreen == &devicePairingScreen || systemInfo.isNeedSaveConfig || buttonsDown())
     {
         return;

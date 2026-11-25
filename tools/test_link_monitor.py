@@ -31,7 +31,7 @@ class LinkTests(harness.FirmwareHarness):
         def history(cpu,address,size,data):
             self.history_events.append((cpu.reg_read(UC_ARM_REG_R0),cpu.reg_read(UC_ARM_REG_R1)))
             cpu.reg_write(UC_ARM_REG_PC,cpu.reg_read(UC_ARM_REG_LR))
-        for name, callback in [("osMessageQueuePut", queue), ("Screen_ShowConnectionError", alert),
+        for name, callback in [("osMessageQueuePut", queue), ("ScrnDcs_ShowConnectionError", alert),
                                ("RemoteHistory_Link",history)]:
             address = harness.symbol(name)[0] & ~1
             self.cpu.hook_add(UC_HOOK_CODE, callback, begin=address, end=address)

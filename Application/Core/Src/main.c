@@ -968,9 +968,9 @@ void Main_SetMotorPower(uint8_t motorPower)
 		systemInfo.currentModuleId >= sizeof(deviceBuff[0].motorData) / sizeof(deviceBuff[0].motorData[0])) {
 		return;
 	}
-	if (!Screen_DeviceVisible(systemInfo.currentDeviceId)) return;
+	if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId)) return;
 	if (deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId].isLock) {
-		Screen_ShowMotorLocked(motorPower);
+		ScrnDcs_ShowMotorLocked(motorPower);
 		Main_SetBuzzerMode(BUZZER_LONG_BEEP);
 		return;
 	}
@@ -988,7 +988,7 @@ void Main_UpdateStatusPeriod(void)
 }
 void Main_SetScheduleTimeToCurrentModule(int32_t time)
 {
-	if (!Screen_DeviceVisible(systemInfo.currentDeviceId)) return;
+	if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId)) return;
 	PayloadRequestSetSchedule_t payload;
 	payload.moduleIndex = systemInfo.currentModuleId;
 	payload.syncTime = systemInfo.currentTime;

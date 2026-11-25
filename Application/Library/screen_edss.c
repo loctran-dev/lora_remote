@@ -104,7 +104,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     device = deviceBuff[systemInfo.currentDeviceId];
     module = device.motorData[systemInfo.currentModuleId];
     snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.", device.factoryInfo.deviceTypeChar, device.deviceIndex + 1,
@@ -153,8 +153,8 @@ static void init(void)
     /* One box per character for the seconds and name editors. */
     if (isSecondsItem() || indexOfSettingMenu == ITEM_NAME)
     {
-        Screen_EditCharactersCreate(isSecondsItem() ? 6 : NAME_LENGTH);
-        Screen_EditCharactersUpdate(indexOfEdittingValue);
+        ScrnCommon_EditCharactersCreate(isSecondsItem() ? 6 : NAME_LENGTH);
+        ScrnCommon_EditCharactersUpdate(indexOfEdittingValue);
     }
 
     /* Description and help. */
@@ -176,9 +176,9 @@ static void render(void)
 {
     if (isSecondsItem() || indexOfSettingMenu == ITEM_NAME)
     {
-        Screen_EditCharactersUpdate(indexOfEdittingValue);
+        ScrnCommon_EditCharactersUpdate(indexOfEdittingValue);
     }
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
@@ -256,13 +256,13 @@ static void centerClicked(void)
 
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
-        Screen_SaveDeviceFlags(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceFlags(systemInfo.currentDeviceId);
         leaveTo(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        Screen_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
         leaveTo(&deviceControlScreen);
     }
 }
@@ -324,7 +324,7 @@ static void centerPressed(void)
     /* Persist; threshold and delay are also sent to the slave. */
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD || isSecondsItem())
     {
-        Screen_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
         if (!CmdHandler_SendCurrentModuleConfig())
         {
             Main_SetBuzzerMode(BUZZER_LONG_BEEP);
@@ -332,11 +332,11 @@ static void centerPressed(void)
     }
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
-        Screen_SaveDeviceFlags(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceFlags(systemInfo.currentDeviceId);
     }
     if (indexOfSettingMenu == ITEM_DELETE || indexOfSettingMenu == ITEM_NAME)
     {
-        Screen_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
     }
 
     /* A hidden or deleted device leaves the settings menu. */

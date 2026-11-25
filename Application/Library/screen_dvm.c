@@ -45,7 +45,7 @@ Screen_t deviceManagerScreen = {
 
 /* Public API =============================================================== */
 
-void Screen_OpenDeviceManager(void)
+void ScrnDvm_OpenDeviceManager(void)
 {
     UG_WindowHide(&window_1);
     UG_WindowDelete(&window_1);
@@ -54,7 +54,7 @@ void Screen_OpenDeviceManager(void)
     currentScreen->render();
 }
 
-uint8_t Screen_ManagerSelectedDevice(void)
+uint8_t ScrnDvm_SelectedDevice(void)
 {
     return managerSelected < managerCount ? managerIds[managerSelected] : MAXIMUM_DEVICE;
 }
@@ -78,7 +78,7 @@ static void init(void)
     }
 
     createWindow();
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createText(&textbox_6, 5, 0, 20, 127, 37, "Device manager", C_DARK_SLATE_BLUE);
     for (uint8_t row = 0; row < MANAGER_ROWS; row++)
     {
@@ -147,7 +147,7 @@ static void render(void)
     UG_TextboxSetText(&window_1, 20, text);
     UG_TextboxSetText(&window_1, 3, !managerCount ? "" :
         deviceBuff[managerIds[managerSelected]].motorData[0].isHide ? "Show" : "Hide");
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
@@ -180,7 +180,7 @@ static void centerClicked(void)
     }
     id = managerIds[managerSelected];
     deviceBuff[id].motorData[0].isHide = !deviceBuff[id].motorData[0].isHide;
-    Screen_SaveDeviceFlags(id);
+    ScrnCommon_SaveDeviceFlags(id);
 }
 
 /* Back to the main menu (also used for long LEFT and CENTER). */

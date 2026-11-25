@@ -45,7 +45,7 @@ Screen_t generalSettingScreen = {
 
 /* Public API =============================================================== */
 
-void Screen_GeneralSettingsResetSelection(void)
+void ScrnGss_ResetSelection(void)
 {
     currentIndex = 0;
 }
@@ -55,7 +55,7 @@ void Screen_GeneralSettingsResetSelection(void)
 static void init(void)
 {
     /* Editor returns keep the selected item/page; a fresh menu entry resets it. */
-    Screen_SettingsMenuCreateStacked("General setup");
+    ScrnCommon_SettingsMenuCreateStacked("General setup");
 }
 
 static void render(void)
@@ -66,14 +66,14 @@ static void render(void)
     uint8_t item;
     char value[32];
 
-    Screen_SettingsMenuBegin(page);
-    Screen_SettingsMenuPage(page, GENERAL_MENU_COUNT);
+    ScrnCommon_SettingsMenuBegin(page);
+    ScrnCommon_SettingsMenuPage(page, GENERAL_MENU_COUNT);
     for (uint8_t row = 0; row < ROWS_PER_PAGE; row++)
     {
         value[0] = '\0';
         if (page + row >= GENERAL_MENU_COUNT)
         {
-            Screen_SettingsMenuRow(row, NULL, NULL, 0);
+            ScrnCommon_SettingsMenuRow(row, NULL, NULL, 0);
             continue;
         }
         item = menuOrder[page + row];
@@ -110,9 +110,9 @@ static void render(void)
             default:
                 break;
         }
-        Screen_SettingsMenuRow(row, labels[item], value, page + row == currentIndex);
+        ScrnCommon_SettingsMenuRow(row, labels[item], value, page + row == currentIndex);
     }
-    Screen_SettingsMenuUpdate();
+    ScrnCommon_SettingsMenuUpdate();
 }
 
 static void leftClicked(void)

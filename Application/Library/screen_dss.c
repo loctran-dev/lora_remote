@@ -42,7 +42,7 @@ Screen_t deviceSettingScreen = {
 
 /* Public API =============================================================== */
 
-void Screen_DeviceSettingsResetSelection(void)
+void ScrnDss_ResetSelection(void)
 {
     menuIndex = 0;
 }
@@ -52,7 +52,7 @@ void Screen_DeviceSettingsResetSelection(void)
 static void init(void)
 {
     /* Keep the row/page on editor return; reset only on fresh control entry. */
-    Screen_SettingsMenuCreateStacked("Device setup");
+    ScrnCommon_SettingsMenuCreateStacked("Device setup");
 }
 
 static void render(void)
@@ -64,15 +64,15 @@ static void render(void)
     uint8_t item;
     char value[32];
 
-    Screen_SettingsMenuBegin(page);
-    Screen_SettingsMenuPage(page, ITEM_COUNT);
+    ScrnCommon_SettingsMenuBegin(page);
+    ScrnCommon_SettingsMenuPage(page, ITEM_COUNT);
     for (uint8_t row = 0; row < ROWS_PER_PAGE; row++)
     {
         item = page + row;
         value[0] = '\0';
         if (item >= ITEM_COUNT)
         {
-            Screen_SettingsMenuRow(row, NULL, NULL, 0);
+            ScrnCommon_SettingsMenuRow(row, NULL, NULL, 0);
             continue;
         }
         switch (item)
@@ -101,9 +101,9 @@ static void render(void)
             default:
                 break;
         }
-        Screen_SettingsMenuRow(row, labels[item], value, item == menuIndex);
+        ScrnCommon_SettingsMenuRow(row, labels[item], value, item == menuIndex);
     }
-    Screen_SettingsMenuUpdate();
+    ScrnCommon_SettingsMenuUpdate();
 }
 
 static void leftClicked(void)

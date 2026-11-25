@@ -79,7 +79,7 @@ Screen_t historyScreen = {
 
 /* Public API =============================================================== */
 
-void Screen_OpenHistory(void)
+void ScrnHs_OpenHistory(void)
 {
     /* Start on the current device, or the first one with history. */
     chosenDevice = systemInfo.currentDeviceId < MAXIMUM_DEVICE ? systemInfo.currentDeviceId : 0;
@@ -105,7 +105,7 @@ void Screen_OpenHistory(void)
 }
 
 /* Open the record list of one device directly, skipping the device picker. */
-uint8_t Screen_OpenDeviceHistory(uint8_t deviceId)
+uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
 {
     if (deviceId >= MAXIMUM_DEVICE || !available(deviceId))
     {
@@ -139,7 +139,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
 
     /* Button labels depend on the mode. */
     createText(2, 0, 144, 35, 159, historyScreenMode == MODE_DETAIL ? "Prev" : "Up", C_DARK_SLATE_BLUE);
@@ -169,7 +169,7 @@ static void render(void)
 {
     char text[64];
 
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     snprintf(text, sizeof(text), historyScreenMode == MODE_PICKER ? "Select device" : "M%u1 %s",
         chosenDevice + 1, historyScreenMode == MODE_LIST ? "History" : "Event");
     UG_TextboxSetText(&window_1, 5, text);

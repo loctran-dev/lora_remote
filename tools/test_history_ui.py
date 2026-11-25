@@ -17,7 +17,7 @@ class HistoryUiTests(unittest.TestCase):
                "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",
                "UG_TextboxSetForeColor","UG_TextboxSetAlignment","UG_TextboxSetScrollEnabled","UG_TextboxCheckVisible",
                "UG_TextboxShow","UG_TextboxHide","UG_Update","screen_mms.o:init","screen_mms.o:render","screen_dcs.o:init","screen_dcs.o:render",
-               "Screen_StatusBarCreate","Screen_StatusBarUpdate","Main_SetBuzzerMode"]
+               "ScrnCommon_StatusBarCreate","ScrnCommon_StatusBarUpdate","Main_SetBuzzerMode"]
         hooks={h.symbol(n)&~1:n for n in names}
         def intercept(cpu,address,size,data):
             if address not in hooks:return
@@ -42,7 +42,7 @@ class HistoryUiTests(unittest.TestCase):
         return struct.unpack("<I",bytes(self.cpu.mem_read(h.symbol("currentScreen"),4)))[0]
     def test_history_from_device_info_returns_to_control(self):
         self.hw.append()
-        self.assertEqual(self.call("Screen_OpenDeviceHistory",0),1)
+        self.assertEqual(self.call("ScrnHs_OpenDeviceHistory",0),1)
         self.assertEqual(self.text[5],"M11 History")
         self.call("screen_hs.o:centerClicked");self.call("screen_hs.o:rightPressed")
         self.assertEqual(self.screen(),h.symbol("historyScreen"))  # Detail -> list stays in history.
@@ -59,7 +59,7 @@ class HistoryUiTests(unittest.TestCase):
         self.open_list()
         self.assertEqual([self.fg[7],self.fg[9],self.fg[11]],[0x07E0,0xD344,0xFFFF])
     def open_list(self):
-        self.call("Screen_OpenHistory");self.call("screen_hs.o:centerClicked")
+        self.call("ScrnHs_OpenHistory");self.call("screen_hs.o:centerClicked")
     def test_menu_picker_list_details_and_back_preserve_selection(self):
         for i in range(3):self.hw.append()
         self.open_list()
@@ -80,7 +80,7 @@ class HistoryUiTests(unittest.TestCase):
         self.assertEqual(self.cpu.mem_read(h.symbol("historyScreenMode"),1),b"\x01")
     def test_hidden_device_is_still_selectable(self):
         self.cpu.mem_write(h.symbol("deviceBuff")+36+69,b"\x01")
-        self.call("Screen_OpenHistory")
+        self.call("ScrnHs_OpenHistory")
         self.assertIn("[Hidden]",self.text[7])
         self.call("screen_hs.o:centerClicked");self.assertEqual(self.text[7],"No history yet")
     def test_new_records_do_not_move_frozen_selection_until_refresh(self):

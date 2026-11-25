@@ -104,7 +104,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createLabel(&textbox_6, TXB_ID_5, 0, 20, LCD_WIDTH - 1, 37, "General setting", C_DARK_SLATE_BLUE,
         ALIGN_CENTER_LEFT);
 
@@ -170,8 +170,8 @@ static void init(void)
     /* One box per character for the numeric editors. */
     if (hasCharacterEditor())
     {
-        Screen_EditCharactersCreate(counts[indexOfGeneralSettingMenu]);
-        Screen_EditCharactersUpdate(indexOfEdittingValue);
+        ScrnCommon_EditCharactersCreate(counts[indexOfGeneralSettingMenu]);
+        ScrnCommon_EditCharactersUpdate(indexOfEdittingValue);
     }
 
     /* Description and help (no room below the SF list). */
@@ -192,7 +192,7 @@ static void render(void)
 {
     if (hasCharacterEditor())
     {
-        Screen_EditCharactersUpdate(indexOfEdittingValue);
+        ScrnCommon_EditCharactersUpdate(indexOfEdittingValue);
     }
     if (indexOfGeneralSettingMenu == ITEM_SPREAD_FACTOR)
     {
@@ -201,7 +201,7 @@ static void render(void)
             UG_TextboxSetBackColor(&window_1, TXB_ID_7 + i, i == indexOfSelection ? C_DIM_GRAY : C_BLACK);
         }
     }
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
@@ -244,7 +244,7 @@ static void centerClicked(void)
 
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE || indexOfGeneralSettingMenu == ITEM_SPREAD_FACTOR)
     {
-        Screen_SaveGeneralSettings();
+        ScrnCommon_SaveGeneralSettings();
         back();
     }
 }
@@ -348,7 +348,7 @@ static void centerPressed(void)
         }
     }
 
-    Screen_SaveGeneralSettings();
+    ScrnCommon_SaveGeneralSettings();
     back();
 }
 

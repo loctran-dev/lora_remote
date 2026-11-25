@@ -91,11 +91,11 @@ Screen_t deviceControlScreen = {
 
 /* Public API =============================================================== */
 
-void Screen_ShowConnectionError(uint8_t id)
+void ScrnDcs_ShowConnectionError(uint8_t id)
 {
     Power_WakeForError();
     Main_SetBuzzerMode(BUZZER_3_SHORT_BEEP);
-    if (Screen_DeviceVisible(id) && currentScreen != &editDeviceSettingScreen &&
+    if (ScrnCommon_DeviceVisible(id) && currentScreen != &editDeviceSettingScreen &&
         currentScreen != &editGeneralSettingScreen && currentScreen != &dateTimeScreen &&
         currentScreen != &historyScreen && !inScheduleSelection)
     {
@@ -110,14 +110,14 @@ void Screen_ShowConnectionError(uint8_t id)
     connectionNoticeTick = HAL_GetTick();
 }
 
-void Screen_ShowMotorLocked(uint8_t motorPower)
+void ScrnDcs_ShowMotorLocked(uint8_t motorPower)
 {
     lockNoticePower = motorPower;
     lockNoticeTick = HAL_GetTick();
     lockNoticeActive = 1;
 }
 
-uint8_t Screen_IsScheduleEditing(void)
+uint8_t ScrnDcs_IsScheduleEditing(void)
 {
     return inScheduleSelection != 0;
 }
@@ -135,10 +135,10 @@ static void init(void)
     char rssiText[20];
 
     lockNoticeActive = 0;
-    if (!Screen_EnsureVisibleDevice())
+    if (!ScrnCommon_EnsureVisibleDevice())
     {
         inScheduleSelection = 0;
-        Screen_EmptyControlInit();
+        ScrnCommon_EmptyControlInit();
         return;
     }
     if (inScheduleSelection)
@@ -167,7 +167,7 @@ static void init(void)
         statusIconsObject->update = statusIconsUpdate;
         statusIconsObject->state = OBJ_STATE_VALID | OBJ_STATE_VISIBLE;
     }
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     /* Power status is drawn with crisp LCD primitives after widget updates. */
 
     /* Button labels. */
@@ -214,9 +214,9 @@ static void render(void)
     char lost[16];
     UG_COLOR rssiColor;
 
-    if (!Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
-        Screen_EmptyControlRender();
+        ScrnCommon_EmptyControlRender();
         return;
     }
     if (inScheduleSelection)
@@ -293,7 +293,7 @@ static void render(void)
         UG_TextboxSetText(&window_1, TXB_ID_10, lost);
     }
 
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     setStatusIcons(&device, &module);
     UG_Update();
 }
@@ -301,13 +301,13 @@ static void render(void)
 static void leftClicked(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    if (!Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
         return;
     }
     if (!inScheduleSelection)
     {
-        Screen_SelectAdjacentVisible(-1);
+        ScrnCommon_SelectAdjacentVisible(-1);
     }
     else if (adjustingScheduleValue)
     {
@@ -326,13 +326,13 @@ static void leftClicked(void)
 static void rightClicked(void)
 {
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    if (!Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
         return;
     }
     if (!inScheduleSelection)
     {
-        Screen_SelectAdjacentVisible(1);
+        ScrnCommon_SelectAdjacentVisible(1);
     }
     else if (adjustingScheduleValue)
     {
@@ -353,9 +353,9 @@ static void centerClicked(void)
 {
     int32_t seconds;
 
-    if (!Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
-        Screen_OpenDeviceManager();
+        ScrnDvm_OpenDeviceManager();
         return;
     }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
@@ -392,7 +392,7 @@ static void centerClicked(void)
 /* Open the device monitor. */
 static void leftPressed(void)
 {
-    if (inScheduleSelection || !Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (inScheduleSelection || !ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
         return;
     }
@@ -409,16 +409,16 @@ static void rightPressed(void)
         returnFromTimer();
         return;
     }
-    if (!Screen_DeviceVisible(systemInfo.currentDeviceId))
+    if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
-        Screen_OpenDeviceManager();
+        ScrnDvm_OpenDeviceManager();
         return;
     }
     Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
     UG_WindowHide(&window_1);
     UG_WindowDelete(&window_1);
     currentScreen = &deviceSettingScreen;
-    Screen_DeviceSettingsResetSelection();
+    ScrnDss_ResetSelection();
     currentScreen->init();
     currentScreen->render();
 }
@@ -613,7 +613,7 @@ static void timerRender(void)
     uint8_t id;
     uint16_t minutes;
 
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     if (adjustingScheduleValue)
     {
         /* Custom duration: four digits with the cursor highlighted. */
@@ -689,7 +689,7 @@ static void createTimerScreen(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     device = &deviceBuff[systemInfo.currentDeviceId];
     type = device->factoryInfo.deviceTypeChar;
     if (type < 32 || type > 126)

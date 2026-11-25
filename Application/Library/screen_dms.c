@@ -56,7 +56,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createText(&textbox_6, 5, 0, 20, 127, 37, "Device info");
     UG_TextboxSetBackColor(&window_1, 5, C_DARK_SLATE_BLUE);
     UG_TextboxSetScrollEnabled(&window_1, 5, 1);
@@ -91,7 +91,7 @@ static void render(void)
     uint8_t module;
     uint32_t seconds;
 
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     if (id >= MAXIMUM_DEVICE || deviceBuff[id].isDelete)
     {
         UG_TextboxSetText(&window_1, 5, "No paired device");
@@ -151,7 +151,7 @@ static void render(void)
 /* Open this device's history list; long beep and stay here if it has none. */
 static void leftClicked(void)
 {
-    if (!Screen_OpenDeviceHistory(systemInfo.currentDeviceId))
+    if (!ScrnHs_OpenDeviceHistory(systemInfo.currentDeviceId))
     {
         Main_SetBuzzerMode(BUZZER_LONG_BEEP);
         return;

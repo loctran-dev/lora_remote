@@ -6,7 +6,7 @@
   never wrote the newly formatted RTC text to it. Both now use a live header.
 - Date/time editor used a centered HH:MM:SS clock and a custom battery position,
   without the standard icon/unknown-voltage/low-battery handling.
-- A single Screen_StatusBarCreate/Update implementation now covers control,
+- A single ScrnCommon_StatusBarCreate/Update implementation now covers control,
   timer picker/custom editor, menu, monitor, both settings menus/editors, date/time,
   history (picker/list/details), device manager and the empty-control screen.
   Clock HH:MM is left-aligned; bitmap 15x9 starts at (87,3); battery percentage

@@ -35,7 +35,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.tick=0;self.rect={};self.text={};self.scroll={};self.align={};self.color={};self.created=[];self.frames=[]
         files=list((h.ROOT/'Application/Library').glob('screen_*.c'))+[h.ROOT/'Application/Library/screens.c']
         names=set(re.findall(r'\b(_?UG_\w+)\s*\(',''.join(f.read_text() for f in files)))
-        names.update(['Rtc_Read','Main_SetBuzzerMode','Screen_EditCharactersCreate','Screen_EditCharactersUpdate','HAL_GetTick'])
+        names.update(['Rtc_Read','Main_SetBuzzerMode','ScrnCommon_EditCharactersCreate','ScrnCommon_EditCharactersUpdate','HAL_GetTick'])
         hooks={}
         for name in names:
             try:hooks[h.symbol(name)[0]&~1]=name
@@ -87,7 +87,7 @@ class UiConsistencyTests(h.FirmwareHarness):
     def test_every_screen_uses_identical_live_clock_and_battery_header(self):
         for init,render in [('screen_mms.o:init','screen_mms.o:render'),('screen_gss.o:init','screen_gss.o:render'),('screen_dss.o:init','screen_dss.o:render'),
                             ('screen_dms.o:init','screen_dms.o:render'),('screen_dts.o:init','screen_dts.o:render'),('screen_hs.o:init','screen_hs.o:render'),
-                            ('screen_dvm.o:init','screen_dvm.o:render'),('Screen_EmptyControlInit','Screen_EmptyControlRender'),
+                            ('screen_dvm.o:init','screen_dvm.o:render'),('ScrnCommon_EmptyControlInit','ScrnCommon_EmptyControlRender'),
                             ('screen_dcs.o:init','screen_dcs.o:render')]:
             with self.subTest(screen=init):
                 self.call(init);self.call(render);self.header();self.layout()
@@ -156,12 +156,12 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.call('screen_dvm.o:render');self.assertIn('17-20/20',self.text[20])
         self.assertEqual(self.text[1],'100%')
     def test_empty_battery_uses_frame_zero_and_unknown_voltage_is_not_100_percent(self):
-        self.call('Screen_StatusBarCreate')
+        self.call('ScrnCommon_StatusBarCreate')
         self.assertEqual(self.frames[-1],h.symbol('bmp_battery_4')[0])
-        self.put(self.system+self.members['batteryUsage'],0);self.call('Screen_StatusBarUpdate')
+        self.put(self.system+self.members['batteryUsage'],0);self.call('ScrnCommon_StatusBarUpdate')
         self.assertEqual(self.frames[-1],h.symbol('bmp_battery_0')[0])
         self.assertEqual(self.text[1],'0%')
         self.cpu.mem_write(self.system+self.members['batteryVoltage'],struct.pack('<f',0))
-        self.call('Screen_StatusBarUpdate');self.assertEqual(self.text[1],'--%')
+        self.call('ScrnCommon_StatusBarUpdate');self.assertEqual(self.text[1],'--%')
 
 if __name__=='__main__':unittest.main(verbosity=2)

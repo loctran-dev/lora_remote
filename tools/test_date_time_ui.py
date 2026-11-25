@@ -16,7 +16,7 @@ class DateTimeUiTests(m.MenuHarness):
                     "UG_TextboxSetBackColor","UG_TextboxSetForeColor","UG_TextboxSetAlignment",
                     "UG_TextboxSetScrollEnabled","UG_WindowShow","UG_Update","Main_SetBuzzerMode",
                     "UG_WindowHide","UG_WindowDelete","screen_gss.o:init","screen_gss.o:render","Power_WakeForError",
-                    "Screen_StatusBarCreate","Screen_StatusBarUpdate"])
+                    "ScrnCommon_StatusBarCreate","ScrnCommon_StatusBarUpdate"])
         self.cpu.mem_write(self.system+28,bytes([12,34,56]))
         self.cpu.mem_write(self.system+31,bytes([4,11,19,26]))
         self.cpu.mem_write(h.symbol("currentScreen")[0],struct.pack("<I",h.symbol("dateTimeScreen")[0]))
@@ -80,7 +80,7 @@ class DateTimeUiTests(m.MenuHarness):
         self.assertEqual(self.render()[15],"Timer active: blocked")
     def test_link_warning_does_not_discard_clock_editor(self):
         self.add(0);self.call("screen_dts.o:leftClicked")
-        self.call("Screen_ShowConnectionError",0)
+        self.call("ScrnDcs_ShowConnectionError",0)
         self.assertFalse(any(c[0]=="UG_WindowDelete" for c in self.calls))
         self.assertEqual(self.render()[5],"20")
     def test_fields_do_not_overlap_separators_and_do_not_scroll(self):

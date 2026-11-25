@@ -71,7 +71,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
 
     /* Title, field captions, fields and separators. */
     createText(2, 0, 20, 127, 37, "Date & time", C_DARK_SLATE_BLUE);
@@ -115,7 +115,7 @@ static void render(void)
         UG_TextboxSetForeColor(&window_1, 5 + i, i == selectedField ? C_WHITE : C_CYAN);
     }
 
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_TextboxSetText(&window_1, 15, saveError == eRtc_SetResult_Busy ? "Timer active: blocked" :
         saveError ? "RTC error; try again" : "Hold CENTER: save");
     UG_TextboxSetForeColor(&window_1, 15, saveError ? C_RED : C_WHITE);

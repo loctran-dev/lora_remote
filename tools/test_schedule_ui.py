@@ -34,12 +34,12 @@ class TimerUiTests(h.FirmwareHarness):
                                        h.symbol("screen_dcs.o:render")[0] | 1))
         names = ["Main_SetBuzzerMode", "Main_SetScheduleTimeToCurrentModule", "UG_TextboxSetText",
                  "UG_TextboxSetBackColor", "UG_TextboxSetForeColor", "UG_TextboxCheckVisible",
-                 "UG_TextboxShow", "UG_TextboxHide", "UG_Update", "Screen_UpdateBattery",
+                 "UG_TextboxShow", "UG_TextboxHide", "UG_Update", "ScrnCommon_UpdateBattery",
                  "screen_dcs.o:createText", "screen_dcs.o:init", "screen_dcs.o:render", "UG_WindowCreate", "UG_WindowHide",
                  "UG_WindowDelete", "UG_WindowSetStyle", "UG_WindowSetTitleHeight",
                  "UG_WindowSetBackColor", "UG_WindowSetXStart", "UG_WindowSetYStart",
-                 "UG_WindowSetXEnd", "UG_WindowSetYEnd", "UG_WindowShow", "Screen_StatusBarCreate",
-                 "Screen_StatusBarUpdate", "Util_ConvertTimestampToRTC", "Power_WakeForError"]
+                 "UG_WindowSetXEnd", "UG_WindowSetYEnd", "UG_WindowShow", "ScrnCommon_StatusBarCreate",
+                 "ScrnCommon_StatusBarUpdate", "Util_ConvertTimestampToRTC", "Power_WakeForError"]
         hooks = {h.symbol(name)[0] & ~1: name for name in names}
 
         def intercept(cpu, address, size, data):
@@ -111,19 +111,19 @@ class TimerUiTests(h.FirmwareHarness):
         self.call("screen_dcs.o:centerPressed")
         self.assertFalse(self.sent)
         self.assertEqual(self.texts[39], "Minimum: 1 minute")
-        self.assertTrue(self.call("Screen_IsScheduleEditing"))
+        self.assertTrue(self.call("ScrnDcs_IsScheduleEditing"))
 
     def test_custom_apply_uses_numeric_state_not_string_cursor(self):
         self.editor(61)
         self.call("screen_dcs.o:centerPressed")
         self.assertEqual(self.sent, [3660])
-        self.assertFalse(self.call("Screen_IsScheduleEditing"))
+        self.assertFalse(self.call("ScrnDcs_IsScheduleEditing"))
 
     def test_hold_right_cancels_custom_without_sending(self):
         self.editor(61)
         self.call("screen_dcs.o:rightPressed")
         self.assertFalse(self.sent)
-        self.assertFalse(self.call("Screen_IsScheduleEditing"))
+        self.assertFalse(self.call("ScrnDcs_IsScheduleEditing"))
 
     def test_hold_center_in_picker_is_back_not_apply(self):
         self.editor()
@@ -194,7 +194,7 @@ class TimerUiTests(h.FirmwareHarness):
     def test_connection_warning_does_not_discard_timer_editor(self):
         self.editor(61, 2)
         self.add(1)
-        self.call("Screen_ShowConnectionError", 1)
+        self.call("ScrnDcs_ShowConnectionError", 1)
         self.assertEqual(self.minutes(), 61)
         self.assertEqual(self.get(self.system + 80), 0)
         self.assertEqual(self.creates, 0)

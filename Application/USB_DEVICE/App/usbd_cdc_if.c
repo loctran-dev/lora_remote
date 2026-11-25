@@ -371,7 +371,7 @@ static void CDC_ButtonCommand(void)
   Power_UserActivity();
   callback();
   if (currentScreen == &deviceManagerScreen) {
-    uint8_t id = Screen_ManagerSelectedDevice();
+    uint8_t id = ScrnDvm_SelectedDevice();
     if (id < MAXIMUM_DEVICE) {
       echoLength = sprintf((char*)UserRxBufferFS,
         "OK BTN %s %s SCREEN=DEVICE_MANAGER DEV=%u HIDE=%u LOCK=%u\n",

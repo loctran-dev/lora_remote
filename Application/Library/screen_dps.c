@@ -71,7 +71,7 @@ static void init(void)
     UG_WindowSetYStart(&window_1, 0);
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createText(&textbox_6, TXB_ID_5, 0, 20, 127, 37, "Device pairing", C_DARK_SLATE_BLUE, ALIGN_CENTER_LEFT);
 
     /* Each pairing state creates its own footer once. */
@@ -116,7 +116,7 @@ static void init(void)
 
 static void render(void)
 {
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 

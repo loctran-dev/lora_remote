@@ -84,46 +84,46 @@ extern uint8_t pairingUI_Step;
 extern uint8_t historyScreenMode;
 
 /* screens.c: device visibility and selection */
-uint8_t Screen_DeviceVisible(uint8_t deviceId);
-uint8_t Screen_EnsureVisibleDevice(void);
-void Screen_SelectAdjacentVisible(int8_t direction);
+uint8_t ScrnCommon_DeviceVisible(uint8_t deviceId);
+uint8_t ScrnCommon_EnsureVisibleDevice(void);
+void ScrnCommon_SelectAdjacentVisible(int8_t direction);
 
 /* screens.c: settings persistence */
-void Screen_SaveDeviceFlags(uint8_t deviceId);
-void Screen_SaveDeviceSettings(uint8_t deviceId);
-void Screen_SaveGeneralSettings(void);
+void ScrnCommon_SaveDeviceFlags(uint8_t deviceId);
+void ScrnCommon_SaveDeviceSettings(uint8_t deviceId);
+void ScrnCommon_SaveGeneralSettings(void);
 
 /* screens.c: status bar */
-void Screen_StatusBarCreate(void);
-void Screen_StatusBarUpdate(void);
-void Screen_UpdateBattery(void);
+void ScrnCommon_StatusBarCreate(void);
+void ScrnCommon_StatusBarUpdate(void);
+void ScrnCommon_UpdateBattery(void);
 
 /* screens.c: settings menu */
-void Screen_SettingsMenuCreate(char *title);
-void Screen_SettingsMenuCreateStacked(char *title);
-void Screen_SettingsMenuPage(uint8_t page, uint8_t count);
-void Screen_SettingsMenuBegin(uint8_t page);
-void Screen_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected);
-void Screen_SettingsMenuUpdate(void);
+void ScrnCommon_SettingsMenuCreate(char *title);
+void ScrnCommon_SettingsMenuCreateStacked(char *title);
+void ScrnCommon_SettingsMenuPage(uint8_t page, uint8_t count);
+void ScrnCommon_SettingsMenuBegin(uint8_t page);
+void ScrnCommon_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected);
+void ScrnCommon_SettingsMenuUpdate(void);
 
 /* screens.c: empty device control screen */
-void Screen_EmptyControlInit(void);
-void Screen_EmptyControlRender(void);
+void ScrnCommon_EmptyControlInit(void);
+void ScrnCommon_EmptyControlRender(void);
 
 /* screens.c: menu scrolling and character editor */
-void Screen_MenuScrollUpdate(uint8_t count, uint8_t selected);
-void Screen_EditCharactersCreate(uint8_t count);
-void Screen_EditCharactersUpdate(uint8_t position);
+void ScrnCommon_MenuScrollUpdate(uint8_t count, uint8_t selected);
+void ScrnCommon_EditCharactersCreate(uint8_t count);
+void ScrnCommon_EditCharactersUpdate(uint8_t position);
 
 /* Implemented by individual screens (screen_*.c). */
-void Screen_OpenDeviceManager(void);
-uint8_t Screen_ManagerSelectedDevice(void);
-void Screen_ShowMotorLocked(uint8_t motorPower);
-void Screen_ShowConnectionError(uint8_t deviceId);
-uint8_t Screen_IsScheduleEditing(void);
-void Screen_DeviceSettingsResetSelection(void);
-void Screen_GeneralSettingsResetSelection(void);
-void Screen_OpenHistory(void);
-uint8_t Screen_OpenDeviceHistory(uint8_t deviceId);
+void ScrnDvm_OpenDeviceManager(void);
+uint8_t ScrnDvm_SelectedDevice(void);
+void ScrnDcs_ShowMotorLocked(uint8_t motorPower);
+void ScrnDcs_ShowConnectionError(uint8_t deviceId);
+uint8_t ScrnDcs_IsScheduleEditing(void);
+void ScrnDss_ResetSelection(void);
+void ScrnGss_ResetSelection(void);
+void ScrnHs_OpenHistory(void);
+uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId);
 
 #endif

@@ -62,13 +62,13 @@ static void saveRadioSettings(void);
 /* Device visibility and selection ========================================== */
 
 /* Hide is device-level in the current single-module storage layout. */
-uint8_t Screen_DeviceVisible(uint8_t id)
+uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
     return id < MAXIMUM_DEVICE && !deviceBuff[id].isDelete &&
         !deviceBuff[id].motorData[0].isHide;
 }
 
-uint8_t Screen_EnsureVisibleDevice(void)
+uint8_t ScrnCommon_EnsureVisibleDevice(void)
 {
     uint8_t start = systemInfo.currentDeviceId < MAXIMUM_DEVICE ? systemInfo.currentDeviceId : 0;
     uint8_t id;
@@ -77,7 +77,7 @@ uint8_t Screen_EnsureVisibleDevice(void)
     for (int offset = 0; offset < MAXIMUM_DEVICE; offset++)
     {
         id = start + offset < MAXIMUM_DEVICE ? start + offset : MAXIMUM_DEVICE - offset - 1;
-        if (Screen_DeviceVisible(id))
+        if (ScrnCommon_DeviceVisible(id))
         {
             if (id != systemInfo.currentDeviceId || systemInfo.currentModuleId >= 6)
             {
@@ -94,13 +94,13 @@ uint8_t Screen_EnsureVisibleDevice(void)
     return 0;
 }
 
-void Screen_SelectAdjacentVisible(int8_t direction)
+void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 {
     int id = systemInfo.currentDeviceId;
 
     for (id += direction; id >= 0 && id < MAXIMUM_DEVICE; id += direction)
     {
-        if (Screen_DeviceVisible((uint8_t)id))
+        if (ScrnCommon_DeviceVisible((uint8_t)id))
         {
             systemInfo.currentDeviceId = id;
             systemInfo.currentModuleId = 0;
@@ -111,7 +111,7 @@ void Screen_SelectAdjacentVisible(int8_t direction)
 
 /* Settings persistence ===================================================== */
 
-void Screen_SaveDeviceFlags(uint8_t id)
+void ScrnCommon_SaveDeviceFlags(uint8_t id)
 {
     DeviceStorageData_t *stored;
     MotorData_t *module;
@@ -130,7 +130,7 @@ void Screen_SaveDeviceFlags(uint8_t id)
     }
 }
 
-void Screen_SaveDeviceSettings(uint8_t id)
+void ScrnCommon_SaveDeviceSettings(uint8_t id)
 {
     DeviceStorageData_t *stored;
     MotorData_t *module;
@@ -151,7 +151,7 @@ void Screen_SaveDeviceSettings(uint8_t id)
     systemInfo.isNeedSaveConfig = 1;
 }
 
-void Screen_SaveGeneralSettings(void)
+void ScrnCommon_SaveGeneralSettings(void)
 {
     saveRadioSettings();
     storageData.sleepMode = systemInfo.sleepMode;
@@ -164,7 +164,7 @@ void Screen_SaveGeneralSettings(void)
 
 /* Every screen reserves textbox 0/1 and image 0 for this same status bar.
    Bitmap bounds (15x9) do not overlap the four-character 100% textbox. */
-void Screen_StatusBarCreate(void)
+void ScrnCommon_StatusBarCreate(void)
 {
     createText(&textbox_1, 0, 0, 0, 50, 15, "", C_BLACK);
     createText(&textbox_2, 1, 104, 0, 127, 15, "", C_BLACK);
@@ -172,19 +172,19 @@ void Screen_StatusBarCreate(void)
     UG_TextboxSetScrollEnabled(&window_1, 0, 0);
     UG_TextboxSetScrollEnabled(&window_1, 1, 0);
     UG_ImageCreate(&window_1, &image_1, IMG_ID_0, 87, 3, 101, 11);
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
 }
 
-void Screen_StatusBarUpdate(void)
+void ScrnCommon_StatusBarUpdate(void)
 {
     char time[8];
 
     sprintf(time, "%02u:%02u", systemInfo.time.Hours, systemInfo.time.Minutes);
     UG_TextboxSetText(&window_1, 0, time);
-    Screen_UpdateBattery();
+    ScrnCommon_UpdateBattery();
 }
 
-void Screen_UpdateBattery(void)
+void ScrnCommon_UpdateBattery(void)
 {
     char text[8];
     uint8_t valid = systemInfo.batteryVoltage > 0;
@@ -217,17 +217,17 @@ void Screen_UpdateBattery(void)
 
 /* Settings menu ============================================================ */
 
-void Screen_SettingsMenuCreate(char *title)
+void ScrnCommon_SettingsMenuCreate(char *title)
 {
     createSettingsMenu(title, 0);
 }
 
-void Screen_SettingsMenuCreateStacked(char *title)
+void ScrnCommon_SettingsMenuCreateStacked(char *title)
 {
     createSettingsMenu(title, 1);
 }
 
-void Screen_SettingsMenuPage(uint8_t page, uint8_t count)
+void ScrnCommon_SettingsMenuPage(uint8_t page, uint8_t count)
 {
     char text[12];
 
@@ -238,7 +238,7 @@ void Screen_SettingsMenuPage(uint8_t page, uint8_t count)
     }
 }
 
-void Screen_SettingsMenuBegin(uint8_t page)
+void ScrnCommon_SettingsMenuBegin(uint8_t page)
 {
     settingsPageChanged = page != settingsPage;
     if (settingsPageChanged)
@@ -248,7 +248,7 @@ void Screen_SettingsMenuBegin(uint8_t page)
     }
 }
 
-void Screen_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected)
+void ScrnCommon_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected)
 {
     uint8_t id;
 
@@ -277,18 +277,18 @@ void Screen_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selec
     }
 }
 
-void Screen_SettingsMenuUpdate(void)
+void ScrnCommon_SettingsMenuUpdate(void)
 {
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
 /* Empty device control screen ============================================== */
 
-void Screen_EmptyControlInit(void)
+void ScrnCommon_EmptyControlInit(void)
 {
     createWindow();
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createText(&textbox_6, 5, 0, 20, 127, 37, "Device control", C_DARK_SLATE_BLUE);
     createText(&textbox_7, 6, 0, 48, 127, 65, "No visible devices", C_BLACK);
     createText(&textbox_8, 8, 0, 76, 127, 93, "Use Device manager", C_BLACK);
@@ -298,15 +298,15 @@ void Screen_EmptyControlInit(void)
     UG_Update();
 }
 
-void Screen_EmptyControlRender(void)
+void ScrnCommon_EmptyControlRender(void)
 {
-    Screen_StatusBarUpdate();
+    ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
 
 /* Menu scrolling and character editor ====================================== */
 
-void Screen_MenuScrollUpdate(uint8_t count, uint8_t selected)
+void ScrnCommon_MenuScrollUpdate(uint8_t count, uint8_t selected)
 {
     for (uint8_t i = 0; i < count; i++)
     {
@@ -315,7 +315,7 @@ void Screen_MenuScrollUpdate(uint8_t count, uint8_t selected)
     }
 }
 
-void Screen_EditCharactersCreate(uint8_t count)
+void ScrnCommon_EditCharactersCreate(uint8_t count)
 {
     uint8_t columns;
     uint16_t x;
@@ -334,7 +334,7 @@ void Screen_EditCharactersCreate(uint8_t count)
     }
 }
 
-void Screen_EditCharactersUpdate(uint8_t position)
+void ScrnCommon_EditCharactersUpdate(uint8_t position)
 {
     char *text = UG_TextboxGetText(&window_1, TXB_ID_7);
     uint8_t length;
@@ -398,7 +398,7 @@ static void createSettingsMenu(char *title, uint8_t stacked)
 
     /* Window, status bar and title (with page indicator when stacked). */
     createWindow();
-    Screen_StatusBarCreate();
+    ScrnCommon_StatusBarCreate();
     createText(&textbox_6, 20, 0, 20, stacked ? 99 : 127, 37, title, C_DARK_SLATE_BLUE);
     if (stacked)
     {
