@@ -187,7 +187,8 @@ static uint8_t isValidPacket(const LoraPackage_t *packet)
 - Viết comment Doxygen bằng tiếng Anh, dùng `/** ... */` cho khối và `///<` cho field; dùng lệnh dạng `@brief`, không dùng `\brief` hay `/*!`.
 - Chỉ ghi điều mà tên hàm chưa nói: ngữ cảnh gọi (ISR, task nào, mutex nào), điều kiện, đơn vị, side effect. Không viết lại tên hàm thành câu.
 - Đầu mỗi file `.h` của module có `@file`, `@brief`, đoạn mô tả ngắn và một `@defgroup`; đóng nhóm bằng `/** @} */` sau `#endif`.
-  - Tên group theo tiền tố module: `power`, `link`, `comm`, `cmdhandler`, `schedule`, `history`, `rtc`, `button`, `main`, `screen`.
+  - Tên group theo tiền tố module: `power`, `link`, `comm`, `cmdhandler`, `schedule`, `history`, `rtc`, `button`, `flash`, `util`, `main`, `screen`; kiểu dùng chung trong `define.h` thuộc group `define`.
+  - File CubeMX (`main.h`, `main.c`): mô tả file, `@defgroup` và `/** @} */` đặt trong các vùng `USER CODE`; symbol do CubeMX sinh (handle, task, pin) được liệt kê trong `EXCLUDE_SYMBOLS` của `Doxyfile` thay vì viết comment.
 - Comment Doxygen của hàm public đặt trong `.c`, ngay trên định nghĩa hàm; không lặp lại trong `.h`. Thứ tự tag: `@brief`, mô tả thêm, `@param`, `@return`, `@note`, `@warning`.
 - File `.h` giữ phần mô tả module, struct/enum/biến `extern` public và nhóm API: `/** @name <Nhóm> */` + `/** @{ */` ... `/** @} */` bao quanh các khai báo, cùng tên với comment phân nhóm trong `.c`.
 - Struct/enum public có `@brief` cho kiểu và `///<` cho từng field hoặc giá trị; ghi đơn vị trong ngoặc vuông, ví dụ `[s]`, `[ms]`, `[V]`.

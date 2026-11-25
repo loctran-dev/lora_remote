@@ -1,201 +1,233 @@
+/**
+ * @file    define.h
+ * @brief   Shared application types: device and system state, and the flash configuration block.
+ *
+ * deviceBuff[] and systemInfo (defined in main.c) hold the runtime state;
+ * storageData is the RAM copy of SystemStorageData_t at CONFIG_DATA_ADDRESS.
+ * The layout of the packed storage structs is the flash format: append new
+ * fields at the end only.
+ *
+ * @defgroup define Shared types
+ * @{
+ */
 #ifndef DEFINE_H
 #define DEFINE_H
 #include <stdint.h>
 #include "stm32f1xx_hal.h"
 
-#define MAXIMUM_DEVICE 20
+#define MAXIMUM_DEVICE 20 ///< Paired device slots.
 
-#define BATTERY_LEVEL_1 5
-#define BATTERY_LEVEL_2 25
-#define BATTERY_LEVEL_3 50
-#define BATTERY_LEVEL_4 75
+/** @name Battery icon steps [%] (not used; see ScrnCommon_UpdateBattery()) */
+/** @{ */
+#define BATTERY_LEVEL_1 5  ///< Not used.
+#define BATTERY_LEVEL_2 25 ///< Not used.
+#define BATTERY_LEVEL_3 50 ///< Not used.
+#define BATTERY_LEVEL_4 75 ///< Not used.
+/** @} */
 
-#define RSSI_LEVEL_1 (115)
-#define RSSI_LEVEL_2 (100)
-#define RSSI_LEVEL_3 (70)
-#define RSSI_LEVEL_4 (30)
-#define RSSI_LEVEL_5 (-10)
+/** @name RSSI colour thresholds on device control, compared with DeviceInfo_t.rssi */
+/** @{ */
+#define RSSI_LEVEL_1 (115) ///< Above: tomato.
+#define RSSI_LEVEL_2 (100) ///< Above: orange.
+#define RSSI_LEVEL_3 (70)  ///< Above: yellow.
+#define RSSI_LEVEL_4 (30)  ///< Above: green-yellow.
+#define RSSI_LEVEL_5 (-10) ///< Above: light green; otherwise green.
+/** @} */
 
+/** @brief Device type reported in factory info. */
 typedef enum Device_Type_e
 {
-    eDevice_Type_Motor = 0x01,
-    eDevice_Type_Pressure = 0x02,
-    eDevice_Type_Encoder = 0x03,
+    eDevice_Type_Motor = 0x01,    ///< Motor controller ('M').
+    eDevice_Type_Pressure = 0x02, ///< Pressure sensor ('P').
+    eDevice_Type_Encoder = 0x03,  ///< Encoder ('E').
 } Device_Type_e;
 
+/** @brief Motor power state; the values are also used on the radio. */
 typedef enum Motor_PowerState_e
 {
-    eMotor_PowerState_Idle = 0x00,
-    eMotor_PowerState_On = 0x01,
-    eMotor_PowerState_Off = 0x02,
+    eMotor_PowerState_Idle = 0x00, ///< Unknown or no change.
+    eMotor_PowerState_On = 0x01,   ///< Running.
+    eMotor_PowerState_Off = 0x02,  ///< Stopped.
 } Motor_PowerState_e;
 
+/** @brief Alarm code sent by a device in CMD_ALARM_MESSAGE. */
 typedef enum Alarm_Name_e
 {
-    eAlarm_Name_None,
-    eAlarm_Name_LostInputPower,
-    eAlarm_Name_LostMotorPower,
-    eAlarm_Name_DiffMotorCurrentPhase,
+    eAlarm_Name_None,                  ///< No alarm.
+    eAlarm_Name_LostInputPower,        ///< Supply input lost.
+    eAlarm_Name_LostMotorPower,        ///< Motor power lost.
+    eAlarm_Name_DiffMotorCurrentPhase, ///< Phase currents differ.
 } Alarm_Name_e;
 
+/** @brief Buzzer pattern, see Main_SetBuzzerMode(). */
 typedef enum Buzzer_Mode_e
 {
-    eBuzzer_Mode_Off = 0,
-    eBuzzer_Mode_ShortBeep,
-    eBuzzer_Mode_2ShortBeep,
-    eBuzzer_Mode_3ShortBeep,
-    eBuzzer_Mode_LongBeep,
-    eBuzzer_Mode_AlarmLong
+    eBuzzer_Mode_Off = 0,    ///< Stop the buzzer.
+    eBuzzer_Mode_ShortBeep,  ///< 100 ms: button feedback.
+    eBuzzer_Mode_2ShortBeep, ///< Two short beeps: request accepted.
+    eBuzzer_Mode_3ShortBeep, ///< Three short beeps: connection lost.
+    eBuzzer_Mode_LongBeep,   ///< 300 ms: request rejected or failed.
+    eBuzzer_Mode_AlarmLong   ///< Continuous until eBuzzer_Mode_Off.
 } Buzzer_Mode_e;
 
+/** @brief Step of a pairing process (device search or connection). */
 typedef enum Process_Step_e
 {
-    eProcess_Step_None = 0,
-    eProcess_Step_Processing,
-    eProcess_Step_Done,
+    eProcess_Step_None = 0,   ///< Idle.
+    eProcess_Step_Processing, ///< Request sent, waiting up to 5 s.
+    eProcess_Step_Done,       ///< Reply received; systemTask picks up the result.
 } Process_Step_e;
 
+/** @brief Result of a pairing process. */
 typedef enum Process_Result_e
 {
-    eProcess_Result_Passed = 0,
-    eProcess_Result_Failed,
+    eProcess_Result_Passed = 0, ///< Succeeded.
+    eProcess_Result_Failed,     ///< Failed or not finished.
 } Process_Result_e;
 
+/** @brief Power mode of the remote, see power_sleep.h. */
 typedef enum System_RunMode_e
 {
-    eSystem_RunMode_DeepSleep = 0,
-    eSystem_RunMode_Sleep,
-    eSystem_RunMode_Normal,
-    eSystem_RunMode_Alarm,
+    eSystem_RunMode_DeepSleep = 0, ///< Not used.
+    eSystem_RunMode_Sleep,         ///< Backlight off; STOP whenever idle.
+    eSystem_RunMode_Normal,        ///< Display on.
+    eSystem_RunMode_Alarm,         ///< Display on for a device error; no sleep until a user action.
 } System_RunMode_e;
 
+/** @brief Identity of a device, read with CMD_GET_FACTORY_INFO. */
 typedef struct
 {
-    uint32_t serial;
-    uint8_t deviceType;
-    char deviceTypeChar;
-    uint8_t numberOfModule;
+    uint32_t serial;        ///< Serial number.
+    uint8_t deviceType;     ///< A Device_Type_e value.
+    char deviceTypeChar;    ///< Letter shown in device names ('M', 'P', 'E', 'x').
+    uint8_t numberOfModule; ///< Motor modules on the device.
 } FactoryInfo_t;
 
+/** @brief State and settings of one motor module. */
 typedef struct
 {
-    uint8_t moduleIndex;
+    uint8_t moduleIndex; ///< Module index on the device.
 
-    uint8_t isAlarmOccurred;
-    Alarm_Name_e alarm;
-    uint32_t alarmTime;
+    uint8_t isAlarmOccurred; ///< An alarm was reported.
+    Alarm_Name_e alarm;      ///< Last alarm code.
+    uint32_t alarmTime;      ///< Device Unix time of the last alarm.
 
-    Motor_PowerState_e pwrState;
-    float phaseCurrent[3];
-    uint16_t countdownMinutes;
-    uint32_t startTime;
-    uint32_t stopTime;
-    uint32_t scheduleTime;
+    Motor_PowerState_e pwrState; ///< Last reported power state.
+    float phaseCurrent[3];       ///< Last reported phase currents [A].
+    uint16_t countdownMinutes;   ///< Not used.
+    uint32_t startTime;          ///< Not used.
+    uint32_t stopTime;           ///< Not used.
+    uint32_t scheduleTime;       ///< Pending switch-off time (Unix); 0 = none.
 
     /* Settings */
-    char name[20];
-    float alarmThreshold;
-    uint32_t alarmDelayTime;
-    uint8_t isLock;
-    uint8_t isHide;
+    char name[20];           ///< Display name.
+    float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
+    uint32_t alarmDelayTime; ///< Time below the threshold before the alarm [s].
+    uint8_t isLock;          ///< Power commands are refused.
+    uint8_t isHide;          ///< Hidden from device control (device-level in practice).
 } MotorData_t;
 
+/** @brief Runtime state of one paired device slot. */
 typedef struct
 {
-    uint8_t deviceIndex;
-    uint8_t nodeId;
-    FactoryInfo_t factoryInfo;
-    uint32_t localTime;
-    int rssi;
+    uint8_t deviceIndex;       ///< Own index in deviceBuff.
+    uint8_t nodeId;            ///< LoRa node id.
+    FactoryInfo_t factoryInfo; ///< Identity from pairing.
+    uint32_t localTime;        ///< Device Unix time from the last status.
+    int rssi;                  ///< RSSI of the last packet from the device.
 
-    uint8_t isDelete;
+    uint8_t isDelete; ///< Slot is free (no paired device).
 
-    uint32_t lastCommTick;
-    uint32_t lastCommTime;
-    uint8_t isConnectionError;
+    uint32_t lastCommTick;     ///< RTOS tick of the last packet [ms].
+    uint32_t lastCommTime;     ///< Remote Unix time of the last packet.
+    uint8_t isConnectionError; ///< Set by the link monitor when probes fail.
 
-    MotorData_t motorData[6];
+    MotorData_t motorData[6]; ///< Motor modules; only module 0 is used.
 } DeviceInfo_t;
 
+/** @brief Runtime state of the remote. */
 typedef struct
 {
-    uint8_t netId;
-    uint8_t netIdConfig;
-    int frequencyConfig;
-    uint8_t sfConfig;
+    uint8_t netId;       ///< Network id the radio uses now (the default while pairing).
+    uint8_t netIdConfig; ///< Configured network id.
+    int frequencyConfig; ///< Configured radio frequency [MHz].
+    uint8_t sfConfig;    ///< Configured LoRa spreading factor.
 
-    uint8_t batteryUsage;
-    uint32_t batteryAdc;
-    float batteryVoltage;
-    float batteryVoltageMin;
-    float batteryVoltageMax;
-    RTC_TimeTypeDef time;
-    RTC_DateTypeDef date;
-    uint32_t currentTime;
-    uint8_t isChanging;
-    uint8_t isFullBattery;
+    uint8_t batteryUsage;    ///< Battery charge [%].
+    uint32_t batteryAdc;     ///< Raw ADC sample, written by DMA.
+    float batteryVoltage;    ///< Filtered battery voltage [V]; 0 = no valid reading.
+    float batteryVoltageMin; ///< Voltage of an empty battery [V].
+    float batteryVoltageMax; ///< Voltage of a full battery [V].
+    RTC_TimeTypeDef time;    ///< RTC time, read every systemTask loop.
+    RTC_DateTypeDef date;    ///< RTC date, read every systemTask loop.
+    uint32_t currentTime;    ///< Unix time of time/date.
+    uint8_t isChanging;      ///< Charger reports charging.
+    uint8_t isFullBattery;   ///< Charger reports full (standby).
 
-    uint8_t sleepMode;
-    uint32_t tUpdate;
-    uint32_t tSleepUpdate;
+    uint8_t sleepMode;     ///< 1 = the remote may sleep when idle.
+    uint32_t tUpdate;      ///< Link scan period outside SLEEP [s].
+    uint32_t tSleepUpdate; ///< RTC wake-up period in SLEEP [s].
 
     /* New connection process */
-    Process_Step_e findDeviceStep;       /* Idle, Processing, Done */
-    Process_Result_e findDeviceResult;   /* Passed, Failed */
-    uint32_t findDeviceTick;
-    Process_Step_e configDeviceStep;     /* Idle, Processing, Done */
-    Process_Result_e configDeviceResult; /* Passed, Failed */
-    uint32_t configDeviceTick;
-    uint8_t nextNodeId;
-    FactoryInfo_t findDevicefactoryInfo;
+    Process_Step_e findDeviceStep;       ///< Device search step.
+    Process_Result_e findDeviceResult;   ///< Device search result.
+    uint32_t findDeviceTick;             ///< RTOS tick when the search started [ms].
+    Process_Step_e configDeviceStep;     ///< Connection step.
+    Process_Result_e configDeviceResult; ///< Connection result.
+    uint32_t configDeviceTick;           ///< RTOS tick when the connection started [ms].
+    uint8_t nextNodeId;                  ///< Node id offered to the device being paired.
+    FactoryInfo_t findDevicefactoryInfo; ///< Identity of the device found by the search.
 
-    uint8_t currentDeviceId;
-    uint8_t currentModuleId;
+    uint8_t currentDeviceId; ///< Selected device (index in deviceBuff).
+    uint8_t currentModuleId; ///< Selected module on that device.
 
-    uint8_t isNeedSaveConfig;
-    uint32_t lastActionTick;
-    uint32_t lastReceiveMsgTick;
-    System_RunMode_e runMode;
+    uint8_t isNeedSaveConfig;    ///< storageData changed; systemTask writes it to flash.
+    uint32_t lastActionTick;     ///< RTOS tick of the last user action [ms].
+    uint32_t lastReceiveMsgTick; ///< Not used.
+    System_RunMode_e runMode;    ///< Power mode.
 } SystemInfo_t;
 
+/** @brief Stored settings of one device slot (flash format). */
 #pragma pack(1)
 typedef struct DeviceStorageData_t
 {
-    uint8_t nodeIdConfig;
-    uint8_t moduleIndex;
-    FactoryInfo_t factoryInfo;
+    uint8_t nodeIdConfig;      ///< LoRa node id.
+    uint8_t moduleIndex;       ///< Module index.
+    FactoryInfo_t factoryInfo; ///< Identity from pairing.
 
-    char name[20];
-    float alarmThreshold;
-    uint32_t alarmDelayTime;
-    uint8_t isLock;
-    uint8_t isHide;
+    char name[20];           ///< Display name.
+    float alarmThreshold;    ///< Low-current alarm threshold [A].
+    uint32_t alarmDelayTime; ///< Alarm delay [s].
+    uint8_t isLock;          ///< Power commands are refused.
+    uint8_t isHide;          ///< Hidden from device control.
 
-    uint8_t isDelete;
+    uint8_t isDelete; ///< Slot is free.
 } DeviceStorageData_t;
 #pragma pack()
 
+/** @brief Configuration block stored at CONFIG_DATA_ADDRESS (flash format). */
 #pragma pack(1)
 typedef struct SystemStorageData_t
 {
-    uint8_t netIdConfig;
-    int frequencyConfig;
-    uint8_t sfConfig;
+    uint8_t netIdConfig; ///< Network id.
+    int frequencyConfig; ///< Radio frequency [MHz].
+    uint8_t sfConfig;    ///< LoRa spreading factor.
 
-    uint8_t sleepMode;
-    uint32_t tUpdate;
-    uint32_t tSleepUpdate;
+    uint8_t sleepMode;     ///< 1 = sleep allowed.
+    uint32_t tUpdate;      ///< Link scan period outside SLEEP [s].
+    uint32_t tSleepUpdate; ///< RTC wake-up period in SLEEP [s].
 
-    DeviceStorageData_t DeviceConfig[MAXIMUM_DEVICE];
+    DeviceStorageData_t DeviceConfig[MAXIMUM_DEVICE]; ///< Device slots.
 
-    uint8_t lastWriteSuccess;
+    uint8_t lastWriteSuccess; ///< TRUE once the block has been written; otherwise defaults load.
     /* Appended extension; legacy settings and marker offsets stay unchanged. */
-    uint32_t linkSettingsMagic;
-    uint16_t sleepAfterIdleSeconds;
-    uint16_t connectionTimeoutSeconds;
-    uint16_t autoStatusSeconds[MAXIMUM_DEVICE];
-    uint8_t linkSettingsChecksum;
+    uint32_t linkSettingsMagic;                 ///< Marks the link settings as present.
+    uint16_t sleepAfterIdleSeconds;             ///< Idle time before SLEEP [s].
+    uint16_t connectionTimeoutSeconds;          ///< Silence before a device is probed [s].
+    uint16_t autoStatusSeconds[MAXIMUM_DEVICE]; ///< Auto-status period per device [s].
+    uint8_t linkSettingsChecksum;               ///< Util_CalculateCRC() of the link settings.
 } SystemStorageData_t;
 #pragma pack()
 
 #endif
+/** @} */
