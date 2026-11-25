@@ -55,10 +55,10 @@ class FirmwareHarness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
-        # The second offsets belong to ConfigV2_t, kept in config_store.c for conversion.
-        for field, offsets in {"isHide": {MOT_HIDE, 39}, "isLock": {MOT_LOCK, 38},
-                               "isDelete": {CFG_DELETE, 40}, "motorData": {DEV_MODULE},
-                               "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, 844, AUTO_STATUS},
+        # autoStatusSeconds also sits at offset 5 of PayloadRequestSetConfig_t.
+        for field, offsets in {"isHide": {MOT_HIDE}, "isLock": {MOT_LOCK},
+                               "isDelete": {CFG_DELETE}, "motorData": {DEV_MODULE},
+                               "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, AUTO_STATUS},
                                "isConnectionError": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "currentDeviceId": {60}, "currentModuleId": {61},
                                "isNeedSaveConfig": {62}, "DeviceConfig": {15}}.items():

@@ -12,8 +12,7 @@ The 4 KiB settings area at 0x0803F000 is split into two 2 KiB slots:
 | B | 0x0803F800 | 16-byte header + SystemStorageData_t (1545 bytes) |
 
 Header: `sequence` (uint32), `length` (uint16), `reserved` (uint16, 0xFFFF),
-`crc` (CRC-32 of the payload), `magic` (0x33474643, "CFG3"; see the motor pool
-below for the older "CFG2" payload).
+`crc` (CRC-32 of the payload), `magic` (0x33474643, "CFG3").
 
 ## Save
 
@@ -26,17 +25,16 @@ A power loss at any point leaves the other slot untouched. At start-up
 `Config_Load()` takes the valid slot (magic, length and CRC correct) with the
 highest sequence number; sequence numbers are compared with wrap-around.
 
-## Migration from the old format
+## Older formats
 
-Boards flashed with earlier firmware hold a raw SystemStorageData_t at
-0x0803F000 with `lastWriteSuccess == TRUE` and no slot magic. `Config_Load()`
-reads it as before. The first save goes to slot B, so the old copy in slot A
-stays readable until slot B is committed; the save after that reuses slot A.
-Nothing has to be done by hand. Going back to older firmware after a save to
-slot B is not supported: it would read slot A only.
+Only "CFG3" slots are read. The earlier formats (the raw single-copy block at
+0x0803F000 and "CFG2" slots with one set of settings per device) were converted
+by firmware 55588a5; that conversion was removed on 2026-11-26 once the only
+remote had saved CFG3. A board that still holds only an older format starts
+from the defaults and loses its pairings. `lastWriteSuccess` is no longer read
+but stays in SystemStorageData_t so the CFG3 layout does not change.
 
-If neither slot nor the old format is valid, the defaults are loaded and saved
-to slot A immediately, as before.
+If no slot is valid, the defaults are loaded and saved to slot A immediately.
 
 ## General settings have a single copy
 
@@ -89,15 +87,6 @@ unused slot.
   names become "Default", and a paired device without a slot for module 0
   gets one if the pool allows.
 
-Conversion: a block in the previous format ("CFG2" slot, or the raw copy at
-slot A) is converted when loaded. Module 0 of each paired device takes over its
-name, alarm, lock and hide; other modules it reports get the defaults, as far
-as the pool allows (module 0 of every device first). The link settings are
-copied unchanged, so their checksum stays valid. Nothing is written on load;
-the next save writes "CFG3" to the other slot, so the old copy stays readable
-until the save after that. Firmware older than CFG3 cannot read CFG3 slots and
-would fall back to an older CFG2 slot or the defaults.
-
 Not done yet: the UI cannot select a module other than 0, the remote ignores
 status replies for modules other than 0, and the slave firmware supports one
 motor only.
@@ -106,19 +95,17 @@ motor only.
 
 Host tests (gcc, flash mocked at the real addresses) covered blank flash,
 alternating saves, a power loss before every one of the 227 flash operations of
-a save, migration from the old format (including an interrupted first save),
-two corrupt slots, sequence wrap-around and sanitising. The ARM emulation tests
+a save, older formats being ignored, two corrupt slots, sequence wrap-around
+and sanitising. The ARM emulation tests
 in tools/ were updated for the new SystemInfo_t offsets but must be run against
 a fresh Keil build.
 
-CFG3 (2026-11-26): tools/test_config_migration.py runs Config_Load/Config_Save
-of the built firmware in Unicorn with emulated flash: CFG2 and raw-format
-conversion (settings, multi-module devices, link checksum kept), CFG3 winning
-over CFG2, pool priority when 20 devices report 6 modules, blank flash, pool
-repair and an interrupted CFG3 save. tools/test_pairing.py covers allocation,
+CFG3 (2026-11-26): tools/test_config_load.py runs Config_Load/Config_Save of
+the built firmware in Unicorn with emulated flash: blank flash, alternating
+saves, older formats ignored, pool repair and an interrupted save. tools/test_pairing.py covers allocation,
 re-pairing with fewer modules, and refusing a full device table or pool before
 the device is contacted. tools/config_store_host/test_config.c was updated for
 the new layout but has not been run (needs Linux and gcc). Bench: the remote
-converted its CFG2 block on first boot with all settings and link settings
-unchanged, then wrote and reloaded CFG3 twice (hide toggle across resets);
-the UI audit passed.
+converted its CFG2 block on first boot (firmware 55588a5) with all settings and
+link settings unchanged, then wrote and reloaded CFG3 twice (hide toggle across
+resets); the UI audit passed.

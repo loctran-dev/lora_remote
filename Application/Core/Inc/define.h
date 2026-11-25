@@ -218,7 +218,7 @@ typedef struct SystemStorageData_t
     DeviceStorageData_t DeviceConfig[MAXIMUM_DEVICE]; ///< Device slots.
     MotorStorageData_t MotorConfig[MAXIMUM_MOTOR];    ///< Motor settings pool shared by all devices.
 
-    uint8_t lastWriteSuccess; ///< TRUE once the block has been written.
+    uint8_t lastWriteSuccess; ///< Always TRUE when saved; no longer read, kept so the CFG3 layout stays put.
     /* Link settings; covered by linkSettingsChecksum, change them through Link_Set...(). */
     uint32_t linkSettingsMagic;                 ///< Marks the link settings as present.
     uint16_t sleepAfterIdleSeconds;             ///< Idle time before SLEEP [s].

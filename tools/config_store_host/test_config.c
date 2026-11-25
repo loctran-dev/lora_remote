@@ -71,33 +71,15 @@ int main(void)
         if (r == 0) break;
     }
 
-    /* 4. Old single-copy format (raw ConfigV2_t, 885 bytes, one settings set per device) is
-          converted and written to slot B; slot A is kept until the next save. */
+    /* 4. Older formats (a raw 885-byte block with lastWriteSuccess set) are not read: defaults. */
     erase_all();
-    uint8_t legacy[885];
-    int32_t freq = 868; uint32_t update = 7, sleepUpdate = 77;
-    memset(legacy, 0, sizeof(legacy));
-    legacy[0] = 9; memcpy(legacy + 1, &freq, 4); legacy[5] = 9;        /* net, frequency, SF */
-    memcpy(legacy + 7, &update, 4); memcpy(legacy + 11, &sleepUpdate, 4);
-    for (int d = 0; d < MAXIMUM_DEVICE; d++) legacy[15 + d * 41 + 40] = 1;  /* isDelete */
-    legacy[15 + 2 * 41 + 0] = 33; legacy[15 + 2 * 41 + 40] = 0;        /* device 2: node 33, paired */
-    memcpy(legacy + 15 + 2 * 41 + 10, "Pump", 5);                       /* its name */
-    legacy[835] = 1;                                                     /* lastWriteSuccess */
-    memcpy(flash, legacy, sizeof(legacy));
-    boot(); CHECK(storageData.netIdConfig == 9 && storageData.DeviceConfig[2].nodeIdConfig == 33 && storageData.tSleepUpdate == 77, "legacy read");
-    CHECK(Config_Motor(2, 0) != NULL && strcmp(Config_Motor(2, 0)->name, "Pump") == 0, "legacy name moved to motor 0");
-    CHECK(Config_Motor(3, 0) == NULL, "deleted device has no motor");
-    /* interrupted first save leaves the legacy copy usable */
-    budget = 3; storageData.tUpdate = 8; CHECK(Config_Save() != 0, "interrupted migration"); budget = -1;
-    boot(); CHECK(storageData.tUpdate == 7 && storageData.netIdConfig == 9, "legacy survives interrupted migration");
-    storageData.tUpdate = 8; CHECK(Config_Save() == 0, "migration save");
-    CHECK(seq(1) == 1, "migration went to B");
-    CHECK(memcmp(flash, legacy, sizeof(legacy)) == 0, "legacy page untouched by migration");
-    boot(); CHECK(storageData.tUpdate == 8 && storageData.netIdConfig == 9, "reload after migration");
-    storageData.tUpdate = 10; CHECK(Config_Save() == 0, "next save to A"); CHECK(seq(0) == 2, "A sequence 2");
+    memset(flash, 0, 885); flash[0] = 9; flash[835] = 1;
+    boot(); CHECK(storageData.netIdConfig == 1 && storageData.DeviceConfig[2].isDelete == 1, "old format ignored");
+    CHECK(seq(0) == 1, "defaults saved over the old block in A");
+    storageData.tUpdate = 10; CHECK(Config_Save() == 0, "save to B"); CHECK(seq(1) == 2, "B sequence 2");
     boot(); CHECK(storageData.tUpdate == 10, "reload 10");
 
-    /* 5. Both slots corrupt and no legacy marker: defaults. */
+    /* 5. Both slots corrupt: defaults. */
     flash[0x10 + 3] ^= 1; flash[0x800 + 0x10 + 3] ^= 1;
     boot(); CHECK(storageData.netIdConfig == 1 && storageData.tUpdate == 5, "corrupt -> defaults");
 

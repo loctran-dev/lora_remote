@@ -9,10 +9,8 @@
  * power loss therefore leaves the previous slot untouched and valid; at
  * start-up the valid slot with the highest sequence number wins.
  *
- * Slots of the current format carry the magic "CFG3". Older blocks (one set of
- * settings per device: "CFG2" slots, or the raw single-copy format at
- * CONFIG_DATA_ADDRESS accepted when lastWriteSuccess is TRUE) are converted when
- * loaded and written in the new format by the next save, to the other slot.
+ * Slots carry the magic "CFG3". Blocks of older formats are not read; a board
+ * holding only those starts from the defaults.
  *
  * Motor settings live in the shared pool storageData.MotorConfig; a device gets
  * one slot per module when it is paired. Find a motor's slot with Config_Motor().

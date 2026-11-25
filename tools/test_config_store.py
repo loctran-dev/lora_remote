@@ -3,7 +3,7 @@
 Builds config_store.c, flash.c and utility.c with gcc against the shims in
 config_store_host/ and runs the scenarios in test_config.c: blank flash,
 alternating saves, a power loss before every flash operation of a save,
-migration from the old single-copy format, corrupt slots, sequence wrap and
+older formats being ignored, corrupt slots, sequence wrap and
 sanitising. Linux only: the fake flash is mapped at the real addresses
 (0x0803F000) with mmap.
 """
