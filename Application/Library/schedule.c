@@ -12,6 +12,14 @@ static volatile Schedule_RequestState_t scheduleRequest;
 
 /* Request lifecycle ======================================================== */
 
+/**
+ * @brief  Start tracking a schedule request that is about to be queued.
+ *
+ * Replaces any request tracked before. The first resend is due 3 s later.
+ *
+ * @param  packet   The CMD_SET_SCHEDULE frame; its transaction id is reused.
+ * @param  payload  Its payload.
+ */
 void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload)
 {
     scheduleRequest.state = eSchedule_State_Idle;
@@ -27,6 +35,7 @@ void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule
     scheduleRequest.state = eSchedule_State_Waiting;
 }
 
+/** @brief Mark the tracked request as not queued (eSchedule_State_QueueError). */
 void Schedule_QueueFailed(void)
 {
     if (scheduleRequest.state == eSchedule_State_Waiting)
@@ -35,6 +44,11 @@ void Schedule_QueueFailed(void)
     }
 }
 
+/**
+ * @brief  Stop tracking the request for a node.
+ * @param  node  Node id; ignored if it is not the tracked node.
+ * @note   Called before a power command, which replaces the schedule.
+ */
 void Schedule_CancelForNode(uint8_t node)
 {
     if (scheduleRequest.node == node)
@@ -43,6 +57,11 @@ void Schedule_CancelForNode(uint8_t node)
     }
 }
 
+/**
+ * @brief  State of the request for a node.
+ * @param  node  Node id.
+ * @return The tracked state, or eSchedule_State_Idle for another node.
+ */
 Schedule_State_e Schedule_GetStateForNode(uint8_t node)
 {
     if (scheduleRequest.node != node)
@@ -55,6 +74,13 @@ Schedule_State_e Schedule_GetStateForNode(uint8_t node)
 
 /* Transmit path ============================================================ */
 
+/**
+ * @brief  Filter stale CMD_SET_SCHEDULE requests before they are sent.
+ * @param  packet  Packet taken from txMsgQueue.
+ * @return TRUE to send it: every packet except a schedule request that is
+ *         not the one being tracked.
+ * @note   Called by loraSendTask.
+ */
 uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet)
 {
     if (packet->code != CMD_SET_SCHEDULE || packet->type != LORA_PACKAGE_TYPE_REQUEST)
@@ -67,6 +93,12 @@ uint8_t Schedule_ShouldTransmit(const LoraPackage_t *packet)
         packet->transactionID == scheduleRequest.transaction;
 }
 
+/**
+ * @brief  Count a sent schedule request and restart the 3 s resend timer.
+ * @param  packet   Packet just transmitted.
+ * @param  success  Radio result.
+ * @note   Called by loraSendTask.
+ */
 void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
 {
     if (packet->code != CMD_SET_SCHEDULE || !Schedule_ShouldTransmit(packet))
@@ -82,6 +114,10 @@ void Schedule_TxFinished(const LoraPackage_t *packet, uint8_t success)
     scheduleRequest.retryAt = HAL_GetTick() + 3000u;
 }
 
+/**
+ * @brief  Resend the tracked request when due, or time it out.
+ * @note   Call from systemTask. A timeout gives a long beep.
+ */
 void Schedule_Tick(void)
 {
     PayloadRequestSetSchedule_t payload;
@@ -122,6 +158,11 @@ void Schedule_Tick(void)
 
 /* Receive path ============================================================= */
 
+/**
+ * @brief  Confirm the request when a status report shows the same schedule.
+ * @param  packet   Received CMD_GET_STATUS response.
+ * @param  payload  Its payload.
+ */
 void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGetStatus_t *payload)
 {
     if ((scheduleRequest.state != eSchedule_State_Waiting &&
@@ -135,6 +176,13 @@ void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGet
     scheduleRequest.state = eSchedule_State_Confirmed;
 }
 
+/**
+ * @brief  Apply the device's answer to the tracked request.
+ * @param  packet    Received CMD_SET_SCHEDULE response.
+ * @param  payload   Its payload.
+ * @param  deadline  Set to the requested switch-off time when the answer matches; may be NULL.
+ * @return TRUE if the answer belongs to the tracked request.
+ */
 uint8_t Schedule_HandleResponse(const LoraPackage_t *packet, const PayloadCommonResponse_t *payload,
     uint32_t *deadline)
 {
@@ -160,11 +208,19 @@ uint8_t Schedule_HandleResponse(const LoraPackage_t *packet, const PayloadCommon
 
 /* State queries ============================================================ */
 
+/**
+ * @brief  Whether a request is still waiting for the device.
+ * @return TRUE while waiting; the remote does not sleep then.
+ */
 uint8_t Schedule_IsWaiting(void)
 {
     return scheduleRequest.state == eSchedule_State_Waiting;
 }
 
+/**
+ * @brief  Copy the tracked request, for diagnostics.
+ * @param  state  Destination; ignored if NULL.
+ */
 void Schedule_GetRequestState(Schedule_RequestState_t *state)
 {
     if (state == NULL)
