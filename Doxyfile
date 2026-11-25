@@ -8,7 +8,8 @@ OUTPUT_DIRECTORY       = output/doxygen
 
 INPUT                  = Application/Library \
                          Application/Core/Inc/define.h \
-                         Application/Core/Inc/main.h
+                         Application/Core/Inc/main.h \
+                         Application/Core/Src/main.c
 FILE_PATTERNS          = *.h *.c
 RECURSIVE              = NO
 # Vendor and third-party code keep their own comments.
@@ -19,6 +20,18 @@ EXCLUDE                = Application/Library/UGUI \
                          Application/Library/lcd.h \
                          Application/Library/image_data.c \
                          Application/Library/image_data.h
+
+# CubeMX-generated symbols in main.c/main.h: handles, RTOS objects, task
+# entry points and the pin map. They keep the comments CubeMX writes.
+EXCLUDE_SYMBOLS        = hadc1 hspi1 hspi2 htim3 htim8 hdma_* hrtc *TaskHandle *_attributes *QueueHandle \
+                         GetDevStatusTimer* SystemClock_Config Start*Task \
+                         HAL_TIM_PeriodElapsedCallback HAL_TIM_MspPostInit Error_Handler \
+                         assert_failed main \
+                         *_GPIO_Port *_EXTI_IRQn \
+                         LORA_RST_Pin LORA_DIO_Pin BAT_CTRL_Pin BAT_MONITOR_Pin LORA_NSS_Pin \
+                         LED1_Pin LED2_Pin BUZZER_PWM_Pin SPI2_CS_Pin LCD_BLK_Pin BTN1_Pin \
+                         BTN2_Pin BTN3_Pin BTN4_Pin BTN5_Pin USB_CTRL_Pin BAT_STDBY_Pin \
+                         BAT_CHARGING_Pin LCD_RST_Pin LCD_CFG_Pin __MAIN_H
 
 OPTIMIZE_OUTPUT_FOR_C  = YES
 EXTRACT_ALL            = NO

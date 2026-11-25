@@ -131,19 +131,19 @@ const osTimerAttr_t GetDevStatusTimer_attributes = {
 static osMutexId_t uiMutex;
 static osMutexId_t radioMutex;
 static volatile uint32_t batterySampleSequence;
-//Init interface button
-Button_t leftButton = {BTN1_GPIO_Port, BTN1_Pin, eButton_State_Idle, 0, 0, 0};
-Button_t centerButton = {BTN3_GPIO_Port, BTN3_Pin, eButton_State_Idle, 0, 0, 0};
-Button_t rightButton = {BTN4_GPIO_Port, BTN4_Pin, eButton_State_Idle, 0, 0, 0};
-Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};
-Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};
-SystemInfo_t systemInfo;
-DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
-LoRa sLoRaCtrl;
-SystemStorageData_t storageData;
-uint32_t timefillScreen = 0;
-uint16_t errorCode = 0;
-uint8_t rxBuffer[256];
+/* Buttons, polled by sensorTask and consumed by systemTask. */
+Button_t leftButton = {BTN1_GPIO_Port, BTN1_Pin, eButton_State_Idle, 0, 0, 0};   ///< LEFT (PA9), wakes from STOP.
+Button_t centerButton = {BTN3_GPIO_Port, BTN3_Pin, eButton_State_Idle, 0, 0, 0}; ///< CENTER (PC9).
+Button_t rightButton = {BTN4_GPIO_Port, BTN4_Pin, eButton_State_Idle, 0, 0, 0};  ///< RIGHT (PC8), wakes from STOP.
+Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};     ///< ON (PA8).
+Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};    ///< OFF (PC7), wakes from STOP.
+SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
+DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
+LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
+SystemStorageData_t storageData;         ///< RAM copy of the configuration block in flash.
+uint32_t timefillScreen = 0;             ///< Not used.
+uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
+uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
 
 extern Screen_t deviceControlScreen;
 Screen_t *currentScreen = &deviceControlScreen;
@@ -925,6 +925,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 /* HAL callbacks ============================================================ */
 
+/**
+ * @brief  Count a finished battery sample (ADC1 by DMA, triggered by TIM8).
+ * @param  adc  ADC that finished.
+ */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *adc)
 {
   if (adc->Instance == ADC1)
@@ -933,6 +937,14 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *adc)
   }
 }
 
+/**
+ * @brief  EXTI wake sources: LEFT/RIGHT/OFF buttons and LoRa DIO0.
+ *
+ * DIO0 also notifies loraReceiveTask, except while Power_TryStop() is
+ * entering STOP; it notifies the task itself after wake-up.
+ *
+ * @param  GPIO_Pin  Pin that triggered.
+ */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   BaseType_t higherPriorityTaskWoken = pdFALSE;
@@ -952,6 +964,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
 }
 
+/**
+ * @brief  RTC Alarm A: wake-up for the periodic sleep scan.
+ * @param  hrtc  RTC handle.
+ */
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
   Power_RtcWakeISR();
@@ -959,11 +975,25 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 
 /* Public API =============================================================== */
 
+/**
+ * @brief  Ask buzzerTask to play a pattern.
+ * @param  mode  Pattern to play.
+ * @note   Does not block; the request is dropped if the queue is full.
+ */
 void Main_SetBuzzerMode(Buzzer_Mode_e mode)
 {
   osMessageQueuePut(buzzerQueueHandle, &mode, 0, 0);
 }
 
+/**
+ * @brief  Send CMD_CONTROL_POWER to the selected device and module.
+ *
+ * A locked motor is refused with a long beep and the lock notice; an
+ * invalid, hidden or deleted device is ignored. Cancels the tracked schedule
+ * of that node, since the command replaces it.
+ *
+ * @param  motorPower  A Motor_PowerState_e value.
+ */
 void Main_SetMotorPower(uint8_t motorPower)
 {
   /* Guard the common send path for both physical and USB-injected buttons. */
@@ -992,6 +1022,7 @@ void Main_SetMotorPower(uint8_t motorPower)
   }
 }
 
+/** @brief Apply a new status period: stop the legacy poll timer and request a link scan. */
 void Main_UpdateStatusPeriod(void)
 {
   /* Compatibility entry point: scanning is local, never unconditional RF polling. */
@@ -1002,6 +1033,10 @@ void Main_UpdateStatusPeriod(void)
   Link_RequestScan();
 }
 
+/**
+ * @brief  Send CMD_SET_SCHEDULE for the selected device and track it.
+ * @param  time  Seconds from now until switch-off; negative cancels the schedule.
+ */
 void Main_SetScheduleTimeToCurrentModule(int32_t time)
 {
   PayloadRequestSetSchedule_t payload;
@@ -1030,6 +1065,13 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
   }
 }
 
+/**
+ * @brief  Start pairing: switch the radio to the default settings and ask for factory info.
+ *
+ * Sets 433 MHz, SF7 and the default network id, then queues
+ * CMD_GET_FACTORY_INFO. systemTask reports the result on the pairing screen,
+ * or "not found" after 5 s.
+ */
 void Main_ScanNewDevice(void)
 {
   FactoryInfo_t factoryInfo;
@@ -1050,6 +1092,12 @@ void Main_ScanNewDevice(void)
   osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
 }
 
+/**
+ * @brief  Send CMD_CONFIG_CONNECTION to the device found by Main_ScanNewDevice().
+ *
+ * Gives it the configured network id, radio settings and the next unused
+ * node id. systemTask stores the device when it answers, or fails after 5 s.
+ */
 void Main_ConnectToDevice(void)
 {
   PayloadRequestConfigConnection_t payload;
@@ -1069,6 +1117,10 @@ void Main_ConnectToDevice(void)
   osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
 }
 
+/**
+ * @brief  Arm RTC Alarm A some seconds from now.
+ * @param  seconds  Delay [s]; the alarm time wraps at midnight.
+ */
 void Main_SetRtcAlarmRelative(uint32_t seconds)
 {
   RTC_AlarmTypeDef sAlarm = {0};
