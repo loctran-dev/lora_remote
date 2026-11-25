@@ -170,6 +170,7 @@ void GetDevStatusTimerCallback(void *argument);
 /* USER CODE BEGIN PFP */
 static void updateBattery(void);
 static uint8_t getNotUsedNodeId(void);
+static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void));
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -1182,6 +1183,21 @@ static uint8_t getNotUsedNodeId(void)
   }
   return nodeIdValid;
 }
+
+/* Run the screen handler for a click or long press and clear its flag. */
+static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void))
+{
+  if (button->isPressed)
+  {
+    button->isPressed = 0;
+    clicked();
+  }
+  else if (button->isLongPressed)
+  {
+    button->isLongPressed = 0;
+    longPressed();
+  }
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartSystemTask */
@@ -1223,60 +1239,11 @@ void StartSystemTask(void *argument)
     {
       Power_UserActivity();
     }
-    if (leftButton.isPressed)
-    {
-      leftButton.isPressed = 0;
-      currentScreen->leftButtonClickedCallback();
-    }
-    else if (leftButton.isLongPressed)
-    {
-      leftButton.isLongPressed = 0;
-      currentScreen->leftButtonPressedCallback();
-    }
-
-    if (rightButton.isPressed)
-    {
-      rightButton.isPressed = 0;
-      currentScreen->rightButtonClickedCallback();
-    }
-    else if (rightButton.isLongPressed)
-    {
-      rightButton.isLongPressed = 0;
-      currentScreen->rightButtonPressedCallback();
-    }
-
-    if (centerButton.isPressed)
-    {
-      centerButton.isPressed = 0;
-      currentScreen->centerButtonClickedCallback();
-    }
-    else if (centerButton.isLongPressed)
-    {
-      centerButton.isLongPressed = 0;
-      currentScreen->centerButtonPressedCallback();
-    }
-
-    if (onButton.isPressed)
-    {
-      onButton.isPressed = 0;
-      currentScreen->bleftButtonClickedCallback();
-    }
-    else if (onButton.isLongPressed)
-    {
-      onButton.isLongPressed = 0;
-      currentScreen->bleftButtonPressedCallback();
-    }
-
-    if (offButton.isPressed)
-    {
-      offButton.isPressed = 0;
-      currentScreen->brightButtonClickedCallback();
-    }
-    else if (offButton.isLongPressed)
-    {
-      offButton.isLongPressed = 0;
-      currentScreen->brightButtonPressedCallback();
-    }
+    handleButton(&leftButton, currentScreen->leftButtonClickedCallback, currentScreen->leftButtonPressedCallback);
+    handleButton(&rightButton, currentScreen->rightButtonClickedCallback, currentScreen->rightButtonPressedCallback);
+    handleButton(&centerButton, currentScreen->centerButtonClickedCallback, currentScreen->centerButtonPressedCallback);
+    handleButton(&onButton, currentScreen->bleftButtonClickedCallback, currentScreen->bleftButtonPressedCallback);
+    handleButton(&offButton, currentScreen->brightButtonClickedCallback, currentScreen->brightButtonPressedCallback);
 
     /* Device search. */
     if (systemInfo.findDeviceStep == eProcess_Step_Done)
