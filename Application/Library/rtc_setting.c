@@ -16,6 +16,11 @@ extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
 /* F1 HAL keeps its calendar in RAM. Preserve it in free BKP DR2..DR4;
    DR1 is the existing RTC-init marker, DR10 belongs to the bootloader. */
+/**
+ * @brief  Save systemInfo.date to the backup registers if it changed.
+ * @note   Called every systemTask loop; DR1 is the RTC-init marker and DR10
+ *         belongs to the bootloader, so only DR2..DR4 are used.
+ */
 void Rtc_SaveDate(void)
 {
     RTC_DateTypeDef *d = &systemInfo.date;
@@ -43,6 +48,10 @@ void Rtc_SaveDate(void)
     HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, DATE_MAGIC);
 }
 
+/**
+ * @brief  Restore the saved date, plus the days counted while powered off.
+ * @note   Call once from MX_RTC_Init(), before the HAL normalises the counter.
+ */
 void Rtc_RestoreDate(void)
 {
     uint16_t packed;
@@ -90,6 +99,10 @@ void Rtc_RestoreDate(void)
 
 /* Read and set the RTC ===================================================== */
 
+/**
+ * @brief  Read the RTC into systemInfo and save the date.
+ * @return Current Unix time, also stored in systemInfo.currentTime.
+ */
 uint32_t Rtc_Read(void)
 {
     HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
@@ -99,6 +112,13 @@ uint32_t Rtc_Read(void)
     return systemInfo.currentTime;
 }
 
+/**
+ * @brief  Set the RTC, then rebase the link clock and resync the devices.
+ * @param  timestamp  New Unix time, 2000-01-01 .. 2099-12-31.
+ * @return An Rtc_SetResult_e value.
+ * @note   Refused while a schedule request is waiting or a device has a
+ *         running schedule, so no switch-off time moves.
+ */
 uint8_t Rtc_Set(uint32_t timestamp)
 {
     RTC_TimeTypeDef time = {0};
@@ -151,6 +171,13 @@ uint8_t Rtc_Set(uint32_t timestamp)
 
 /* USB "TIME <unix>\n" command ============================================== */
 
+/**
+ * @brief  Parse a USB "TIME <unix>\n" command.
+ * @param  command    Received bytes, ending with '\n'.
+ * @param  length     Number of bytes.
+ * @param  timestamp  Set to the parsed value on success.
+ * @return 1 on success, 0 if the text is not a valid command.
+ */
 uint8_t Rtc_Parse(const uint8_t *command, uint32_t length, uint32_t *timestamp)
 {
     uint32_t value = 0;
