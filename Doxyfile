@@ -27,6 +27,8 @@ EXTRACT_STATIC         = NO
 EXTRACT_LOCAL_CLASSES  = NO
 TYPEDEF_HIDES_STRUCT   = YES
 SORT_MEMBER_DOCS       = NO
+# One comment on the first member documents a whole @name group (shared widgets).
+DISTRIBUTE_GROUP_DOC   = YES
 
 QUIET                  = YES
 WARN_IF_UNDOCUMENTED   = YES

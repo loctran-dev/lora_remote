@@ -90,6 +90,12 @@ Screen_t deviceControlScreen = {
 
 /* Public API =============================================================== */
 
+/**
+ * @brief  Report a lost connection: wake the display, beep three times and show the device.
+ * @param  id  Device index in deviceBuff.
+ * @note   Switches to device control unless an editor, the history or a
+ *         schedule selection is open; the notice is shown on that screen.
+ */
 void ScrnDcs_ShowConnectionError(uint8_t id)
 {
     Power_WakeForError();
@@ -109,6 +115,10 @@ void ScrnDcs_ShowConnectionError(uint8_t id)
     connectionNoticeTick = HAL_GetTick();
 }
 
+/**
+ * @brief  Show the "motor locked" notice on device control.
+ * @param  motorPower  Power state that was refused, a Motor_PowerState_e value.
+ */
 void ScrnDcs_ShowMotorLocked(uint8_t motorPower)
 {
     lockNoticePower = motorPower;
@@ -116,6 +126,10 @@ void ScrnDcs_ShowMotorLocked(uint8_t motorPower)
     lockNoticeActive = 1;
 }
 
+/**
+ * @brief  Whether the schedule/timer selection is open.
+ * @return 1 while open; the remote does not sleep then.
+ */
 uint8_t ScrnDcs_IsScheduleEditing(void)
 {
     return inScheduleSelection != 0;

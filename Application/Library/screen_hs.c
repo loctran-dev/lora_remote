@@ -79,6 +79,7 @@ Screen_t historyScreen = {
 
 /* Public API =============================================================== */
 
+/** @brief Open the history at the device picker, on the current device or the first with history. */
 void ScrnHs_OpenHistory(void)
 {
     /* Start on the current device, or the first one with history. */
@@ -100,7 +101,12 @@ void ScrnHs_OpenHistory(void)
     ScrnCommon_Switch(&historyScreen);
 }
 
-/* Open the record list of one device directly, skipping the device picker. */
+/**
+ * @brief  Open the history list of one device, skipping the picker.
+ * @param  deviceId  Index in deviceBuff.
+ * @return 1 if the list opened, 0 if the id is invalid or the device has no history.
+ * @note   Going back from the list returns to device control.
+ */
 uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
 {
     if (deviceId >= MAXIMUM_DEVICE || !available(deviceId))

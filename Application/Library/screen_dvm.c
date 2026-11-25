@@ -45,6 +45,10 @@ Screen_t deviceManagerScreen = {
 
 /* Public API =============================================================== */
 
+/**
+ * @brief  Device highlighted in the device manager.
+ * @return Index in deviceBuff, or MAXIMUM_DEVICE if none.
+ */
 uint8_t ScrnDvm_SelectedDevice(void)
 {
     return managerSelected < managerCount ? managerIds[managerSelected] : MAXIMUM_DEVICE;

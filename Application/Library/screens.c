@@ -59,9 +59,15 @@ static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye
     char *text, UG_COLOR background);
 static void createSettingsMenu(char *title, uint8_t stacked);
 static void saveRadioSettings(void);
+
 /* Screen switching ======================================================== */
 
-/* Close the current window and open the next screen. */
+/**
+ * @brief  Close the current window and open another screen (init() then render()).
+ * @param  next  Screen to open.
+ * @note   Call with uiMutex held. To start the screen with fresh state, call
+ *         its reset API (for example ScrnDss_ResetSelection()) just before.
+ */
 void ScrnCommon_Switch(Screen_t *next)
 {
     UG_WindowHide(&window_1);
@@ -73,13 +79,25 @@ void ScrnCommon_Switch(Screen_t *next)
 
 /* Device visibility and selection ========================================== */
 
-/* Hide is device-level in the current single-module storage layout. */
+/**
+ * @brief  Whether a device is paired and not hidden.
+ * @param  id  Device index in deviceBuff.
+ * @return 1 if visible. Hiding is per device in the single-module storage layout.
+ */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
     return id < MAXIMUM_DEVICE && !deviceBuff[id].isDelete &&
         !deviceBuff[id].motorData[0].isHide;
 }
 
+/**
+ * @brief  Make systemInfo.currentDeviceId point to a visible device.
+ *
+ * Keeps the current device if visible, else picks the next one, else the
+ * closest preceding one. The module index resets when the device changes.
+ *
+ * @return 1 if a visible device is selected, 0 if there is none (indices set to 0).
+ */
 uint8_t ScrnCommon_EnsureVisibleDevice(void)
 {
     uint8_t start = systemInfo.currentDeviceId < MAXIMUM_DEVICE ? systemInfo.currentDeviceId : 0;
@@ -106,6 +124,10 @@ uint8_t ScrnCommon_EnsureVisibleDevice(void)
     return 0;
 }
 
+/**
+ * @brief  Select the next or previous visible device; stays put at the end of the list.
+ * @param  direction  +1 for the next device, -1 for the previous one.
+ */
 void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 {
     int id = systemInfo.currentDeviceId;
@@ -123,6 +145,11 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 
 /* Settings persistence ===================================================== */
 
+/**
+ * @brief  Copy the hide and lock flags of a device to storageData if they changed.
+ * @param  id  Device index in deviceBuff.
+ * @note   Flash is written later by systemTask (isNeedSaveConfig).
+ */
 void ScrnCommon_SaveDeviceFlags(uint8_t id)
 {
     DeviceStorageData_t *stored;
@@ -142,6 +169,11 @@ void ScrnCommon_SaveDeviceFlags(uint8_t id)
     }
 }
 
+/**
+ * @brief  Copy all settings of a device (alarm, flags, name, deleted) to storageData.
+ * @param  id  Device index in deviceBuff.
+ * @note   Flash is written later by systemTask (isNeedSaveConfig).
+ */
 void ScrnCommon_SaveDeviceSettings(uint8_t id)
 {
     DeviceStorageData_t *stored;
@@ -163,6 +195,7 @@ void ScrnCommon_SaveDeviceSettings(uint8_t id)
     systemInfo.isNeedSaveConfig = 1;
 }
 
+/** @brief Copy the radio, sleep and update-period settings from systemInfo to storageData. */
 void ScrnCommon_SaveGeneralSettings(void)
 {
     saveRadioSettings();
@@ -174,8 +207,11 @@ void ScrnCommon_SaveGeneralSettings(void)
 
 /* Status bar =============================================================== */
 
-/* Every screen reserves textbox 0/1 and image 0 for this same status bar.
-   Bitmap bounds (15x9) do not overlap the four-character 100% textbox. */
+/**
+ * @brief  Create the status bar: clock (textbox 0), battery % (textbox 1) and battery icon (image 0).
+ * @note   Every screen reserves these widget ids for the status bar. The
+ *         15x9 icon does not overlap the four-character "100%" textbox.
+ */
 void ScrnCommon_StatusBarCreate(void)
 {
     createText(&textbox_1, 0, 0, 0, 50, 15, "", C_BLACK);
@@ -187,6 +223,7 @@ void ScrnCommon_StatusBarCreate(void)
     ScrnCommon_StatusBarUpdate();
 }
 
+/** @brief Refresh the clock and the battery indicator. */
 void ScrnCommon_StatusBarUpdate(void)
 {
     char time[8];
@@ -196,6 +233,7 @@ void ScrnCommon_StatusBarUpdate(void)
     ScrnCommon_UpdateBattery();
 }
 
+/** @brief Refresh the battery percentage and icon; red at 10 % or less, animated while charging. */
 void ScrnCommon_UpdateBattery(void)
 {
     char text[8];
@@ -229,16 +267,29 @@ void ScrnCommon_UpdateBattery(void)
 
 /* Settings menu ============================================================ */
 
+/**
+ * @brief  Create a settings menu with label and value on one row.
+ * @param  title  Menu title.
+ */
 void ScrnCommon_SettingsMenuCreate(char *title)
 {
     createSettingsMenu(title, 0);
 }
 
+/**
+ * @brief  Create a settings menu with the value below the label, and a page counter.
+ * @param  title  Menu title.
+ */
 void ScrnCommon_SettingsMenuCreateStacked(char *title)
 {
     createSettingsMenu(title, 1);
 }
 
+/**
+ * @brief  Show "page/pages" on a stacked menu; does nothing on a one-line menu.
+ * @param  page   Index of the first row on the page.
+ * @param  count  Number of menu items.
+ */
 void ScrnCommon_SettingsMenuPage(uint8_t page, uint8_t count)
 {
     char text[12];
@@ -250,6 +301,10 @@ void ScrnCommon_SettingsMenuPage(uint8_t page, uint8_t count)
     }
 }
 
+/**
+ * @brief  Start drawing a menu page; clears the rows when the page changed.
+ * @param  page  Index of the first row on the page.
+ */
 void ScrnCommon_SettingsMenuBegin(uint8_t page)
 {
     settingsPageChanged = page != settingsPage;
@@ -260,6 +315,13 @@ void ScrnCommon_SettingsMenuBegin(uint8_t page)
     }
 }
 
+/**
+ * @brief  Draw one menu row.
+ * @param  row       Row on the page.
+ * @param  label     Item label, or NULL to hide the row.
+ * @param  value     Item value.
+ * @param  selected  1 to highlight the row.
+ */
 void ScrnCommon_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected)
 {
     uint8_t id;
@@ -289,6 +351,7 @@ void ScrnCommon_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t s
     }
 }
 
+/** @brief Finish a menu page: refresh the status bar and redraw. */
 void ScrnCommon_SettingsMenuUpdate(void)
 {
     ScrnCommon_StatusBarUpdate();
@@ -297,6 +360,7 @@ void ScrnCommon_SettingsMenuUpdate(void)
 
 /* Empty device control screen ============================================== */
 
+/** @brief Build the device control screen shown when no device is visible. */
 void ScrnCommon_EmptyControlInit(void)
 {
     createWindow();
@@ -310,6 +374,7 @@ void ScrnCommon_EmptyControlInit(void)
     UG_Update();
 }
 
+/** @brief Refresh the empty device control screen. */
 void ScrnCommon_EmptyControlRender(void)
 {
     ScrnCommon_StatusBarUpdate();
@@ -318,6 +383,11 @@ void ScrnCommon_EmptyControlRender(void)
 
 /* Menu scrolling and character editor ====================================== */
 
+/**
+ * @brief  Let only the selected row of a main-style menu scroll its text.
+ * @param  count     Number of rows.
+ * @param  selected  Selected row.
+ */
 void ScrnCommon_MenuScrollUpdate(uint8_t count, uint8_t selected)
 {
     for (uint8_t i = 0; i < count; i++)
@@ -327,6 +397,10 @@ void ScrnCommon_MenuScrollUpdate(uint8_t count, uint8_t selected)
     }
 }
 
+/**
+ * @brief  Replace the value textbox with one box per character for editing.
+ * @param  count  Number of characters (at most 19, in rows of 10).
+ */
 void ScrnCommon_EditCharactersCreate(uint8_t count)
 {
     uint8_t columns;
@@ -346,6 +420,10 @@ void ScrnCommon_EditCharactersCreate(uint8_t count)
     }
 }
 
+/**
+ * @brief  Copy the value text into the character boxes and highlight the cursor.
+ * @param  position  Character under the cursor.
+ */
 void ScrnCommon_EditCharactersUpdate(uint8_t position)
 {
     char *text = UG_TextboxGetText(&window_1, TXB_ID_7);
