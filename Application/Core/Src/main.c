@@ -170,6 +170,7 @@ static void updateBattery(void);
 static uint8_t getNotUsedNodeId(void);
 static char deviceTypeChar(uint8_t deviceType);
 static int8_t findPairedSlot(uint32_t serial);
+static int8_t pairingSlot(void);
 static int8_t storePairedDevice(void);
 static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void));
 /* USER CODE END PFP */
@@ -275,21 +276,15 @@ int main(void)
   systemInfo.netId = storageData.netIdConfig;
   systemInfo.runMode = eSystem_RunMode_Normal;
 
-  /* Device list: runtime state in deviceBuff, settings normalised in place in storageData. */
+  /* Device list: runtime state in deviceBuff; Config_Load() has already checked the settings. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    DeviceStorageData_t *config = &storageData.DeviceConfig[devNo];
-
-    config->isDelete = config->isDelete != FALSE;
-    config->isHide = config->isHide == TRUE;
-    config->isLock = config->isLock == TRUE;
-    config->factoryInfo.deviceTypeChar = deviceTypeChar(config->factoryInfo.deviceType);
-    config->name[sizeof(config->name) - 1] = '\0';
-    if (config->name[0] == '\0')
+    storageData.DeviceConfig[devNo].factoryInfo.deviceTypeChar =
+      deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.deviceType);
+    for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
     {
-      sprintf(config->name, "Default");
+      deviceBuff[devNo].motorData[module].moduleIndex = module;
     }
-    deviceBuff[devNo].motorData[0].moduleIndex = config->moduleIndex;
     deviceBuff[devNo].deviceIndex = devNo;
   }
 
@@ -942,9 +937,10 @@ void Main_SetBuzzerMode(Buzzer_Mode_e mode)
  */
 void Main_SetMotorPower(uint8_t motorPower)
 {
+  MotorStorageData_t *motor;
+
   /* Guard the common send path for both physical and USB-injected buttons. */
-  if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE ||
-    systemInfo.currentModuleId >= sizeof(deviceBuff[0].motorData) / sizeof(deviceBuff[0].motorData[0]))
+  if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE || systemInfo.currentModuleId >= MAXIMUM_MODULE)
   {
     return;
   }
@@ -952,7 +948,12 @@ void Main_SetMotorPower(uint8_t motorPower)
   {
     return;
   }
-  if (storageData.DeviceConfig[systemInfo.currentDeviceId].isLock)
+  motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+  if (motor == NULL)
+  {
+    return;
+  }
+  if (motor->isLock)
   {
     ScrnDcs_ShowMotorLocked(motorPower);
     Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
@@ -1060,18 +1061,27 @@ void Main_RestoreRadio(void)
  *
  * Gives it the configured network id, radio settings and the next unused
  * node id. systemTask stores the device when it answers, or fails after 5 s.
+ *
+ * @return FALSE, without contacting the device, if the device table or the
+ *         motor pool has no room for it; the device keeps its settings then.
  */
-void Main_ConnectToDevice(void)
+uint8_t Main_ConnectToDevice(void)
 {
   PayloadRequestConfigConnection_t payload;
   int8_t slot;
 
+  /* Check the room first: a device that accepted the connection must be storable. */
+  slot = pairingSlot();
+  if (slot < 0)
+  {
+    return FALSE;
+  }
   systemInfo.configDeviceTick = xTaskGetTickCount();
   systemInfo.configDeviceStep = eProcess_Step_Processing;
   systemInfo.configDeviceResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
-  slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
-  systemInfo.nextNodeId = slot >= 0 ? storageData.DeviceConfig[slot].nodeIdConfig : getNotUsedNodeId();
+  systemInfo.nextNodeId = findPairedSlot(systemInfo.findDevicefactoryInfo.serial) == slot ?
+    storageData.DeviceConfig[slot].nodeIdConfig : getNotUsedNodeId();
 
   payload.serial = systemInfo.findDevicefactoryInfo.serial;
   payload.netId = storageData.netIdConfig;
@@ -1081,6 +1091,7 @@ void Main_ConnectToDevice(void)
 
   LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
   osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
+  return TRUE;
 }
 
 /**
@@ -1230,11 +1241,11 @@ static int8_t findPairedSlot(uint32_t serial)
 }
 
 /**
- * Store the device confirmed by CMD_CONFIG_CONNECTION. A device paired before
- * keeps its slot, otherwise the first free slot is used; either way the slot
- * starts from the default settings. Returns the slot, or -1 if all are in use.
+ * Device slot for the device being paired, if it and all its motors fit: the
+ * slot already holding its serial, else the first free one. Returns -1 when the
+ * device table is full or the motor pool cannot take numberOfModule motors.
  */
-static int8_t storePairedDevice(void)
+static int8_t pairingSlot(void)
 {
   int8_t slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
 
@@ -1245,7 +1256,25 @@ static int8_t storePairedDevice(void)
       slot = devNo;
     }
   }
-  if (slot < 0)
+  if (slot < 0 ||
+    !Config_CanAllocateMotors(slot, Config_ModuleCount(systemInfo.findDevicefactoryInfo.numberOfModule)))
+  {
+    return -1;
+  }
+  return slot;
+}
+
+/**
+ * Store the device confirmed by CMD_CONFIG_CONNECTION in pairingSlot(). The
+ * device and each of its motors start from the default settings. Returns the
+ * slot, or -1 if it no longer fits.
+ */
+static int8_t storePairedDevice(void)
+{
+  int8_t slot = pairingSlot();
+
+  if (slot < 0 ||
+    !Config_AllocateMotors(slot, Config_ModuleCount(systemInfo.findDevicefactoryInfo.numberOfModule)))
   {
     return -1;
   }
@@ -1257,7 +1286,6 @@ static int8_t storePairedDevice(void)
   memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
   storageData.DeviceConfig[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
   storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.nextNodeId;
-  sprintf(storageData.DeviceConfig[slot].name, "Default");
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
   systemInfo.isNeedSaveConfig = TRUE;
   return slot;

@@ -376,8 +376,8 @@ static void CDC_ButtonCommand(void)
     if (id < MAXIMUM_DEVICE) {
       echoLength = sprintf((char*)UserRxBufferFS,
         "OK BTN %s %s SCREEN=DEVICE_MANAGER DEV=%u HIDE=%u LOCK=%u\n",
-        button, action, id + 1, storageData.DeviceConfig[id].isHide,
-        storageData.DeviceConfig[id].isLock);
+        button, action, id + 1, Config_DeviceHidden(id),
+        Config_Motor(id, 0) != NULL && Config_Motor(id, 0)->isLock);
       return;
     }
   }

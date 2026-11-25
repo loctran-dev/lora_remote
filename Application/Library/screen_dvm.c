@@ -119,7 +119,8 @@ static void render(void)
         device = &storageData.DeviceConfig[managerIds[item]];
         snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
             device->factoryInfo.deviceTypeChar, managerIds[item] + 1,
-            device->isHide ? "Hidden" : "Visible", device->name);
+            Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible",
+            ScrnCommon_MotorName(managerIds[item], 0));
         UG_TextboxSetText(&window_1, id, text);
         UG_TextboxSetBackColor(&window_1, id, item == managerSelected ? C_DIM_GRAY : C_BLACK);
         UG_TextboxSetScrollEnabled(&window_1, id, item == managerSelected);
@@ -137,7 +138,7 @@ static void render(void)
     }
     UG_TextboxSetText(&window_1, 20, text);
     UG_TextboxSetText(&window_1, 3, !managerCount ? "" :
-        storageData.DeviceConfig[managerIds[managerSelected]].isHide ? "Show" : "Hide");
+        Config_DeviceHidden(managerIds[managerSelected]) ? "Show" : "Hide");
     ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
@@ -170,7 +171,7 @@ static void centerClicked(void)
         return;
     }
     id = managerIds[managerSelected];
-    storageData.DeviceConfig[id].isHide = !storageData.DeviceConfig[id].isHide;
+    Config_SetDeviceHidden(id, !Config_DeviceHidden(id)); /* all motors of the device */
     ScrnCommon_SaveDeviceSettings();
 }
 

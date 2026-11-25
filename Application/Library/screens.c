@@ -81,8 +81,7 @@ void ScrnCommon_Switch(Screen_t *next)
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
-    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].isDelete &&
-        !storageData.DeviceConfig[id].isHide;
+    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].isDelete && !Config_DeviceHidden(id);
 }
 
 /**
@@ -139,7 +138,38 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 }
 
 /**
- * @brief  Commit device settings edited in storageData.DeviceConfig.
+ * @brief  Settings of the selected motor (systemInfo.currentDeviceId/currentModuleId).
+ * @return Its MotorConfig slot, or a blank placeholder if it has none, so screens
+ *         never dereference NULL; writes to the placeholder are discarded.
+ */
+MotorStorageData_t *ScrnCommon_CurrentMotor(void)
+{
+    static MotorStorageData_t noMotor;
+    MotorStorageData_t *motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+
+    if (motor)
+    {
+        return motor;
+    }
+    memset(&noMotor, 0, sizeof(noMotor));
+    noMotor.device = MOTOR_SLOT_FREE;
+    strcpy(noMotor.name, "Default");
+    return &noMotor;
+}
+
+/**
+ * @brief  Display name of a motor.
+ * @return Its stored name, or "Default" if it has no MotorConfig slot.
+ */
+const char *ScrnCommon_MotorName(uint8_t device, uint8_t module)
+{
+    const MotorStorageData_t *motor = Config_Motor(device, module);
+
+    return motor ? motor->name : "Default";
+}
+
+/**
+ * @brief  Commit device or motor settings edited in storageData.
  * @note   Flash is written later by systemTask (isNeedSaveConfig).
  */
 void ScrnCommon_SaveDeviceSettings(void)

@@ -38,6 +38,7 @@ static void createMessage(char *text, int y);
 static void createInfoRow(uint8_t row, char *label, char *value);
 static void createDeviceInfo(uint8_t withLoraId);
 static void restart(uint8_t step);
+static void connect(void);
 static void openMainMenu(void);
 
 Screen_t devicePairingScreen = {
@@ -107,6 +108,12 @@ static void init(void)
         createMessage("Connect failed", MESSAGE_Y_TOP);
         createDeviceInfo(0);
     }
+    else if (pairingUI_Step == PAIRING_STATE_NO_ROOM)
+    {
+        createButtons("Scan", "", "Exit ");
+        createMessage("Memory full", MESSAGE_Y_TOP);
+        createDeviceInfo(0);
+    }
 
     UG_WindowShow(&window_1);
     UG_Update();
@@ -122,15 +129,15 @@ static void render(void)
 static void leftClicked(void)
 {
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
-    if (pairingUI_Step == PAIRING_STATE_FOUND || pairingUI_Step == PAIRING_STATE_NOT_FOUND)
+    if (pairingUI_Step == PAIRING_STATE_FOUND || pairingUI_Step == PAIRING_STATE_NOT_FOUND ||
+        pairingUI_Step == PAIRING_STATE_NO_ROOM)
     {
         restart(PAIRING_STATE_SEARCHING);
         Main_ScanNewDevice();
     }
     else if (pairingUI_Step == PAIRING_STATE_FAILED)
     {
-        restart(PAIRING_STATE_CONNECTING);
-        Main_ConnectToDevice();
+        connect();
     }
 }
 
@@ -143,7 +150,8 @@ static void rightClicked(void)
         pairingUI_Step == PAIRING_STATE_NOT_FOUND ||
         pairingUI_Step == PAIRING_STATE_CONNECTING ||
         pairingUI_Step == PAIRING_STATE_SUCCESS ||
-        pairingUI_Step == PAIRING_STATE_FAILED)
+        pairingUI_Step == PAIRING_STATE_FAILED ||
+        pairingUI_Step == PAIRING_STATE_NO_ROOM)
     {
         openMainMenu();
     }
@@ -155,8 +163,7 @@ static void centerClicked(void)
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (pairingUI_Step == PAIRING_STATE_FOUND || pairingUI_Step == PAIRING_STATE_FAILED)
     {
-        restart(PAIRING_STATE_CONNECTING);
-        Main_ConnectToDevice();
+        connect();
     }
     else if (pairingUI_Step == PAIRING_STATE_SUCCESS)
     {
@@ -243,6 +250,16 @@ static void restart(uint8_t step)
 {
     pairingUI_Step = step;
     ScrnCommon_Switch(&devicePairingScreen);
+}
+
+/* "Conn"/"Retry": connect the found device, or report that there is no room for it. */
+static void connect(void)
+{
+    restart(PAIRING_STATE_CONNECTING);
+    if (!Main_ConnectToDevice())
+    {
+        restart(PAIRING_STATE_NO_ROOM);
+    }
 }
 
 static void openMainMenu(void)

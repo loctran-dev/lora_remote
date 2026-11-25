@@ -21,9 +21,9 @@ class DeviceMenuTests(MenuHarness):
         self.cpu.mem_write(locale + 12, struct.pack("<I", numeric))
         self.call("Link_SetAutoStatus", 0, 2)
         self.module = self.dev(0, harness.DEV_MODULE)
-        self.cpu.mem_write(self.cfg(0, harness.CFG_NAME), b"ABCDEFGHIJKLMNOPQRS\0")
-        self.cpu.mem_write(self.cfg(0, harness.CFG_THRESHOLD), struct.pack("<fI", 12.34, 30))
-        self.put(self.cfg(0, harness.CFG_LOCK), 1)
+        self.cpu.mem_write(self.mot(0, harness.MOT_NAME), b"ABCDEFGHIJKLMNOPQRS\0")
+        self.cpu.mem_write(self.mot(0, harness.MOT_THRESHOLD), struct.pack("<fI", 12.34, 30))
+        self.put(self.mot(0, harness.MOT_LOCK), 1)
         for screen, init, render in [("editDeviceSettingScreen", "screen_edss.o:init", "screen_edss.o:render"),
                                      ("deviceSettingScreen", "screen_dss.o:init", "screen_dss.o:render")]:
             self.cpu.mem_write(harness.symbol(screen)[0] + 4,

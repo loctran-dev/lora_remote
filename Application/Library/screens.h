@@ -29,6 +29,7 @@
 #define PAIRING_STATE_CONNECTING 3 ///< CONFIG_CONNECTION sent, waiting for the reply.
 #define PAIRING_STATE_SUCCESS    4 ///< Device paired and saved.
 #define PAIRING_STATE_FAILED     5 ///< No reply, or no free device slot.
+#define PAIRING_STATE_NO_ROOM    7 ///< Device table or motor pool full; the device was not contacted.
 #define PAIRING_STATE_IDLE       6 ///< Not used.
 /** @} */
 
@@ -120,6 +121,8 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction);
 
 /* screens.c: settings persistence */
 
+MotorStorageData_t *ScrnCommon_CurrentMotor(void);
+const char *ScrnCommon_MotorName(uint8_t device, uint8_t module);
 void ScrnCommon_SaveDeviceSettings(void);
 void ScrnCommon_SaveGeneralSettings(void);
 

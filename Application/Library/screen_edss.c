@@ -39,7 +39,7 @@ static void centerPressed(void);
 static void noAction(void);
 static void windowCallback(UG_MESSAGE *message);
 static uint8_t isSecondsItem(void);
-static DeviceStorageData_t *currentConfig(void);
+static MotorStorageData_t *currentConfig(void);
 static void createLabel(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye, char *text,
     UG_COLOR background, uint8_t alignment);
 static void createButtons(char *left, char *center, char *right);
@@ -85,7 +85,7 @@ static void init(void)
         "Device display name\nEdit one letter/box",
         "Status interval (s)\n0 = status disabled"
     };
-    DeviceStorageData_t module;
+    MotorStorageData_t module;
     char title[40];
     char secondsText[20];
 
@@ -101,8 +101,9 @@ static void init(void)
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
     ScrnCommon_StatusBarCreate();
-    module = storageData.DeviceConfig[systemInfo.currentDeviceId];
-    snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.", module.factoryInfo.deviceTypeChar, systemInfo.currentDeviceId + 1,
+    module = *ScrnCommon_CurrentMotor();
+    snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.",
+        storageData.DeviceConfig[systemInfo.currentDeviceId].factoryInfo.deviceTypeChar, systemInfo.currentDeviceId + 1,
         systemInfo.currentModuleId + 1, module.name);
     createLabel(&textbox_6, TXB_ID_5, 0, 20, 127, 37, title, C_DARK_SLATE_BLUE, ALIGN_CENTER_LEFT);
 
@@ -252,7 +253,7 @@ static void centerClicked(void)
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
         ScrnCommon_SaveDeviceSettings();
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && storageData.DeviceConfig[systemInfo.currentDeviceId].isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
@@ -338,7 +339,7 @@ static void centerPressed(void)
     /* A hidden or deleted device leaves the settings menu. */
     if (indexOfSettingMenu != ITEM_DELETE)
     {
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && storageData.DeviceConfig[systemInfo.currentDeviceId].isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else
@@ -362,9 +363,9 @@ static uint8_t isSecondsItem(void)
     return indexOfSettingMenu == ITEM_ALARM_DELAY || indexOfSettingMenu == ITEM_AUTO_STATUS;
 }
 
-static DeviceStorageData_t *currentConfig(void)
+static MotorStorageData_t *currentConfig(void)
 {
-    return &storageData.DeviceConfig[systemInfo.currentDeviceId];
+    return ScrnCommon_CurrentMotor();
 }
 
 static void createLabel(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye, char *text,
@@ -583,5 +584,9 @@ static void applySelection(void)
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
         storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete = (indexOfSelection + 1) % 2;
+        if (storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete)
+        {
+            Config_FreeMotors(systemInfo.currentDeviceId);
+        }
     }
 }

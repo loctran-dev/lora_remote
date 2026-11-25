@@ -17,6 +17,9 @@
 #include "stm32f1xx_hal.h"
 
 #define MAXIMUM_DEVICE 20 ///< Paired device slots.
+#define MAXIMUM_MODULE 6  ///< Motor modules per device.
+#define MAXIMUM_MOTOR  40 ///< Motor settings slots shared by all devices (storageData.MotorConfig).
+#define MOTOR_SLOT_FREE 0xFFu ///< MotorStorageData_t.device of an unused motor slot.
 
 /** @name Battery icon steps [%] (not used; see ScrnCommon_UpdateBattery()) */
 /** @{ */
@@ -134,7 +137,7 @@ typedef struct
     uint32_t lastCommTime;     ///< Remote Unix time of the last packet.
     uint8_t isConnectionError; ///< Set by the link monitor when probes fail.
 
-    MotorData_t motorData[6]; ///< Motor modules; only module 0 is used.
+    MotorData_t motorData[MAXIMUM_MODULE]; ///< Motor modules; only module 0 is used.
 } DeviceInfo_t;
 
 /** @brief Runtime state of the remote. */
@@ -171,25 +174,36 @@ typedef struct
     System_RunMode_e runMode;    ///< Power mode.
 } SystemInfo_t;
 
-/** @brief Stored settings of one device slot (flash format). */
+/** @brief Stored identity of one device slot (flash format); its motors are in MotorConfig. */
 #pragma pack(1)
 typedef struct DeviceStorageData_t
 {
     uint8_t nodeIdConfig;      ///< LoRa node id.
-    uint8_t moduleIndex;       ///< Module index.
-    FactoryInfo_t factoryInfo; ///< Identity from pairing.
-
-    char name[20];           ///< Display name.
-    float alarmThreshold;    ///< Low-current alarm threshold [A].
-    uint32_t alarmDelayTime; ///< Alarm delay [s].
-    uint8_t isLock;          ///< Power commands are refused.
-    uint8_t isHide;          ///< Hidden from device control.
-
-    uint8_t isDelete; ///< Slot is free.
+    FactoryInfo_t factoryInfo; ///< Identity from pairing; numberOfModule motors are allocated.
+    uint8_t isDelete;          ///< Slot is free.
 } DeviceStorageData_t;
 #pragma pack()
 
-/** @brief Configuration block stored at CONFIG_DATA_ADDRESS (flash format). */
+/**
+ * @brief Stored settings of one motor (flash format), a slot of the shared MotorConfig pool.
+ *
+ * A slot belongs to the motor (device, module); device == MOTOR_SLOT_FREE marks
+ * an unused slot. Use Config_Motor() to find the slot of a motor.
+ */
+#pragma pack(1)
+typedef struct MotorStorageData_t
+{
+    uint8_t device;          ///< Owner index in DeviceConfig, or MOTOR_SLOT_FREE.
+    uint8_t module;          ///< Module index on that device, 0 .. MAXIMUM_MODULE-1.
+    char name[20];           ///< Display name.
+    float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
+    uint32_t alarmDelayTime; ///< Time below the threshold before the alarm [s].
+    uint8_t isLock;          ///< Power commands are refused.
+    uint8_t isHide;          ///< Hidden from device control.
+} MotorStorageData_t;
+#pragma pack()
+
+/** @brief Configuration block stored in a config slot (flash format "CFG3", see config_store.h). */
 #pragma pack(1)
 typedef struct SystemStorageData_t
 {
@@ -202,9 +216,10 @@ typedef struct SystemStorageData_t
     uint32_t tSleepUpdate; ///< RTC wake-up period in SLEEP [s].
 
     DeviceStorageData_t DeviceConfig[MAXIMUM_DEVICE]; ///< Device slots.
+    MotorStorageData_t MotorConfig[MAXIMUM_MOTOR];    ///< Motor settings pool shared by all devices.
 
-    uint8_t lastWriteSuccess; ///< TRUE once the block has been written; otherwise defaults load.
-    /* Appended extension; legacy settings and marker offsets stay unchanged. */
+    uint8_t lastWriteSuccess; ///< TRUE once the block has been written.
+    /* Link settings; covered by linkSettingsChecksum, change them through Link_Set...(). */
     uint32_t linkSettingsMagic;                 ///< Marks the link settings as present.
     uint16_t sleepAfterIdleSeconds;             ///< Idle time before SLEEP [s].
     uint16_t connectionTimeoutSeconds;          ///< Silence before a device is probed [s].

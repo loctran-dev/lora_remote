@@ -41,18 +41,24 @@ DEV_CONNECTION_ERROR = 20
 DEV_RSSI = 8
 DEV_MODULE = 24           # motorData[0]
 MODULE_STRIDE = 28        # sizeof(MotorData_t)
-# DeviceStorageData_t (packed), storageData.DeviceConfig[] at storage + 15: identity and settings.
-CFG_BASE, CFG_STRIDE = 15, 41
-CFG_NODE, CFG_SERIAL, CFG_TYPE, CFG_TYPE_CHAR, CFG_MODULES = 0, 2, 6, 7, 8
-CFG_NAME, CFG_THRESHOLD, CFG_DELAY, CFG_LOCK, CFG_HIDE, CFG_DELETE = 10, 30, 34, 38, 39, 40
+# DeviceStorageData_t (packed), storageData.DeviceConfig[] at storage + 15: device identity.
+CFG_BASE, CFG_STRIDE = 15, 10
+CFG_NODE, CFG_SERIAL, CFG_TYPE, CFG_TYPE_CHAR, CFG_MODULES, CFG_DELETE = 0, 1, 5, 6, 7, 9
+# MotorStorageData_t (packed), storageData.MotorConfig[40] at storage + 215: settings of one motor.
+MOTOR_BASE, MOTOR_STRIDE, MOTOR_SLOTS, MOTOR_FREE = 215, 32, 40, 0xFF
+MOT_DEVICE, MOT_MODULE, MOT_NAME, MOT_THRESHOLD, MOT_DELAY, MOT_LOCK, MOT_HIDE = 0, 1, 2, 22, 26, 30, 31
+STORAGE_SIZE = 1545       # sizeof(SystemStorageData_t)
+AUTO_STATUS = 1504        # storageData.autoStatusSeconds[]
 
 
 class FirmwareHarness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
-        for field, offsets in {"isHide": {CFG_HIDE}, "isLock": {CFG_LOCK},
-                               "isDelete": {CFG_DELETE}, "motorData": {DEV_MODULE},
+        # The second offsets belong to ConfigV2_t, kept in config_store.c for conversion.
+        for field, offsets in {"isHide": {MOT_HIDE, 39}, "isLock": {MOT_LOCK, 38},
+                               "isDelete": {CFG_DELETE, 40}, "motorData": {DEV_MODULE},
+                               "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, 844, AUTO_STATUS},
                                "isConnectionError": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "currentDeviceId": {60}, "currentModuleId": {61},
                                "isNeedSaveConfig": {62}, "DeviceConfig": {15}}.items():
@@ -75,6 +81,8 @@ class FirmwareHarness(unittest.TestCase):
         self.cpu.mem_map(0x20000000, 0x10000)
         for i in range(20):
             self.put(self.cfg(i, CFG_DELETE), 1)
+        for slot in range(MOTOR_SLOTS):
+            self.put(self.mot(slot, MOT_DEVICE), MOTOR_FREE)
 
     def put(self, address, value):
         self.cpu.mem_write(address, bytes([value]))
@@ -90,22 +98,29 @@ class FirmwareHarness(unittest.TestCase):
         """Address in storageData.DeviceConfig[index] (identity and settings)."""
         return self.storage + CFG_BASE + index * CFG_STRIDE + offset
 
+    def mot(self, slot, offset=0):
+        """Address in storageData.MotorConfig[slot]; add(i) gives device i's module 0 slot i."""
+        return self.storage + MOTOR_BASE + slot * MOTOR_STRIDE + offset
+
     def add(self, index, hidden=False):
+        """Pair device index with one motor, held in motor slot index."""
         self.put(self.cfg(index, CFG_DELETE), 0)
-        self.put(self.cfg(index, CFG_HIDE), int(hidden))
+        self.put(self.mot(index, MOT_DEVICE), index)
+        self.put(self.mot(index, MOT_MODULE), 0)
+        self.put(self.mot(index, MOT_HIDE), int(hidden))
 
     def select(self, index, module=0):
         self.put(self.system + 60, index)
         self.put(self.system + 61, module)
 
-    def call(self, name, argument=0, argument1=0, argument2=0):
+    def call(self, name, argument=0, argument1=0, argument2=0, count=10000):
         stop = 0x0807FFF0
         self.cpu.reg_write(UC_ARM_REG_SP, 0x2000F000)
         self.cpu.reg_write(UC_ARM_REG_LR, stop | 1)
         self.cpu.reg_write(UC_ARM_REG_R0, argument & 0xFFFFFFFF)
         self.cpu.reg_write(UC_ARM_REG_R1, argument1)
         self.cpu.reg_write(UC_ARM_REG_R2, argument2)
-        self.cpu.emu_start(symbol(name)[0] | 1, stop, count=10000)
+        self.cpu.emu_start(symbol(name)[0] | 1, stop, count=count)
         self.assertEqual(self.cpu.reg_read(UC_ARM_REG_PC), stop)
         return self.cpu.reg_read(UC_ARM_REG_R0)
 
@@ -172,10 +187,10 @@ class VisibilityTests(FirmwareHarness):
     def test_save_device_settings_only_marks_dirty(self):
         # Editors write storageData.DeviceConfig directly; saving only requests the flash write.
         self.add(2, True)
-        self.put(self.cfg(2, CFG_LOCK), 1)
-        before = bytes(self.cpu.mem_read(self.storage, 836))
+        self.put(self.mot(2, MOT_LOCK), 1)
+        before = bytes(self.cpu.mem_read(self.storage, STORAGE_SIZE))
         self.call("ScrnCommon_SaveDeviceSettings")
-        self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.storage, STORAGE_SIZE)), before)
         self.assertEqual(self.get(self.system + 62), 1)
 
     def test_deleted_device_is_no_longer_visible(self):
@@ -188,8 +203,8 @@ class VisibilityTests(FirmwareHarness):
         # Runtime state must not change when settings are edited, and vice versa.
         self.add(2)
         runtime = bytes(self.cpu.mem_read(self.dev(2), DEVICE_STRIDE))
-        self.cpu.mem_write(self.cfg(2, CFG_NAME), b"Pump test\x00")
-        self.cpu.mem_write(self.cfg(2, CFG_THRESHOLD), struct.pack("<fI", 12.34, 30))
+        self.cpu.mem_write(self.mot(2, MOT_NAME), b"Pump test\x00")
+        self.cpu.mem_write(self.mot(2, MOT_THRESHOLD), struct.pack("<fI", 12.34, 30))
         self.call("ScrnCommon_SaveDeviceSettings")
         self.assertEqual(bytes(self.cpu.mem_read(self.dev(2), DEVICE_STRIDE)), runtime)
 
@@ -225,7 +240,7 @@ class VisibilityTests(FirmwareHarness):
 
     def test_manager_can_restore_hidden_without_changing_selection_or_lock(self):
         self.add(2, True)
-        self.put(self.cfg(2, CFG_LOCK), 1)
+        self.put(self.mot(2, MOT_LOCK), 1)
         self.select(0)
         self.put(symbol("managerCount")[0], 1)
         self.put(symbol("managerSelected")[0], 0)
@@ -233,8 +248,8 @@ class VisibilityTests(FirmwareHarness):
         self.call("screen_dvm.o:centerClicked")
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
         self.assertEqual(self.get(self.system + 60), 0)
-        self.assertEqual(self.get(self.cfg(2, CFG_LOCK)), 1)
-        self.assertEqual(self.get(self.cfg(2, CFG_HIDE)), 0)
+        self.assertEqual(self.get(self.mot(2, MOT_LOCK)), 1)
+        self.assertEqual(self.get(self.mot(2, MOT_HIDE)), 0)
         self.assertEqual(self.get(self.system + 62), 1)
 
     def test_manager_navigation_and_empty_toggle(self):
@@ -247,9 +262,9 @@ class VisibilityTests(FirmwareHarness):
             self.call("screen_dvm.o:rightClicked")
         self.assertEqual(self.get(selected), 19)
         self.put(symbol("managerCount")[0], 0)
-        before = bytes(self.cpu.mem_read(self.storage, 836))
+        before = bytes(self.cpu.mem_read(self.storage, STORAGE_SIZE))
         self.call("screen_dvm.o:centerClicked")
-        self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.storage, STORAGE_SIZE)), before)
 
     def flash_mocks(self, erase_error=False, program_error=False):
         calls = []

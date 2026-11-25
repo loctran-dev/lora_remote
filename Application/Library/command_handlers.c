@@ -58,15 +58,17 @@ const CmdMapping_t cmdTable[] = {
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
     DeviceStorageData_t *device = &storageData.DeviceConfig[systemInfo.currentDeviceId];
+    MotorStorageData_t *motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
     PayloadRequestSetConfig_t config;
     LoraPackage_t packet;
-    if (device->isDelete || !(device->alarmThreshold >= 0 && device->alarmThreshold <= 99.99f) || device->alarmDelayTime > 9999)
+    if (device->isDelete || motor == NULL ||
+        !(motor->alarmThreshold >= 0 && motor->alarmThreshold <= 99.99f) || motor->alarmDelayTime > 9999)
     {
         return FALSE;
     }
     config.moduleIndex = systemInfo.currentModuleId;
-    config.alarmThresholdCentiAmp = (uint16_t)(device->alarmThreshold * 100.0f + 0.5f);
-    config.alarmDelaySeconds = device->alarmDelayTime;
+    config.alarmThresholdCentiAmp = (uint16_t)(motor->alarmThreshold * 100.0f + 0.5f);
+    config.alarmDelaySeconds = motor->alarmDelayTime;
     config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.currentDeviceId);
     packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeIdConfig, CMD_SET_CONFIG,
                                    LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);

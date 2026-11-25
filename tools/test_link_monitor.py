@@ -123,8 +123,8 @@ class LinkTests(harness.FirmwareHarness):
         self.assertEqual(self.queued[-1][4], 2)
 
     def test_hidden_and_locked_devices_are_still_monitored(self):
-        self.put(self.cfg(0, harness.CFG_LOCK), 1)
-        self.put(self.cfg(0, harness.CFG_HIDE), 1)
+        self.put(self.mot(0, harness.MOT_LOCK), 1)
+        self.put(self.mot(0, harness.MOT_HIDE), 1)
         self.at(6)
         self.assertEqual(len(self.queued), 1)
 

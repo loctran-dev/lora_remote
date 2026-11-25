@@ -56,7 +56,7 @@ static void render(void)
 {
     char *labels[] = {"Low-current alarm", "Alarm delay", "Lock", "Hide", "Delete device", "Device name",
                       "Auto status interval"};
-    const DeviceStorageData_t *module = &storageData.DeviceConfig[systemInfo.currentDeviceId];
+    const MotorStorageData_t *module = ScrnCommon_CurrentMotor();
     uint8_t page = menuIndex / ROWS_PER_PAGE * ROWS_PER_PAGE;
     uint8_t item;
     char value[32];

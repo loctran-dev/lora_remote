@@ -189,7 +189,7 @@ static void init(void)
     device = deviceBuff[systemInfo.currentDeviceId];
     module = device.motorData[systemInfo.currentModuleId];
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, module.moduleIndex + 1, storageData.DeviceConfig[device.deviceIndex].name);
+        device.deviceIndex + 1, module.moduleIndex + 1, ScrnCommon_MotorName(device.deviceIndex, module.moduleIndex));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -239,11 +239,11 @@ static void render(void)
     device = deviceBuff[systemInfo.currentDeviceId];
     module = device.motorData[systemInfo.currentModuleId];
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, module.moduleIndex + 1, storageData.DeviceConfig[device.deviceIndex].name);
+        device.deviceIndex + 1, module.moduleIndex + 1, ScrnCommon_MotorName(device.deviceIndex, module.moduleIndex));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
-    if (lockNoticeActive && (!storageData.DeviceConfig[device.deviceIndex].isLock || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
+    if (lockNoticeActive && (!ScrnCommon_CurrentMotor()->isLock || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
     {
         lockNoticeActive = 0;
     }

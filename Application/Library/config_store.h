@@ -9,9 +9,13 @@
  * power loss therefore leaves the previous slot untouched and valid; at
  * start-up the valid slot with the highest sequence number wins.
  *
- * Boards still holding the old single-copy format (raw SystemStorageData_t at
- * CONFIG_DATA_ADDRESS, accepted when lastWriteSuccess is TRUE) are read once
- * and migrated by the first save, which goes to slot B.
+ * Slots of the current format carry the magic "CFG3". Older blocks (one set of
+ * settings per device: "CFG2" slots, or the raw single-copy format at
+ * CONFIG_DATA_ADDRESS accepted when lastWriteSuccess is TRUE) are converted when
+ * loaded and written in the new format by the next save, to the other slot.
+ *
+ * Motor settings live in the shared pool storageData.MotorConfig; a device gets
+ * one slot per module when it is paired. Find a motor's slot with Config_Motor().
  *
  * @defgroup config Configuration storage
  * @{
@@ -32,6 +36,16 @@ extern SystemStorageData_t storageData;
 
 void Config_Load(void);
 uint32_t Config_Save(void);
+
+/* Motor settings pool */
+
+MotorStorageData_t *Config_Motor(uint8_t device, uint8_t module);
+uint8_t Config_ModuleCount(uint8_t numberOfModule);
+uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count);
+uint8_t Config_AllocateMotors(uint8_t device, uint8_t count);
+void Config_FreeMotors(uint8_t device);
+uint8_t Config_DeviceHidden(uint8_t device);
+void Config_SetDeviceHidden(uint8_t device, uint8_t hidden);
 
 #endif
 /** @} */

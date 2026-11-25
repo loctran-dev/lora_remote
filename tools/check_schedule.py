@@ -86,7 +86,7 @@ class RemoteScheduleChecks(harness.FirmwareHarness):
         self.assertFalse(self.packets)
 
     def test_hidden_device_cannot_send_timer(self):
-        self.put(self.cfg(0, harness.CFG_HIDE), 1)
+        self.put(self.mot(0, harness.MOT_HIDE), 1)
         self.call("Main_SetScheduleTimeToCurrentModule", 60)
         self.assertFalse(self.packets)
 
