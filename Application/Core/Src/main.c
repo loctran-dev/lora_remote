@@ -168,6 +168,9 @@ void GetDevStatusTimerCallback(void *argument);
 /* USER CODE BEGIN PFP */
 static void updateBattery(void);
 static uint8_t getNotUsedNodeId(void);
+static char deviceTypeChar(uint8_t deviceType);
+static int8_t findPairedSlot(uint32_t serial);
+static int8_t storePairedDevice(void);
 static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void));
 /* USER CODE END PFP */
 
@@ -284,21 +287,7 @@ int main(void)
     deviceBuff[devNo].motorData[0].isLock = storageData.DeviceConfig[devNo].isLock == TRUE;
     deviceBuff[devNo].motorData[0].moduleIndex = storageData.DeviceConfig[devNo].moduleIndex;
     deviceBuff[devNo].factoryInfo = storageData.DeviceConfig[devNo].factoryInfo;
-    switch (deviceBuff[devNo].factoryInfo.deviceType)
-    {
-      case eDevice_Type_Motor:
-        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'M';
-        break;
-      case eDevice_Type_Pressure:
-        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'P';
-        break;
-      case eDevice_Type_Encoder:
-        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'E';
-        break;
-      default:
-        deviceBuff[devNo].factoryInfo.deviceTypeChar = 'x';
-        break;
-    }
+    deviceBuff[devNo].factoryInfo.deviceTypeChar = deviceTypeChar(deviceBuff[devNo].factoryInfo.deviceType);
     memcpy(deviceBuff[devNo].motorData[0].name, storageData.DeviceConfig[devNo].name,
       sizeof(deviceBuff[devNo].motorData[0].name));
     if (deviceBuff[devNo].motorData[0].name[0] == '\0')
@@ -1035,13 +1024,11 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
  */
 void Main_ScanNewDevice(void)
 {
-  FactoryInfo_t factoryInfo;
-
   osMutexAcquire(radioMutex, osWaitForever);
   systemInfo.findDeviceTick = xTaskGetTickCount();
   systemInfo.findDeviceStep = eProcess_Step_Processing;
   systemInfo.findDeviceResult = eProcess_Result_Failed;
-  systemInfo.findDevicefactoryInfo = factoryInfo;
+  memset(&systemInfo.findDevicefactoryInfo, 0, sizeof(systemInfo.findDevicefactoryInfo));
   systemInfo.netId = LORA_NET_ID_DEFAULT;
   sLoRaCtrl.frequency = 433;
   sLoRaCtrl.spredingFactor = SF_7;
@@ -1054,6 +1041,25 @@ void Main_ScanNewDevice(void)
 }
 
 /**
+ * @brief  Leave pairing: put the radio back on the stored network and drop pending pairing steps.
+ *
+ * Main_ScanNewDevice() moves the radio to the default network; without this
+ * every paired device stays unreachable until the next reset.
+ */
+void Main_RestoreRadio(void)
+{
+  osMutexAcquire(radioMutex, osWaitForever);
+  systemInfo.findDeviceStep = eProcess_Step_None;
+  systemInfo.configDeviceStep = eProcess_Step_None;
+  systemInfo.netId = storageData.netIdConfig;
+  sLoRaCtrl.frequency = storageData.frequencyConfig;
+  sLoRaCtrl.spredingFactor = storageData.sfConfig;
+  LoRa_init(&sLoRaCtrl);
+  LoRa_startReceiving(&sLoRaCtrl);
+  osMutexRelease(radioMutex);
+}
+
+/**
  * @brief  Send CMD_CONFIG_CONNECTION to the device found by Main_ScanNewDevice().
  *
  * Gives it the configured network id, radio settings and the next unused
@@ -1062,11 +1068,14 @@ void Main_ScanNewDevice(void)
 void Main_ConnectToDevice(void)
 {
   PayloadRequestConfigConnection_t payload;
+  int8_t slot;
 
   systemInfo.configDeviceTick = xTaskGetTickCount();
   systemInfo.configDeviceStep = eProcess_Step_Processing;
   systemInfo.configDeviceResult = eProcess_Result_Failed;
-  systemInfo.nextNodeId = getNotUsedNodeId();
+  /* A device paired before keeps its slot and node id. */
+  slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
+  systemInfo.nextNodeId = slot >= 0 ? deviceBuff[slot].nodeId : getNotUsedNodeId();
 
   payload.serial = systemInfo.findDevicefactoryInfo.serial;
   payload.netId = storageData.netIdConfig;
@@ -1195,6 +1204,71 @@ static uint8_t getNotUsedNodeId(void)
   return nodeIdValid;
 }
 
+/* Name letter for a Device_Type_e value: 'M', 'P', 'E', or 'x' if unknown. */
+static char deviceTypeChar(uint8_t deviceType)
+{
+  switch (deviceType)
+  {
+    case eDevice_Type_Motor:
+      return 'M';
+    case eDevice_Type_Pressure:
+      return 'P';
+    case eDevice_Type_Encoder:
+      return 'E';
+    default:
+      return 'x';
+  }
+}
+
+/* Slot in deviceBuff already paired with this serial, or -1 if there is none. */
+static int8_t findPairedSlot(uint32_t serial)
+{
+  for (int8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+  {
+    if (!deviceBuff[devNo].isDelete && deviceBuff[devNo].factoryInfo.serial == serial)
+    {
+      return devNo;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Store the device confirmed by CMD_CONFIG_CONNECTION. A device paired before
+ * keeps its slot, otherwise the first free slot is used; either way the slot
+ * starts from the default settings. Returns the slot, or -1 if all are in use.
+ */
+static int8_t storePairedDevice(void)
+{
+  int8_t slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
+
+  for (int8_t devNo = 0; slot < 0 && devNo < MAXIMUM_DEVICE; devNo++)
+  {
+    if (deviceBuff[devNo].isDelete == TRUE)
+    {
+      slot = devNo;
+    }
+  }
+  if (slot < 0)
+  {
+    return -1;
+  }
+
+  memset(&deviceBuff[slot], 0, sizeof(deviceBuff[slot]));
+  memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
+  deviceBuff[slot].deviceIndex = slot;
+  deviceBuff[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
+  deviceBuff[slot].nodeId = systemInfo.nextNodeId;
+  deviceBuff[slot].lastCommTime = systemInfo.currentTime;
+  sprintf(deviceBuff[slot].motorData[0].name, "Default");
+
+  storageData.DeviceConfig[slot].factoryInfo = deviceBuff[slot].factoryInfo;
+  storageData.DeviceConfig[slot].nodeIdConfig = deviceBuff[slot].nodeId;
+  storageData.autoStatusSeconds[slot] = 0;
+  systemInfo.isNeedSaveConfig = TRUE;
+  return slot;
+}
+
 /* Run the screen handler for a click or long press and clear its flag. */
 static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void))
 {
@@ -1223,9 +1297,6 @@ void StartSystemTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-  uint8_t isFullDev;
-  uint8_t devIndexValid;
-
   /* Infinite loop */
   for (;;)
   {
@@ -1262,6 +1333,7 @@ void StartSystemTask(void *argument)
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
         systemInfo.findDeviceResult == eProcess_Result_Passed)
       {
+        systemInfo.findDevicefactoryInfo.deviceTypeChar = deviceTypeChar(systemInfo.findDevicefactoryInfo.deviceType);
         pairingUI_Step = PAIRING_STATE_FOUND;
         currentScreen = &devicePairingScreen;
         currentScreen->init();
@@ -1288,33 +1360,8 @@ void StartSystemTask(void *argument)
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING &&
         systemInfo.configDeviceResult == eProcess_Result_Passed)
       {
-        isFullDev = TRUE;
-        for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
+        if (storePairedDevice() >= 0)
         {
-          if (deviceBuff[devNo].isDelete == TRUE)
-          {
-            devIndexValid = devNo;
-            isFullDev = FALSE;
-            break;
-          }
-        }
-        if (isFullDev == FALSE)
-        {
-          deviceBuff[devIndexValid].factoryInfo = systemInfo.findDevicefactoryInfo;
-          deviceBuff[devIndexValid].nodeId = systemInfo.nextNodeId;
-          deviceBuff[devIndexValid].motorData[0].isHide = FALSE;
-          deviceBuff[devIndexValid].motorData[0].isLock = FALSE;
-          deviceBuff[devIndexValid].isDelete = FALSE;
-          deviceBuff[devIndexValid].lastCommTime = systemInfo.currentTime;
-
-          storageData.DeviceConfig[devIndexValid].factoryInfo = deviceBuff[devIndexValid].factoryInfo;
-          storageData.DeviceConfig[devIndexValid].nodeIdConfig = deviceBuff[devIndexValid].nodeId;
-          storageData.DeviceConfig[devIndexValid].isHide = deviceBuff[devIndexValid].motorData[0].isHide;
-          storageData.DeviceConfig[devIndexValid].isLock = deviceBuff[devIndexValid].motorData[0].isLock;
-          storageData.DeviceConfig[devIndexValid].isDelete = deviceBuff[devIndexValid].isDelete;
-
-          systemInfo.isNeedSaveConfig = TRUE;
-
           pairingUI_Step = PAIRING_STATE_SUCCESS;
           currentScreen = &devicePairingScreen;
           currentScreen->init();

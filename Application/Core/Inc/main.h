@@ -69,6 +69,7 @@ void Main_UpdateStatusPeriod(void);
 void Main_SetScheduleTimeToCurrentModule(int32_t time);
 void Main_ScanNewDevice(void);
 void Main_ConnectToDevice(void);
+void Main_RestoreRadio(void);
 void Main_SetRtcAlarmRelative(uint32_t seconds);
 /* USER CODE END EFP */
 

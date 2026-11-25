@@ -247,5 +247,6 @@ static void restart(uint8_t step)
 
 static void openMainMenu(void)
 {
+    Main_RestoreRadio();
     ScrnCommon_Switch(&mainMenuScreen);
 }
