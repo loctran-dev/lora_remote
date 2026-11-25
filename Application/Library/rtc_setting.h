@@ -22,22 +22,20 @@ typedef enum Rtc_SetResult_e
     eRtc_SetResult_Io     ///< HAL error or the read-back time does not match.
 } Rtc_SetResult_e;
 
-/** @name Backup of the calendar date */
-/** @{ */
+/* Backup of the calendar date */
+
 void Rtc_SaveDate(void);
 void Rtc_RestoreDate(void);
-/** @} */
 
-/** @name Read and set the RTC */
-/** @{ */
+/* Read and set the RTC */
+
 uint32_t Rtc_Read(void);
 uint8_t Rtc_Set(uint32_t timestamp);
-/** @} */
 
-/** @name USB "TIME <unix>\n" command */
-/** @{ */
+/* USB "TIME <unix>
+" command */
+
 uint8_t Rtc_Parse(const uint8_t *command, uint32_t length, uint32_t *timestamp);
-/** @} */
 
 #endif
 /** @} */

@@ -190,7 +190,9 @@ static uint8_t isValidPacket(const LoraPackage_t *packet)
   - Tên group theo tiền tố module: `power`, `link`, `comm`, `cmdhandler`, `schedule`, `history`, `rtc`, `button`, `flash`, `util`, `main`, `screen`; kiểu dùng chung trong `define.h` thuộc group `define`.
   - File CubeMX (`main.h`, `main.c`): mô tả file, `@defgroup` và `/** @} */` đặt trong các vùng `USER CODE`; symbol do CubeMX sinh (handle, task, pin) được liệt kê trong `EXCLUDE_SYMBOLS` của `Doxyfile` thay vì viết comment.
 - Comment Doxygen của hàm public đặt trong `.c`, ngay trên định nghĩa hàm; không lặp lại trong `.h`. Thứ tự tag: `@brief`, mô tả thêm, `@param`, `@return`, `@note`, `@warning`.
-- File `.h` giữ phần mô tả module, struct/enum/biến `extern` public và nhóm API: `/** @name <Nhóm> */` + `/** @{ */` ... `/** @} */` bao quanh các khai báo, cùng tên với comment phân nhóm trong `.c`.
+- File `.h` giữ phần mô tả module và comment cho struct/enum/macro/biến `extern` public. Khai báo hàm trong `.h` không có comment Doxygen ngay phía trên: nhóm API dùng comment thường `/* <Nhóm> */` cùng tên với nhóm trong `.c`, cách khai báo đầu tiên một dòng trống.
+  - Lý do: IDE (VS Code C/C++) lấy comment nằm sát khai báo trong `.h`; nếu ở đó là `/** @{ */` hay `/** @} */` thì hover hiện các marker đó thay vì mô tả trong `.c`.
+  - `@name` + `@{ @}` vẫn dùng được cho nhóm macro hoặc biến `extern`.
 - Struct/enum public có `@brief` cho kiểu và `///<` cho từng field hoặc giá trị; ghi đơn vị trong ngoặc vuông, ví dụ `[s]`, `[ms]`, `[V]`.
 - Hàm `static` trong `.c` chỉ cần một dòng comment ngắn khi tên chưa đủ rõ; handler chung của screen (`init`, `render`, ...) không cần comment.
 - Không thêm Doxygen vào code CubeMX/vendor (`lcd.*`, `lora.*`, `UGUI`, HAL); `Doxyfile` loại các file này khỏi tài liệu.
@@ -211,11 +213,10 @@ uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
 
 ```c
 /* power_sleep.h */
-/** @name Wake sources (ISR context) */
-/** @{ */
+/* Wake sources (ISR context) */
+
 void Power_RtcWakeISR(void);
 void Power_RadioWakeISR(void);
-/** @} */
 
 typedef struct
 {

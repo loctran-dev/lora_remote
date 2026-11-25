@@ -108,57 +108,50 @@ extern uint8_t pairingUI_Step;            ///< PAIRING_STATE_... step of deviceP
 extern uint8_t historyScreenMode;         ///< 0 = device picker, 1 = list, 2 = event detail.
 /** @} */
 
-/** @name screens.c: screen switching */
-/** @{ */
-void ScrnCommon_Switch(Screen_t *next);
-/** @} */
+/* screens.c: screen switching */
 
-/** @name screens.c: device visibility and selection */
-/** @{ */
+void ScrnCommon_Switch(Screen_t *next);
+
+/* screens.c: device visibility and selection */
+
 uint8_t ScrnCommon_DeviceVisible(uint8_t id);
 uint8_t ScrnCommon_EnsureVisibleDevice(void);
 void ScrnCommon_SelectAdjacentVisible(int8_t direction);
-/** @} */
 
-/** @name screens.c: settings persistence */
-/** @{ */
+/* screens.c: settings persistence */
+
 void ScrnCommon_SaveDeviceFlags(uint8_t id);
 void ScrnCommon_SaveDeviceSettings(uint8_t id);
 void ScrnCommon_SaveGeneralSettings(void);
-/** @} */
 
-/** @name screens.c: status bar */
-/** @{ */
+/* screens.c: status bar */
+
 void ScrnCommon_StatusBarCreate(void);
 void ScrnCommon_StatusBarUpdate(void);
 void ScrnCommon_UpdateBattery(void);
-/** @} */
 
-/** @name screens.c: settings menu */
-/** @{ */
+/* screens.c: settings menu */
+
 void ScrnCommon_SettingsMenuCreate(char *title);
 void ScrnCommon_SettingsMenuCreateStacked(char *title);
 void ScrnCommon_SettingsMenuPage(uint8_t page, uint8_t count);
 void ScrnCommon_SettingsMenuBegin(uint8_t page);
 void ScrnCommon_SettingsMenuRow(uint8_t row, char *label, char *value, uint8_t selected);
 void ScrnCommon_SettingsMenuUpdate(void);
-/** @} */
 
-/** @name screens.c: empty device control screen */
-/** @{ */
+/* screens.c: empty device control screen */
+
 void ScrnCommon_EmptyControlInit(void);
 void ScrnCommon_EmptyControlRender(void);
-/** @} */
 
-/** @name screens.c: menu scrolling and character editor */
-/** @{ */
+/* screens.c: menu scrolling and character editor */
+
 void ScrnCommon_MenuScrollUpdate(uint8_t count, uint8_t selected);
 void ScrnCommon_EditCharactersCreate(uint8_t count);
 void ScrnCommon_EditCharactersUpdate(uint8_t position);
-/** @} */
 
-/** @name Implemented by individual screens (screen_*.c) */
-/** @{ */
+/* Implemented by individual screens (screen_*.c) */
+
 uint8_t ScrnDvm_SelectedDevice(void);
 void ScrnDcs_ShowMotorLocked(uint8_t motorPower);
 void ScrnDcs_ShowConnectionError(uint8_t id);
@@ -167,7 +160,6 @@ void ScrnDss_ResetSelection(void);
 void ScrnGss_ResetSelection(void);
 void ScrnHs_OpenHistory(void);
 uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId);
-/** @} */
 
 #endif
 /** @} */

@@ -61,8 +61,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-/** @name Main_ API (main.c) */
-/** @{ */
+/* Main_ API (main.c) */
+
 void Main_SetBuzzerMode(Buzzer_Mode_e mode);
 void Main_SetMotorPower(uint8_t motorPower);
 void Main_UpdateStatusPeriod(void);
@@ -70,7 +70,6 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time);
 void Main_ScanNewDevice(void);
 void Main_ConnectToDevice(void);
 void Main_SetRtcAlarmRelative(uint32_t seconds);
-/** @} */
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

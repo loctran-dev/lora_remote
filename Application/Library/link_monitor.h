@@ -49,48 +49,42 @@ extern Link_DeviceState_t linkDevices[];
 /** @brief Probe state; also read by the USB console. */
 extern Link_ProbeState_t linkProbe;
 
-/** @name Settings */
-/** @{ */
+/* Settings */
+
 uint16_t Link_GetIdleSeconds(void);
 uint16_t Link_GetTimeoutSeconds(void);
 uint16_t Link_GetAutoStatus(uint8_t id);
 void Link_SetAutoStatus(uint8_t id, uint16_t seconds);
 void Link_SetIdleSeconds(uint16_t seconds);
 void Link_SetTimeoutSeconds(uint16_t seconds);
-/** @} */
 
-/** @name Initialisation and clock */
-/** @{ */
+/* Initialisation and clock */
+
 void Link_Init(uint32_t rtcSecond);
 void Link_ClockStep(uint32_t rtcSecond);
 uint32_t Link_Now(void);
 void Link_ClockRebase(uint32_t rtcSecond);
-/** @} */
 
-/** @name Requests */
-/** @{ */
+/* Requests */
+
 void Link_RequestScan(void);
 uint8_t Link_IsBusy(void);
 void Link_RequestStatusSync(void);
-/** @} */
 
-/** @name Received packets */
-/** @{ */
+/* Received packets */
+
 void Link_RecordStatusReply(uint8_t id, uint16_t transaction);
 void Link_RecordPacket(uint8_t id, uint8_t status);
 void Link_RecordNodePacket(uint8_t node, uint8_t status);
-/** @} */
 
-/** @name Transmit path */
-/** @{ */
+/* Transmit path */
+
 uint8_t Link_ShouldTransmit(const LoraPackage_t *packet);
 void Link_TxFinished(const LoraPackage_t *packet, uint8_t success);
-/** @} */
 
-/** @name Periodic processing */
-/** @{ */
+/* Periodic processing */
+
 void Link_Tick(void);
-/** @} */
 
 #endif
 /** @} */

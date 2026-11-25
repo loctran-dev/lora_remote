@@ -130,18 +130,16 @@ extern uint32_t historyStoreFull;
 uint32_t HJ_Crc(const void *data, uint32_t size);
 void HJ_Init(void);
 
-/** @name Record access */
-/** @{ */
+/* Record access */
+
 const HistoryRecord *HJ_Get(uint16_t slot);
 uint8_t HJ_Contains(const HistoryEvent *event, uint16_t owner);
 uint8_t HJ_Append(HistoryEvent *event, uint16_t owner);
-/** @} */
 
-/** @name Synchronisation */
-/** @{ */
+/* Synchronisation */
+
 const HistoryRecord *HJ_Pending(void);
 uint8_t HJ_MarkSynced(uint32_t serial, uint32_t id);
-/** @} */
 
 #endif
 /** @} */

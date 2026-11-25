@@ -27,17 +27,15 @@ extern uint32_t remoteHistoryRevision;   ///< Incremented on every new event; th
 void RemoteHistory_Init(void);
 uint16_t RemoteHistory_Owner(uint8_t id);
 
-/** @name Event sources */
-/** @{ */
+/* Event sources */
+
 void RemoteHistory_Handle(LoraPackage_t packet);
 void RemoteHistory_Link(uint8_t id, uint8_t restored);
-/** @} */
 
-/** @name Storage and acknowledgement */
-/** @{ */
+/* Storage and acknowledgement */
+
 uint8_t RemoteHistory_Busy(void);
 void RemoteHistory_Tick(void);
-/** @} */
 
 #endif
 /** @} */

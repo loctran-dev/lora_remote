@@ -180,8 +180,8 @@ typedef struct PayloadResponseConfigConnection_t
 } PayloadResponseConfigConnection_t;
 #pragma pack()
 
-/** @name Package builders */
-/** @{ */
+/* Package builders */
+
 LoraPackage_t Comm_CreateNewPackage(uint8_t netId, uint8_t nodeId, uint8_t opcode, uint8_t type, uint8_t *payload, int16_t payloadLength, uint32_t timeout);
 void Comm_UpdatePackagePayload(LoraPackage_t *packageOut, uint8_t *payload, int16_t payloadLength);
 LoraPackage_t Comm_CreateReqGetStatus(uint8_t netId, uint8_t nodeId, PayloadRequestGetStatus_t payload);
@@ -190,15 +190,13 @@ LoraPackage_t Comm_CreateReqSetSchedule(uint8_t netId, uint8_t nodeId, PayloadRe
 LoraPackage_t Comm_CreateReqSyncTime(uint8_t netId, uint8_t nodeId, PayloadRequestSyncTime_t payload);
 LoraPackage_t Comm_CreateReqConfigConnection(uint8_t netId, uint8_t nodeId, PayloadRequestConfigConnection_t payload);
 LoraPackage_t Comm_CreateReqGetFactoryInfo(uint8_t netId, uint8_t nodeId);
-/** @} */
 
-/** @name Receive path */
-/** @{ */
+/* Receive path */
+
 void Comm_ProcessRxData(uint8_t *buffer, uint32_t length);
-/** @} */
 
-/** @name Payload parsers */
-/** @{ */
+/* Payload parsers */
+
 uint8_t Comm_ParsePayloadReqCtrlPwr(LoraPackage_t package, PayloadRequestCtrlPower_t *payload);
 uint8_t Comm_ParsePayloadReqSetSchedule(LoraPackage_t package, PayloadRequestSetSchedule_t *payload);
 uint8_t Comm_ParsePayloadReqSyncTime(LoraPackage_t package, PayloadRequestSyncTime_t *payload);
@@ -207,7 +205,6 @@ uint8_t Comm_ParsePayloadReqAlarm(LoraPackage_t package, PayloadRequestAlarm_t *
 uint8_t Comm_ParsePayloadResGetStatus(LoraPackage_t package, PayloadResponseGetStatus_t *payload);
 uint8_t Comm_ParsePayloadResGetFactoryInfo(LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload);
 uint8_t Comm_ParsePayloadResConfigConnection(LoraPackage_t package, PayloadResponseConfigConnection_t *payload);
-/** @} */
 
 #endif
 /** @} */

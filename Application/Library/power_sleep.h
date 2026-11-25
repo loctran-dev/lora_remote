@@ -35,32 +35,28 @@ typedef struct
 /** @brief Sleep state; also used by the tasks in main.c and the USB console. */
 extern Power_SleepState_t powerSleep;
 
-/** @name RTC clock */
-/** @{ */
-uint32_t Power_ReadRtcSecond(void);
-/** @} */
+/* RTC clock */
 
-/** @name Initialisation and activity */
-/** @{ */
+uint32_t Power_ReadRtcSecond(void);
+
+/* Initialisation and activity */
+
 void Power_Init(void);
 void Power_UserActivity(void);
 void Power_WakeForError(void);
-/** @} */
 
-/** @name Wake sources (ISR context) */
-/** @{ */
+/* Wake sources (ISR context) */
+
 void Power_RtcWakeISR(void);
 void Power_RadioWakeISR(void);
 void Power_ButtonWakeISR(void);
 void Power_UsbSofISR(void);
 void Power_RxProcessed(void);
-/** @} */
 
-/** @name Sleep policy */
-/** @{ */
+/* Sleep policy */
+
 void Power_Tick(void);
 void Power_TryStop(void);
-/** @} */
 
 #endif
 /** @} */
