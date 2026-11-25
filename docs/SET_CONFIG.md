@@ -23,7 +23,7 @@ Wrong payload length, packet type, or address is ignored. Unsupported module
 or out-of-range values return result 0 without changing either setting.
 Valid values are assigned to sysInfo.alarmThresholdCentiAmp and
 sysInfo.alarmDelaySeconds, committed to slave settings Flash, and return result 1.
-Flash failure or MOTOR_POWER_ON returns result 0 and rolls back the RAM edit.
+Flash failure or eMotor_PowerState_On returns result 0 and rolls back the RAM edit.
 
 Response: existing packed PayloadCommonResponse_t (moduleIndex, result),
 with the request transaction ID retained.

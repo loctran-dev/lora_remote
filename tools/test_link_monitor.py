@@ -12,7 +12,7 @@ class LinkTests(harness.FirmwareHarness):
         self.add(0)
         self.put(self.device + 1, 1)
         self.put(self.system, 1)
-        self.put(self.system + 92, 2)  # SYS_MODE_NORMAL; legacy layout unchanged.
+        self.put(self.system + 92, 2)  # eSystem_RunMode_Normal; legacy layout unchanged.
         self.cpu.mem_write(self.system + self.fields["tUpdate"], struct.pack("<I", 1))
         self.queue_ok = True
         self.queued, self.alerts = [], []

@@ -108,7 +108,7 @@ static void render(void)
 
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (menuIndex)
     {
         menuIndex--;
@@ -117,7 +117,7 @@ static void leftClicked(void)
 
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (menuIndex + 1 < ITEM_COUNT)
     {
         menuIndex++;
@@ -126,7 +126,7 @@ static void rightClicked(void)
 
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     indexOfSettingMenu = menuIndex;
     ScrnCommon_Switch(&editDeviceSettingScreen);
 }
@@ -134,7 +134,7 @@ static void centerClicked(void)
 /* Long press on RIGHT returns to device control. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnCommon_Switch(&deviceControlScreen);
 }
 

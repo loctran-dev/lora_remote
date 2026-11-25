@@ -117,7 +117,7 @@ static void render(void)
 
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (currentIndex)
     {
         currentIndex--;
@@ -126,7 +126,7 @@ static void leftClicked(void)
 
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (currentIndex + 1 < GENERAL_MENU_COUNT)
     {
         currentIndex++;
@@ -135,7 +135,7 @@ static void rightClicked(void)
 
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     indexOfGeneralSettingMenu = menuOrder[currentIndex];
     ScrnCommon_Switch(indexOfGeneralSettingMenu == DATE_TIME_ITEM ? &dateTimeScreen : &editGeneralSettingScreen);
 }
@@ -143,7 +143,7 @@ static void centerClicked(void)
 /* Long press on RIGHT returns to the main menu. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnCommon_Switch(&mainMenuScreen);
 }
 

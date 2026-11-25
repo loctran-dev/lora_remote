@@ -118,7 +118,7 @@ uint8_t Rtc_Set(uint32_t timestamp)
     {
         for (uint8_t module = 0; module < sizeof(deviceBuff[i].motorData) / sizeof(deviceBuff[i].motorData[0]); module++)
         {
-            if (!deviceBuff[i].isDelete && deviceBuff[i].motorData[module].pwrState == MOTOR_POWER_ON &&
+            if (!deviceBuff[i].isDelete && deviceBuff[i].motorData[module].pwrState == eMotor_PowerState_On &&
                 deviceBuff[i].motorData[module].scheduleTime)
             {
                 return eRtc_SetResult_Busy;

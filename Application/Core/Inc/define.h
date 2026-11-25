@@ -16,96 +16,58 @@
 #define RSSI_LEVEL_4 (30)
 #define RSSI_LEVEL_5 (-10)
 
-typedef enum
+typedef enum Device_Type_e
 {
-    WD_DEVICE_CTRL = 0x00,
-    WD_GENERAL_SETTING,
-    WD_NEW_CONNECTION,
-} Window_t;
+    eDevice_Type_Motor = 0x01,
+    eDevice_Type_Pressure = 0x02,
+    eDevice_Type_Encoder = 0x03,
+} Device_Type_e;
 
-typedef enum
+typedef enum Motor_PowerState_e
 {
-    WDT_MAIN = 0x00,
+    eMotor_PowerState_Idle = 0x00,
+    eMotor_PowerState_On = 0x01,
+    eMotor_PowerState_Off = 0x02,
+} Motor_PowerState_e;
 
-    WDT_DEV_SETTING,
-    WDT_DEV_INFO,
-    WDT_DEV_MESSAGE,
-    WDT_DEV_SCHEDULE,
-
-    WDT_NC_FINDING_DEVICE,
-    WDT_NC_FOUND_FAILED,
-    WDT_NC_FOUND_PASSED,
-    WDT_NC_WAITING_CONFIG,
-    WDT_NC_CONFIG_PASSED,
-    WDT_NC_CONFIG_FAILED,
-} WindowTab_t;
-
-typedef enum
+typedef enum Alarm_Name_e
 {
-    DEV_TYPE_MOTOR = 0x01,
-    DEV_TYPE_PRESSURE = 0x02,
-    DEV_TYPE_ENCODER = 0x03,
-} DeviceType_t;
+    eAlarm_Name_None,
+    eAlarm_Name_LostInputPower,
+    eAlarm_Name_LostMotorPower,
+    eAlarm_Name_DiffMotorCurrentPhase,
+} Alarm_Name_e;
 
-typedef enum
+typedef enum Buzzer_Mode_e
 {
-    MOTOR_POWER_IDLE = 0x00,
-    MOTOR_POWER_ON = 0x01,
-    MOTOR_POWER_OFF = 0x02,
-} MotorPowerState_t;
+    eBuzzer_Mode_Off = 0,
+    eBuzzer_Mode_ShortBeep,
+    eBuzzer_Mode_2ShortBeep,
+    eBuzzer_Mode_3ShortBeep,
+    eBuzzer_Mode_LongBeep,
+    eBuzzer_Mode_AlarmLong
+} Buzzer_Mode_e;
 
-typedef enum
+typedef enum Process_Step_e
 {
-    CMD_STATE_LOST_CONNECTED,
-    CMD_STATE_CONNECTING,
-    CMD_STATE_SENDING,
-    CMD_STATE_ERROR,
-} CommandState_t;
+    eProcess_Step_None = 0,
+    eProcess_Step_Processing,
+    eProcess_Step_Done,
+} Process_Step_e;
 
-typedef enum
+typedef enum Process_Result_e
 {
-    ALARM_NONE,
-    ALARM_LOST_INPUT_POWER,
-    ALARM_LOST_MOTOR_POWER,
-    ALARM_DIFF_MOTOR_CURRENT_PHASE,
-} AlarmName_t;
+    eProcess_Result_Passed = 0,
+    eProcess_Result_Failed,
+} Process_Result_e;
 
-typedef enum
+typedef enum System_RunMode_e
 {
-    BUZZER_OFF = 0,
-    BUZZER_SHORT_BEEP,
-    BUZZER_2_SHORT_BEEP,
-    BUZZER_3_SHORT_BEEP,
-    BUZZER_LONG_BEEP,
-    BUZZER_ALARM_LONG
-} BuzzerMode_t;
-
-typedef enum
-{
-    STEP_NONE = 0,
-    STEP_PROCESSING,
-    STEP_DONE,
-} ProcessStep_t;
-
-typedef enum
-{
-    PROCESS_PASSED = 0,
-    PROCESS_FAILED,
-} ProcessResult_t;
-
-typedef enum
-{
-    LCD_ON = 0,
-    LCD_OFF,
-} LCD_mode_t;
-
-typedef enum
-{
-    SYS_MODE_DEEP_SLEEP = 0,
-    SYS_MODE_SLEEP,
-    SYS_MODE_NORMAL,
-    SYS_MODE_ALARM,
-} SystemRunMode_t;
+    eSystem_RunMode_DeepSleep = 0,
+    eSystem_RunMode_Sleep,
+    eSystem_RunMode_Normal,
+    eSystem_RunMode_Alarm,
+} System_RunMode_e;
 
 typedef struct
 {
@@ -120,10 +82,10 @@ typedef struct
     uint8_t moduleIndex;
 
     uint8_t isAlarmOccurred;
-    AlarmName_t alarm;
+    Alarm_Name_e alarm;
     uint32_t alarmTime;
 
-    MotorPowerState_t pwrState;
+    Motor_PowerState_e pwrState;
     float phaseCurrent[3];
     uint16_t countdownMinutes;
     uint32_t startTime;
@@ -162,8 +124,6 @@ typedef struct
     int frequencyConfig;
     uint8_t sfConfig;
 
-    Window_t currentWindow;
-    WindowTab_t currentTab;
     uint8_t batteryUsage;
     uint32_t batteryAdc;
     float batteryVoltage;
@@ -180,11 +140,11 @@ typedef struct
     uint32_t tSleepUpdate;
 
     /* New connection process */
-    ProcessStep_t findDeviceStep;       /* Idle, Processing, Done */
-    ProcessResult_t findDeviceResult;   /* Passed, Failed */
+    Process_Step_e findDeviceStep;       /* Idle, Processing, Done */
+    Process_Result_e findDeviceResult;   /* Passed, Failed */
     uint32_t findDeviceTick;
-    ProcessStep_t configDeviceStep;     /* Idle, Processing, Done */
-    ProcessResult_t configDeviceResult; /* Passed, Failed */
+    Process_Step_e configDeviceStep;     /* Idle, Processing, Done */
+    Process_Result_e configDeviceResult; /* Passed, Failed */
     uint32_t configDeviceTick;
     uint8_t nextNodeId;
     FactoryInfo_t findDevicefactoryInfo;
@@ -193,10 +153,9 @@ typedef struct
     uint8_t currentModuleId;
 
     uint8_t isNeedSaveConfig;
-    LCD_mode_t lcdMode;
     uint32_t lastActionTick;
     uint32_t lastReceiveMsgTick;
-    SystemRunMode_t runMode;
+    System_RunMode_e runMode;
 } SystemInfo_t;
 
 #pragma pack(1)

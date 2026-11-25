@@ -55,7 +55,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void Main_SetBuzzerMode(BuzzerMode_t mode);
+void Main_SetBuzzerMode(Buzzer_Mode_e mode);
 void Main_SetMotorPower(uint8_t motorPower);
 void Main_UpdateStatusPeriod(void);
 void Main_SetScheduleTimeToCurrentModule(int32_t time);

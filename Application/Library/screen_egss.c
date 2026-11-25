@@ -207,20 +207,20 @@ static void render(void)
 
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     adjust(DIRECTION_UP);
 }
 
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     adjust(DIRECTION_DOWN);
 }
 
 /* Move the cursor; for selection items apply the choice and leave. */
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE)
     {
         systemInfo.sleepMode = (indexOfSelection + 1) % 2;
@@ -252,7 +252,7 @@ static void centerClicked(void)
 /* Cancel. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     back();
 }
 
@@ -264,7 +264,7 @@ static void centerPressed(void)
     long net;
     int value;
 
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE)
     {
         systemInfo.sleepMode = (indexOfSelection + 1) % 2;
@@ -278,7 +278,7 @@ static void centerPressed(void)
             if (value < 1)
             {
                 free(valueText);
-                Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+                Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
                 return;
             }
             if (indexOfGeneralSettingMenu == ITEM_SCAN_INTERVAL)
@@ -299,7 +299,7 @@ static void centerPressed(void)
         if (*endPtr || net <= 0 || net >= 255)
         {
             free(valueText);
-            Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+            Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
             return;
         }
         systemInfo.netIdConfig = net;
@@ -313,7 +313,7 @@ static void centerPressed(void)
             if (value < MIN_FREQUENCY_MHZ)
             {
                 free(valueText);
-                Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+                Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
                 return;
             }
             systemInfo.frequencyConfig = value;
@@ -335,7 +335,7 @@ static void centerPressed(void)
         free(valueText);
         if (!value)
         {
-            Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+            Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
             return;
         }
         if (indexOfGeneralSettingMenu == ITEM_SLEEP_AFTER)

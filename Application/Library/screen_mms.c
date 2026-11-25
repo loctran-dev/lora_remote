@@ -107,7 +107,7 @@ static void render(void)
 /* Move the selection up. */
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (menuIndex > 0)
     {
         menuIndex--;
@@ -118,7 +118,7 @@ static void leftClicked(void)
 /* Move the selection down. */
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (menuIndex < ITEM_COUNT - 1)
     {
         menuIndex++;
@@ -129,7 +129,7 @@ static void rightClicked(void)
 /* Open the selected item. */
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (menuIndex == ITEM_HISTORY)
     {
         ScrnHs_OpenHistory();
@@ -157,7 +157,7 @@ static void centerClicked(void)
 
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 }
 
 static void noAction(void)

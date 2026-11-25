@@ -103,7 +103,7 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
     event.action = restored ? HIST_LINK_RESTORED : HIST_LINK_LOST;
     event.source = HIST_MONITOR;
     /* Link detection is not motor feedback: never present stale ON/OFF as a fact. */
-    event.before = event.after = MOTOR_POWER_IDLE;
+    event.before = event.after = eMotor_PowerState_Idle;
     event.result = restored ? HIST_APPLIED : HIST_WARNING;
     event.error = restored ? 0 : HIST_ERROR_NO_STATUS;
     event.flags = HIST_LOCAL;

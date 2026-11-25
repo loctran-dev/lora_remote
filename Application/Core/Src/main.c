@@ -304,7 +304,7 @@ int main(void)
   systemInfo.tUpdate = storageData.tUpdate >= 1 && storageData.tUpdate <= 9999 ? storageData.tUpdate : 5;
   systemInfo.tSleepUpdate = storageData.tSleepUpdate >= 1 && storageData.tSleepUpdate <= 9999 ?
     storageData.tSleepUpdate : 300;
-  systemInfo.runMode = SYS_MODE_NORMAL;
+  systemInfo.runMode = eSystem_RunMode_Normal;
 
   /* Device list. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
@@ -320,13 +320,13 @@ int main(void)
     deviceBuff[devNo].factoryInfo = storageData.DeviceConfig[devNo].factoryInfo;
     switch (deviceBuff[devNo].factoryInfo.deviceType)
     {
-      case DEV_TYPE_MOTOR:
+      case eDevice_Type_Motor:
         deviceBuff[devNo].factoryInfo.deviceTypeChar = 'M';
         break;
-      case DEV_TYPE_PRESSURE:
+      case eDevice_Type_Pressure:
         deviceBuff[devNo].factoryInfo.deviceTypeChar = 'P';
         break;
-      case DEV_TYPE_ENCODER:
+      case eDevice_Type_Encoder:
         deviceBuff[devNo].factoryInfo.deviceTypeChar = 'E';
         break;
       default:
@@ -400,7 +400,7 @@ int main(void)
   txMsgQueueHandle = osMessageQueueNew (16, sizeof(LoraPackage_t), &txMsgQueue_attributes);
 
   /* creation of buzzerQueue */
-  buzzerQueueHandle = osMessageQueueNew (16, sizeof(BuzzerMode_t), &buzzerQueue_attributes);
+  buzzerQueueHandle = osMessageQueueNew (16, sizeof(Buzzer_Mode_e), &buzzerQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -958,7 +958,7 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 
 /* Public API =============================================================== */
 
-void Main_SetBuzzerMode(BuzzerMode_t mode)
+void Main_SetBuzzerMode(Buzzer_Mode_e mode)
 {
   osMessageQueuePut(buzzerQueueHandle, &mode, 0, 0);
 }
@@ -978,7 +978,7 @@ void Main_SetMotorPower(uint8_t motorPower)
   if (deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId].isLock)
   {
     ScrnDcs_ShowMotorLocked(motorPower);
-    Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
     return;
   }
 
@@ -1035,8 +1035,8 @@ void Main_ScanNewDevice(void)
 
   osMutexAcquire(radioMutex, osWaitForever);
   systemInfo.findDeviceTick = xTaskGetTickCount();
-  systemInfo.findDeviceStep = STEP_PROCESSING;
-  systemInfo.findDeviceResult = PROCESS_FAILED;
+  systemInfo.findDeviceStep = eProcess_Step_Processing;
+  systemInfo.findDeviceResult = eProcess_Result_Failed;
   systemInfo.findDevicefactoryInfo = factoryInfo;
   systemInfo.netId = LORA_NET_ID_DEFAULT;
   sLoRaCtrl.frequency = 433;
@@ -1054,8 +1054,8 @@ void Main_ConnectToDevice(void)
   PayloadRequestConfigConnection_t payload;
 
   systemInfo.configDeviceTick = xTaskGetTickCount();
-  systemInfo.configDeviceStep = STEP_PROCESSING;
-  systemInfo.configDeviceResult = PROCESS_FAILED;
+  systemInfo.configDeviceStep = eProcess_Step_Processing;
+  systemInfo.configDeviceResult = eProcess_Result_Failed;
   systemInfo.nextNodeId = getNotUsedNodeId();
 
   payload.serial = systemInfo.findDevicefactoryInfo.serial;
@@ -1279,18 +1279,18 @@ void StartSystemTask(void *argument)
     }
 
     /* Device search. */
-    if (systemInfo.findDeviceStep == STEP_DONE)
+    if (systemInfo.findDeviceStep == eProcess_Step_Done)
     {
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
-        systemInfo.findDeviceResult == PROCESS_PASSED)
+        systemInfo.findDeviceResult == eProcess_Result_Passed)
       {
         pairingUI_Step = PAIRING_STATE_FOUND;
         currentScreen = &devicePairingScreen;
         currentScreen->init();
       }
-      systemInfo.findDeviceStep = STEP_NONE;
+      systemInfo.findDeviceStep = eProcess_Step_None;
     }
-    else if (systemInfo.findDeviceStep == STEP_PROCESSING)
+    else if (systemInfo.findDeviceStep == eProcess_Step_Processing)
     {
       if (xTaskGetTickCount() - systemInfo.findDeviceTick > pdMS_TO_TICKS(5000))
       {
@@ -1300,15 +1300,15 @@ void StartSystemTask(void *argument)
           currentScreen = &devicePairingScreen;
           currentScreen->init();
         }
-        systemInfo.findDeviceStep = STEP_NONE;
+        systemInfo.findDeviceStep = eProcess_Step_None;
       }
     }
 
     /* Device connection. */
-    if (systemInfo.configDeviceStep == STEP_DONE)
+    if (systemInfo.configDeviceStep == eProcess_Step_Done)
     {
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING &&
-        systemInfo.configDeviceResult == PROCESS_PASSED)
+        systemInfo.configDeviceResult == eProcess_Result_Passed)
       {
         isFullDev = TRUE;
         for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
@@ -1348,9 +1348,9 @@ void StartSystemTask(void *argument)
           currentScreen->init();
         }
       }
-      systemInfo.configDeviceStep = STEP_NONE;
+      systemInfo.configDeviceStep = eProcess_Step_None;
     }
-    else if (systemInfo.configDeviceStep == STEP_PROCESSING)
+    else if (systemInfo.configDeviceStep == eProcess_Step_Processing)
     {
       if (xTaskGetTickCount() - systemInfo.configDeviceTick > pdMS_TO_TICKS(5000))
       {
@@ -1360,7 +1360,7 @@ void StartSystemTask(void *argument)
           currentScreen = &devicePairingScreen;
           currentScreen->init();
         }
-        systemInfo.configDeviceStep = STEP_NONE;
+        systemInfo.configDeviceStep = eProcess_Step_None;
       }
     }
 
@@ -1374,7 +1374,7 @@ void StartSystemTask(void *argument)
       if (Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t *)&storageData, sizeof(SystemStorageData_t)) ||
         memcmp((void *)CONFIG_DATA_ADDRESS, &storageData, sizeof(storageData)))
       {
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
       }
     }
 
@@ -1432,7 +1432,7 @@ void StartLcdTask(void *argument)
   for (;;)
   {
     osMutexAcquire(uiMutex, osWaitForever);
-    if (systemInfo.runMode != SYS_MODE_SLEEP)
+    if (systemInfo.runMode != eSystem_RunMode_Sleep)
     {
       currentScreen->render();
     }
@@ -1461,7 +1461,7 @@ void StartBuzzerTask(void *argument)
   TIM_HandleTypeDef *buzzerTimer = &htim3;
   const uint32_t BUZZER_TIMER_CHANNEL = TIM_CHANNEL_3;
   const float MAX_CC_VALUE = 183.0f;
-  BuzzerMode_t mode;
+  Buzzer_Mode_e mode;
 
   /* Infinite loop */
   for (;;)
@@ -1470,16 +1470,16 @@ void StartBuzzerTask(void *argument)
     {
       switch (mode)
       {
-        case BUZZER_OFF:
+        case eBuzzer_Mode_Off:
           HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
           break;
-        case BUZZER_SHORT_BEEP:
+        case eBuzzer_Mode_ShortBeep:
           __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
           HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
           osDelay(100);
           HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
           break;
-        case BUZZER_2_SHORT_BEEP:
+        case eBuzzer_Mode_2ShortBeep:
           __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
           for (int i = 0; i < 2; i++)
           {
@@ -1489,7 +1489,7 @@ void StartBuzzerTask(void *argument)
             osDelay(100);
           }
           break;
-        case BUZZER_3_SHORT_BEEP:
+        case eBuzzer_Mode_3ShortBeep:
           __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.3f);
           for (int i = 0; i < 3; i++)
           {
@@ -1499,13 +1499,13 @@ void StartBuzzerTask(void *argument)
             osDelay(100);
           }
           break;
-        case BUZZER_LONG_BEEP:
+        case eBuzzer_Mode_LongBeep:
           __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 0.8f);
           HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
           osDelay(300);
           HAL_TIM_PWM_Stop(buzzerTimer, BUZZER_TIMER_CHANNEL);
           break;
-        case BUZZER_ALARM_LONG:
+        case eBuzzer_Mode_AlarmLong:
           __HAL_TIM_SET_COMPARE(buzzerTimer, BUZZER_TIMER_CHANNEL, MAX_CC_VALUE * 1.0f);
           HAL_TIM_PWM_Start(buzzerTimer, BUZZER_TIMER_CHANNEL);
           break;

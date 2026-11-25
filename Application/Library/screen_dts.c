@@ -139,13 +139,13 @@ static void centerClicked(void)
 {
     selectedField = (selectedField + 1) % FIELD_COUNT;
     saveError = 0;
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 }
 
 /* Cancel without touching the RTC. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     back();
 }
 
@@ -155,10 +155,10 @@ static void centerPressed(void)
     saveError = Rtc_Set(Util_GetUnixTimestamp(&editedTime, &editedDate));
     if (saveError)
     {
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         return;
     }
-    Main_SetBuzzerMode(BUZZER_2_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_2ShortBeep);
     back();
 }
 
@@ -249,7 +249,7 @@ static void change(int8_t direction)
         editedDate.Date = limit;
     }
     saveError = 0;
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 }
 
 static void back(void)

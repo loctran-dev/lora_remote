@@ -96,7 +96,7 @@ void Schedule_Tick(void)
         (scheduleRequest.deadline && systemInfo.currentTime >= scheduleRequest.deadline))
     {
         scheduleRequest.state = eSchedule_State_Timeout;
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         return;
     }
 
@@ -127,7 +127,7 @@ void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGet
     if ((scheduleRequest.state != eSchedule_State_Waiting &&
          scheduleRequest.state != eSchedule_State_Timeout) ||
         packet->nodeId != scheduleRequest.node || payload->scheduleTime != scheduleRequest.deadline ||
-        (scheduleRequest.deadline && payload->powerState != MOTOR_POWER_ON))
+        (scheduleRequest.deadline && payload->powerState != eMotor_PowerState_On))
     {
         return;
     }

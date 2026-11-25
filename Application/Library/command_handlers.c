@@ -91,7 +91,7 @@ static void handleSetConfig(LoraPackage_t packet)
     memcpy(&reply, &packet.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(reply));
     configTransaction = 0;
     Link_RecordNodePacket(packet.nodeId, 0);
-    Main_SetBuzzerMode(reply.result ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
+    Main_SetBuzzerMode(reply.result ? eBuzzer_Mode_2ShortBeep : eBuzzer_Mode_LongBeep);
 }
 
 static void handleGetStatus(LoraPackage_t fwPackage)
@@ -123,7 +123,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
         {
             Link_RecordPacket(devNo, 1);
             Link_RecordStatusReply(devNo, fwPackage.transactionID);
-            deviceBuff[devNo].motorData[0].pwrState = (MotorPowerState_t)payloadResponse.powerState;
+            deviceBuff[devNo].motorData[0].pwrState = (Motor_PowerState_e)payloadResponse.powerState;
             deviceBuff[devNo].localTime = payloadResponse.localTime;
             deviceBuff[devNo].motorData[0].scheduleTime = payloadResponse.scheduleTime;
             Schedule_HandleStatus(&fwPackage, &payloadResponse);
@@ -189,7 +189,7 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
         return;
     }
     accepted = payloadResponse.result == 1;
-    Main_SetBuzzerMode(accepted ? BUZZER_2_SHORT_BEEP : BUZZER_LONG_BEEP);
+    Main_SetBuzzerMode(accepted ? eBuzzer_Mode_2ShortBeep : eBuzzer_Mode_LongBeep);
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
@@ -252,20 +252,20 @@ static void handleGetFactoryInfo(LoraPackage_t fwPackage)
         return;
     }
 
-    if (systemInfo.findDeviceStep == STEP_PROCESSING)
+    if (systemInfo.findDeviceStep == eProcess_Step_Processing)
     {
-        systemInfo.findDeviceStep = STEP_DONE;
+        systemInfo.findDeviceStep = eProcess_Step_Done;
 
         if (payloadResponse.result)
         {
-            systemInfo.findDeviceResult = PROCESS_PASSED;
+            systemInfo.findDeviceResult = eProcess_Result_Passed;
             systemInfo.findDevicefactoryInfo.serial = payloadResponse.serial;
             systemInfo.findDevicefactoryInfo.deviceType = payloadResponse.deviceType;
             systemInfo.findDevicefactoryInfo.numberOfModule = payloadResponse.numberOfModule;
         }
         else
         {
-            systemInfo.findDeviceResult = PROCESS_FAILED;
+            systemInfo.findDeviceResult = eProcess_Result_Failed;
         }
     }
 }
@@ -285,19 +285,19 @@ static void handleConfigConnection(LoraPackage_t fwPackage)
         return;
     }
 
-    if (systemInfo.configDeviceStep == STEP_PROCESSING)
+    if (systemInfo.configDeviceStep == eProcess_Step_Processing)
     {
-        systemInfo.configDeviceStep = STEP_DONE;
+        systemInfo.configDeviceStep = eProcess_Step_Done;
         /* A reply from another serial leaves configDeviceResult unchanged. */
         if (payloadResponse.serial == systemInfo.findDevicefactoryInfo.serial)
         {
             if (payloadResponse.result == TRUE)
             {
-                systemInfo.configDeviceResult = PROCESS_PASSED;
+                systemInfo.configDeviceResult = eProcess_Result_Passed;
             }
             else
             {
-                systemInfo.configDeviceResult = PROCESS_FAILED;
+                systemInfo.configDeviceResult = eProcess_Result_Failed;
             }
         }
     }
@@ -329,7 +329,7 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
         {
             deviceBuff[devNo].motorData[0].isAlarmOccurred = TRUE;
             Power_WakeForError();
-            deviceBuff[devNo].motorData[0].alarm = (AlarmName_t)payloadRequest.alarmCode;
+            deviceBuff[devNo].motorData[0].alarm = (Alarm_Name_e)payloadRequest.alarmCode;
             deviceBuff[devNo].motorData[0].alarmTime = payloadRequest.alarmTime;
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
             deviceBuff[devNo].lastCommTime = systemInfo.currentTime;

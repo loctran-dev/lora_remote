@@ -64,13 +64,13 @@ void Power_UserActivity(void)
 {
     powerSleep.lastUser = Link_Now();
     systemInfo.lastActionTick = xTaskGetTickCount();
-    systemInfo.runMode = SYS_MODE_NORMAL;
+    systemInfo.runMode = eSystem_RunMode_Normal;
     LCD_Backlight_On();
 }
 
 void Power_WakeForError(void)
 {
-    systemInfo.runMode = SYS_MODE_ALARM;
+    systemInfo.runMode = eSystem_RunMode_Alarm;
     LCD_Backlight_On();
 }
 
@@ -117,11 +117,11 @@ void Power_Tick(void)
         powerSleep.nextRtc = Link_Now() + systemInfo.tSleepUpdate;
         Link_RequestScan();
     }
-    if (systemInfo.runMode == SYS_MODE_SLEEP && (!systemInfo.sleepMode || usbActive()))
+    if (systemInfo.runMode == eSystem_RunMode_Sleep && (!systemInfo.sleepMode || usbActive()))
     {
         Power_UserActivity();
     }
-    if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == SYS_MODE_ALARM ||
+    if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == eSystem_RunMode_Alarm ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
         ScrnDcs_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
@@ -129,10 +129,10 @@ void Power_Tick(void)
     {
         return;
     }
-    if (systemInfo.runMode != SYS_MODE_SLEEP &&
+    if (systemInfo.runMode != eSystem_RunMode_Sleep &&
         Link_Now() - powerSleep.lastUser >= Link_GetIdleSeconds())
     {
-        systemInfo.runMode = SYS_MODE_SLEEP;
+        systemInfo.runMode = eSystem_RunMode_Sleep;
         powerSleep.nextRtc = Link_Now() + systemInfo.tSleepUpdate;
         LCD_Backlight_Off();
     }
@@ -146,7 +146,7 @@ void Power_TryStop(void)
     uint32_t cfgr;
     uint32_t cause;
 
-    if (systemInfo.runMode != SYS_MODE_SLEEP || Link_IsBusy() || powerSleep.rxPending ||
+    if (systemInfo.runMode != eSystem_RunMode_Sleep || Link_IsBusy() || powerSleep.rxPending ||
         powerSleep.txBusy || usbActive() || systemInfo.isNeedSaveConfig ||
         osMessageQueueGetCount(txMsgQueueHandle) || osMessageQueueGetCount(buzzerQueueHandle) ||
         (TIM3->CCER & TIM_CCER_CC3E) || hspi1.State != HAL_SPI_STATE_READY ||

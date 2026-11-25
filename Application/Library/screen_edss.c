@@ -184,7 +184,7 @@ static void render(void)
 /* Increment the value under the cursor, or select "Yes". */
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD)
     {
         adjustAlarmThreshold(1);
@@ -210,7 +210,7 @@ static void leftClicked(void)
 /* Decrement the value under the cursor, or select "No". */
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD)
     {
         adjustAlarmThreshold(0);
@@ -235,7 +235,7 @@ static void rightClicked(void)
 /* Move the cursor; for Yes/No items apply the selection and leave. */
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD || isSecondsItem())
     {
         indexOfEdittingValue = (indexOfEdittingValue + 1) % SECONDS_DIGITS;
@@ -269,7 +269,7 @@ static void centerClicked(void)
 /* Cancel. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnCommon_Switch(&deviceSettingScreen);
 }
 
@@ -280,7 +280,7 @@ static void centerPressed(void)
     char nameText[20];
     int value;
 
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 
     /* Copy the edited value into the device data. */
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD)
@@ -326,7 +326,7 @@ static void centerPressed(void)
         ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
         if (!CmdHandler_SendCurrentModuleConfig())
         {
-            Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+            Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         }
     }
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)

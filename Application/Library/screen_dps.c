@@ -123,7 +123,7 @@ static void render(void)
 /* "Scan" after a search result, "Retry" after a failed connection. */
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (pairingUI_Step == PAIRING_STATE_FOUND || pairingUI_Step == PAIRING_STATE_NOT_FOUND)
     {
         restart(PAIRING_STATE_SEARCHING);
@@ -139,7 +139,7 @@ static void leftClicked(void)
 /* "Cancel"/"Exit" in every state. */
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (pairingUI_Step == PAIRING_STATE_SEARCHING ||
         pairingUI_Step == PAIRING_STATE_FOUND ||
         pairingUI_Step == PAIRING_STATE_NOT_FOUND ||
@@ -154,7 +154,7 @@ static void rightClicked(void)
 /* "Conn" when found, "Scan" after a successful or failed connection. */
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (pairingUI_Step == PAIRING_STATE_FOUND || pairingUI_Step == PAIRING_STATE_FAILED)
     {
         restart(PAIRING_STATE_CONNECTING);
@@ -169,7 +169,7 @@ static void centerClicked(void)
 
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     openMainMenu();
 }
 

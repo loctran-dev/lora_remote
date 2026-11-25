@@ -93,7 +93,7 @@ Screen_t deviceControlScreen = {
 void ScrnDcs_ShowConnectionError(uint8_t id)
 {
     Power_WakeForError();
-    Main_SetBuzzerMode(BUZZER_3_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_3ShortBeep);
     if (ScrnCommon_DeviceVisible(id) && currentScreen != &editDeviceSettingScreen &&
         currentScreen != &editGeneralSettingScreen && currentScreen != &dateTimeScreen &&
         currentScreen != &historyScreen && !inScheduleSelection)
@@ -238,7 +238,7 @@ static void render(void)
     }
     UG_TextboxSetBackColor(&window_1, TXB_ID_9, lockNoticeActive ? C_RED : C_DARK_SLATE_BLUE);
     UG_TextboxSetText(&window_1, TXB_ID_9, lockNoticeActive ?
-        (lockNoticePower == MOTOR_POWER_ON ? "ON BLOCKED" : "OFF BLOCKED") : title);
+        (lockNoticePower == eMotor_PowerState_On ? "ON BLOCKED" : "OFF BLOCKED") : title);
     UG_TextboxSetText(&window_1, TXB_ID_5, currentAText);
     UG_TextboxSetText(&window_1, TXB_ID_6, currentBText);
     UG_TextboxSetText(&window_1, TXB_ID_7, currentCText);
@@ -299,7 +299,7 @@ static void render(void)
 
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
         return;
@@ -324,7 +324,7 @@ static void leftClicked(void)
 
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (!ScrnCommon_DeviceVisible(systemInfo.currentDeviceId))
     {
         return;
@@ -357,7 +357,7 @@ static void centerClicked(void)
         ScrnCommon_Switch(&deviceManagerScreen);
         return;
     }
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (!inScheduleSelection)
     {
         inScheduleSelection = 1;
@@ -395,7 +395,7 @@ static void leftPressed(void)
     {
         return;
     }
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnCommon_Switch(&deviceMonitorScreen);
 }
 
@@ -404,7 +404,7 @@ static void rightPressed(void)
 {
     if (inScheduleSelection)
     {
-        Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
         returnFromTimer();
         return;
     }
@@ -413,7 +413,7 @@ static void rightPressed(void)
         ScrnCommon_Switch(&deviceManagerScreen);
         return;
     }
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnDss_ResetSelection();
     ScrnCommon_Switch(&deviceSettingScreen);
 }
@@ -421,7 +421,7 @@ static void rightPressed(void)
 /* Main menu; in the timer: back from presets, or apply the custom time. */
 static void centerPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (!inScheduleSelection)
     {
         ScrnCommon_Switch(&mainMenuScreen);
@@ -433,7 +433,7 @@ static void centerPressed(void)
     else if (!scheduleCustomMinutes)
     {
         timerZeroError = 1;
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         timerRender();
     }
     else
@@ -445,14 +445,14 @@ static void centerPressed(void)
 
 static void bLeftPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    Main_SetMotorPower(MOTOR_POWER_ON);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
+    Main_SetMotorPower(eMotor_PowerState_On);
 }
 
 static void bRightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
-    Main_SetMotorPower(MOTOR_POWER_OFF);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
+    Main_SetMotorPower(eMotor_PowerState_Off);
 }
 
 static void noAction(void)
@@ -514,7 +514,7 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
     UG_COLOR color = C_ORANGE;
     char *status = "UNKNOWN";
     uint8_t known = !device->isDelete && !device->isConnectionError &&
-        (module->pwrState == MOTOR_POWER_ON || module->pwrState == MOTOR_POWER_OFF);
+        (module->pwrState == eMotor_PowerState_On || module->pwrState == eMotor_PowerState_Off);
 
     /* Status text and colour. */
     if (device->isDelete || device->isConnectionError)
@@ -528,8 +528,8 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
     }
     else if (known)
     {
-        status = module->pwrState == MOTOR_POWER_ON ? "ON" : "OFF";
-        color = module->pwrState == MOTOR_POWER_ON ? C_GREEN : C_RED;
+        status = module->pwrState == eMotor_PowerState_On ? "ON" : "OFF";
+        color = module->pwrState == eMotor_PowerState_On ? C_GREEN : C_RED;
     }
 
     /* Frame, then a power symbol (known state) or a warning triangle. */
@@ -790,7 +790,7 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
     }
 
     UG_TextboxSetForeColor(&window_1, 12, C_WHITE);
-    present = module->pwrState == MOTOR_POWER_ON && module->scheduleTime != 0;
+    present = module->pwrState == eMotor_PowerState_On && module->scheduleTime != 0;
     UG_TextboxSetText(&window_1, 11, device->isConnectionError && present ? "Last timer" : "Auto stop");
     if (!present)
     {

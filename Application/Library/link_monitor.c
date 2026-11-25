@@ -290,7 +290,7 @@ void Link_Tick(void)
     }
 
     /* Start a new probe for the next device that needs one. */
-    if (systemInfo.runMode != SYS_MODE_SLEEP &&
+    if (systemInfo.runMode != eSystem_RunMode_Sleep &&
         uptimeSeconds - lastScan >= systemInfo.tUpdate)
     {
         scanRequested = 1;

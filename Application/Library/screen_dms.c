@@ -153,21 +153,21 @@ static void leftClicked(void)
 {
     if (!ScrnHs_OpenDeviceHistory(systemInfo.currentDeviceId))
     {
-        Main_SetBuzzerMode(BUZZER_LONG_BEEP);
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         return;
     }
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 }
 
 static void leftPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
 }
 
 /* Back to device control. */
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     ScrnCommon_Switch(&deviceControlScreen);
 }
 

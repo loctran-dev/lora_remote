@@ -186,20 +186,20 @@ static void render(void)
 
 static void leftClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     move(-1);
 }
 
 static void rightClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     move(1);
 }
 
 /* Picker -> list -> detail -> list. */
 static void centerClicked(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (historyScreenMode == MODE_PICKER)
     {
         if (!available(chosenDevice))
@@ -228,7 +228,7 @@ static void centerClicked(void)
    Opened from device info: from the list, back to device control. */
 static void rightPressed(void)
 {
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (openedFromInfo && historyScreenMode == MODE_LIST)
     {
         openedFromInfo = 0;
@@ -252,7 +252,7 @@ static void centerPressed(void)
     uint16_t oldSlot;
     uint32_t oldGeneration;
 
-    Main_SetBuzzerMode(BUZZER_SHORT_BEEP);
+    Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (!historyScreenMode)
     {
         return;
@@ -530,7 +530,7 @@ static void snapshot(void)
 
 static char *powerName(uint8_t state)
 {
-    return state == MOTOR_POWER_ON ? "ON" : state == MOTOR_POWER_OFF ? "OFF" : "?";
+    return state == eMotor_PowerState_On ? "ON" : state == eMotor_PowerState_Off ? "OFF" : "?";
 }
 
 static char *actionName(uint8_t action)
