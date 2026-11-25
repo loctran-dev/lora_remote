@@ -1,5 +1,10 @@
 #include "button.h"
 
+/**
+ * @brief  Sample the pin and advance the debounce state machine.
+ * @param  btn  Button to update.
+ * @note   Call every 1 ms from sensorTask.
+ */
 void Button_UpdateState(Button_t *btn)
 {
     uint8_t reading;
