@@ -160,7 +160,7 @@ class TimerUiTests(h.FirmwareHarness):
         self.put(self.device + 1, 1)
         self.put(h.symbol("scheduleRequest")[0] + 15, 1)
         for state, label in [(1, "Sending"), (3, "Rejected"), (4, "No reply"), (5, "Queue err")]:
-            self.put(h.symbol("scheduleRequest")[0] + 17, state)
+            self.put(h.symbol("scheduleRequest")[0] + 19, state)
             self.countdown(0)
             self.assertEqual(self.texts[12], label)
             self.assertFalse(self.visible[8])

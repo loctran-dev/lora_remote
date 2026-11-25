@@ -63,7 +63,7 @@ class RtcSettingTests(h.FirmwareHarness):
             self.assertEqual(self.call("Rtc_Set",stamp),1)
         self.assertEqual(self.writes,[])
     def test_rejects_while_timer_command_is_pending(self):
-        self.put(h.symbol("scheduleRequest")[0]+17,1)
+        self.put(h.symbol("scheduleRequest")[0]+19,1)
         self.assertEqual(self.call("Rtc_Set",self.stamp),2)
         self.assertEqual(self.writes,[])
     def test_rejects_active_timer_on_any_supported_module(self):

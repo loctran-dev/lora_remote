@@ -246,8 +246,10 @@ class LinkTests(harness.FirmwareHarness):
         self.assertEqual(self.call("Link_ShouldTransmit",0x20008800),0)
         self.assertNotEqual(self.queued[-1][6:8],old[6:8])
     def test_transaction_zero_is_reserved_for_autonomous_status(self):
+        # generateTransactionID() is static and inlined; check the id of a real queued request.
         self.cpu.mem_write(harness.symbol("currentTransactionID")[0],struct.pack("<H",65535))
-        self.assertEqual(self.call("generateTransactionID"),1)
+        self.call("Link_RequestStatusSync");self.at(0)
+        self.assertEqual(struct.unpack_from("<H",self.queued[-1],6)[0],1)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

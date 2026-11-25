@@ -49,7 +49,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.call("Schedule_Tick")
 
     def state(self):
-        return self.get(h.symbol("scheduleRequest")[0] + 17)
+        return self.get(h.symbol("scheduleRequest")[0] + 19)
 
     def start(self, seconds=60):
         self.call("Main_SetScheduleTimeToCurrentModule", seconds)

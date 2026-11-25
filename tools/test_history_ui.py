@@ -12,6 +12,8 @@ class HistoryUiTests(unittest.TestCase):
         self.text={};self.bg={};self.fg={};self.visible={};self.beeps=[]
         self.cpu.mem_write(h.symbol("mainMenuScreen")+4,struct.pack("<II",h.symbol("screen_mms.o:init")|1,h.symbol("screen_mms.o:render")|1))
         self.cpu.mem_write(h.symbol("deviceControlScreen")+4,struct.pack("<II",h.symbol("screen_dcs.o:init")|1,h.symbol("screen_dcs.o:render")|1))
+        # ScrnCommon_Switch() calls through the Screen_t pointers; .data is not scatter-loaded here.
+        self.cpu.mem_write(h.symbol("historyScreen")+4,struct.pack("<II",h.symbol("screen_hs.o:init")|1,h.symbol("screen_hs.o:render")|1))
         names=["UG_WindowCreate","UG_WindowHide","UG_WindowDelete","UG_WindowSetStyle","UG_WindowSetTitleHeight",
                "UG_WindowSetBackColor","UG_WindowSetXStart","UG_WindowSetXEnd","UG_WindowSetYStart","UG_WindowSetYEnd",
                "UG_WindowShow","UG_TextboxCreate","UG_TextboxSetFont","UG_TextboxSetText","UG_TextboxSetBackColor",

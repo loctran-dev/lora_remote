@@ -106,7 +106,7 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.assertEqual(self.get(self.system + 68), 2)
 
     def test_pending_timer_command_keeps_remote_awake_without_usb(self):
-        self.put(harness.symbol("scheduleRequest")[0] + 17, 1)
+        self.put(harness.symbol("scheduleRequest")[0] + 19, 1)
         self.at(100)
         self.assertEqual(self.get(self.system + 68), 2)
 
