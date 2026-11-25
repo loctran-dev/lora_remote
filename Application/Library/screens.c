@@ -81,8 +81,8 @@ void ScrnCommon_Switch(Screen_t *next)
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
-    return id < MAXIMUM_DEVICE && !deviceBuff[id].isDelete &&
-        !deviceBuff[id].motorData[0].isHide;
+    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].isDelete &&
+        !storageData.DeviceConfig[id].isHide;
 }
 
 /**
@@ -139,52 +139,11 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 }
 
 /**
- * @brief  Copy the hide and lock flags of a device to storageData if they changed.
- * @param  id  Device index in deviceBuff.
+ * @brief  Commit device settings edited in storageData.DeviceConfig.
  * @note   Flash is written later by systemTask (isNeedSaveConfig).
  */
-void ScrnCommon_SaveDeviceFlags(uint8_t id)
+void ScrnCommon_SaveDeviceSettings(void)
 {
-    DeviceStorageData_t *stored;
-    MotorData_t *module;
-
-    if (id >= MAXIMUM_DEVICE)
-    {
-        return;
-    }
-    stored = &storageData.DeviceConfig[id];
-    module = &deviceBuff[id].motorData[0];
-    if (stored->isHide != module->isHide || stored->isLock != module->isLock)
-    {
-        stored->isHide = module->isHide;
-        stored->isLock = module->isLock;
-        systemInfo.isNeedSaveConfig = 1;
-    }
-}
-
-/**
- * @brief  Copy all settings of a device (alarm, flags, name, deleted) to storageData.
- * @param  id  Device index in deviceBuff.
- * @note   Flash is written later by systemTask (isNeedSaveConfig).
- */
-void ScrnCommon_SaveDeviceSettings(uint8_t id)
-{
-    DeviceStorageData_t *stored;
-    MotorData_t *module;
-
-    if (id >= MAXIMUM_DEVICE)
-    {
-        return;
-    }
-    stored = &storageData.DeviceConfig[id];
-    module = &deviceBuff[id].motorData[0];
-    stored->alarmThreshold = module->alarmThreshold;
-    stored->alarmDelayTime = module->alarmDelayTime;
-    stored->isLock = module->isLock;
-    stored->isHide = module->isHide;
-    stored->isDelete = deviceBuff[id].isDelete;
-    memcpy(stored->name, module->name, sizeof(stored->name));
-    stored->name[sizeof(stored->name) - 1] = 0;
     systemInfo.isNeedSaveConfig = 1;
 }
 

@@ -5,6 +5,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "define.h"
+#include "config_store.h"
 #include "lora.h"
 #include "link_monitor.h"
 #include "power_sleep.h"
@@ -56,22 +57,21 @@ const CmdMapping_t cmdTable[] = {
  */
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
-    DeviceInfo_t *device = &deviceBuff[systemInfo.currentDeviceId];
-    MotorData_t *module = &device->motorData[systemInfo.currentModuleId];
+    DeviceStorageData_t *device = &storageData.DeviceConfig[systemInfo.currentDeviceId];
     PayloadRequestSetConfig_t config;
     LoraPackage_t packet;
-    if (device->isDelete || !(module->alarmThreshold >= 0 && module->alarmThreshold <= 99.99f) || module->alarmDelayTime > 9999)
+    if (device->isDelete || !(device->alarmThreshold >= 0 && device->alarmThreshold <= 99.99f) || device->alarmDelayTime > 9999)
     {
         return FALSE;
     }
     config.moduleIndex = systemInfo.currentModuleId;
-    config.alarmThresholdCentiAmp = (uint16_t)(module->alarmThreshold * 100.0f + 0.5f);
-    config.alarmDelaySeconds = module->alarmDelayTime;
+    config.alarmThresholdCentiAmp = (uint16_t)(device->alarmThreshold * 100.0f + 0.5f);
+    config.alarmDelaySeconds = device->alarmDelayTime;
     config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.currentDeviceId);
-    packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeId, CMD_SET_CONFIG,
+    packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeIdConfig, CMD_SET_CONFIG,
                                    LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);
     configTransaction = packet.transactionID;
-    configNode = device->nodeId;
+    configNode = device->nodeIdConfig;
     return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
 }
 
@@ -125,7 +125,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 1);
             Link_RecordStatusReply(devNo, fwPackage.transactionID);
@@ -162,7 +162,7 @@ static void handleControlPower(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -199,7 +199,7 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             /* ACK confirms this exact deadline; STATUS remains authoritative afterwards. */
             if (accepted && payloadResponse.moduleIndex < sizeof(deviceBuff[devNo].motorData) / sizeof(deviceBuff[devNo].motorData[0]))
@@ -233,7 +233,7 @@ static void handleSyncTime(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -331,7 +331,7 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].nodeId == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             deviceBuff[devNo].motorData[0].isAlarmOccurred = TRUE;
             Power_WakeForError();

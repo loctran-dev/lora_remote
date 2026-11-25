@@ -22,7 +22,7 @@ class RemoteScheduleChecks(harness.FirmwareHarness):
         self.add(0)
         self.select(0)
         self.put(self.system, 1)
-        self.put(self.device + 1, 1)
+        self.put(self.cfg(0, harness.CFG_NODE), 1)
         self.cpu.mem_write(self.system + self.time_offset, struct.pack("<I", 1000))
         self.cpu.mem_write(0x20008000, b"00h01\0")
         self.cpu.mem_write(harness.symbol("deviceControlScreen")[0] + 4,
@@ -81,12 +81,12 @@ class RemoteScheduleChecks(harness.FirmwareHarness):
         self.assertFalse(self.packets)
 
     def test_deleted_device_cannot_send_timer(self):
-        self.put(self.device + 20, 1)
+        self.put(self.cfg(0, harness.CFG_DELETE), 1)
         self.call("Main_SetScheduleTimeToCurrentModule", 60)
         self.assertFalse(self.packets)
 
     def test_hidden_device_cannot_send_timer(self):
-        self.put(self.device + 36 + 57, 1)
+        self.put(self.cfg(0, harness.CFG_HIDE), 1)
         self.call("Main_SetScheduleTimeToCurrentModule", 60)
         self.assertFalse(self.packets)
 

@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "main.h"
+#include "config_store.h"
 
 #define MANAGER_ROWS 4
 
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
 /* Every paired device, including hidden ones. */
 static uint8_t managerIds[MAXIMUM_DEVICE];
@@ -45,7 +45,7 @@ Screen_t deviceManagerScreen = {
 
 /**
  * @brief  Device highlighted in the device manager.
- * @return Index in deviceBuff, or MAXIMUM_DEVICE if none.
+ * @return Device index, or MAXIMUM_DEVICE if none.
  */
 uint8_t ScrnDvm_SelectedDevice(void)
 {
@@ -62,7 +62,7 @@ static void init(void)
     managerPage = 0xFF;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!deviceBuff[id].isDelete)
+        if (!storageData.DeviceConfig[id].isDelete)
         {
             managerIds[managerCount++] = id;
         }
@@ -90,7 +90,7 @@ static void render(void)
     char text[96];
     uint8_t item;
     uint8_t id;
-    DeviceInfo_t *device;
+    const DeviceStorageData_t *device;
 
     if (pageChanged)
     {
@@ -116,10 +116,10 @@ static void render(void)
         {
             UG_TextboxShow(&window_1, id);
         }
-        device = &deviceBuff[managerIds[item]];
+        device = &storageData.DeviceConfig[managerIds[item]];
         snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
-            device->factoryInfo.deviceTypeChar, device->deviceIndex + 1,
-            device->motorData[0].isHide ? "Hidden" : "Visible", device->motorData[0].name);
+            device->factoryInfo.deviceTypeChar, managerIds[item] + 1,
+            device->isHide ? "Hidden" : "Visible", device->name);
         UG_TextboxSetText(&window_1, id, text);
         UG_TextboxSetBackColor(&window_1, id, item == managerSelected ? C_DIM_GRAY : C_BLACK);
         UG_TextboxSetScrollEnabled(&window_1, id, item == managerSelected);
@@ -137,7 +137,7 @@ static void render(void)
     }
     UG_TextboxSetText(&window_1, 20, text);
     UG_TextboxSetText(&window_1, 3, !managerCount ? "" :
-        deviceBuff[managerIds[managerSelected]].motorData[0].isHide ? "Show" : "Hide");
+        storageData.DeviceConfig[managerIds[managerSelected]].isHide ? "Show" : "Hide");
     ScrnCommon_StatusBarUpdate();
     UG_Update();
 }
@@ -170,8 +170,8 @@ static void centerClicked(void)
         return;
     }
     id = managerIds[managerSelected];
-    deviceBuff[id].motorData[0].isHide = !deviceBuff[id].motorData[0].isHide;
-    ScrnCommon_SaveDeviceFlags(id);
+    storageData.DeviceConfig[id].isHide = !storageData.DeviceConfig[id].isHide;
+    ScrnCommon_SaveDeviceSettings();
 }
 
 /* Back to the main menu (also used for long LEFT and CENTER). */

@@ -5,6 +5,7 @@
 #include "screens.h"
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 #include "command_handlers.h"
 
 /* Items of the device settings menu (indexOfSettingMenu). */
@@ -22,7 +23,6 @@
 #define TXB_ID_HELP        61
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
 static uint8_t indexOfEdittingValue;
 static uint8_t indexOfSelection;
@@ -39,7 +39,7 @@ static void centerPressed(void);
 static void noAction(void);
 static void windowCallback(UG_MESSAGE *message);
 static uint8_t isSecondsItem(void);
-static MotorData_t *currentModule(void);
+static DeviceStorageData_t *currentConfig(void);
 static void createLabel(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye, char *text,
     UG_COLOR background, uint8_t alignment);
 static void createButtons(char *left, char *center, char *right);
@@ -85,8 +85,7 @@ static void init(void)
         "Device display name\nEdit one letter/box",
         "Status interval (s)\n0 = status disabled"
     };
-    DeviceInfo_t device;
-    MotorData_t module;
+    DeviceStorageData_t module;
     char title[40];
     char secondsText[20];
 
@@ -102,10 +101,9 @@ static void init(void)
     UG_WindowSetXEnd(&window_1, LCD_WIDTH - 1);
     UG_WindowSetYEnd(&window_1, LCD_HEIGHT - 1);
     ScrnCommon_StatusBarCreate();
-    device = deviceBuff[systemInfo.currentDeviceId];
-    module = device.motorData[systemInfo.currentModuleId];
-    snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.", device.factoryInfo.deviceTypeChar, device.deviceIndex + 1,
-        module.moduleIndex + 1, module.name);
+    module = storageData.DeviceConfig[systemInfo.currentDeviceId];
+    snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.", module.factoryInfo.deviceTypeChar, systemInfo.currentDeviceId + 1,
+        systemInfo.currentModuleId + 1, module.name);
     createLabel(&textbox_6, TXB_ID_5, 0, 20, 127, 37, title, C_DARK_SLATE_BLUE, ALIGN_CENTER_LEFT);
 
     /* Editor for the selected item. */
@@ -253,13 +251,13 @@ static void centerClicked(void)
 
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
-        ScrnCommon_SaveDeviceFlags(systemInfo.currentDeviceId);
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
+        ScrnCommon_SaveDeviceSettings();
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && storageData.DeviceConfig[systemInfo.currentDeviceId].isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings();
         ScrnCommon_Switch(&deviceControlScreen);
     }
 }
@@ -283,7 +281,7 @@ static void centerPressed(void)
     /* Copy the edited value into the device data. */
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD)
     {
-        currentModule()->alarmThreshold = UG_RealEditGetValue(&window_1, REDT_ID_0);
+        currentConfig()->alarmThreshold = UG_RealEditGetValue(&window_1, REDT_ID_0);
     }
     else if (isSecondsItem())
     {
@@ -296,7 +294,7 @@ static void centerPressed(void)
             }
             else
             {
-                currentModule()->alarmDelayTime = value;
+                currentConfig()->alarmDelayTime = value;
             }
         }
         free(valueText);
@@ -311,7 +309,8 @@ static void centerPressed(void)
             nameText[end - 1] = '\0';
         }
         free(valueText);
-        strncpy(currentModule()->name, nameText, sizeof(nameText));
+        strncpy(currentConfig()->name, nameText, sizeof(currentConfig()->name) - 1);
+        currentConfig()->name[sizeof(currentConfig()->name) - 1] = '\0';
     }
     else
     {
@@ -321,7 +320,7 @@ static void centerPressed(void)
     /* Persist; threshold and delay are also sent to the slave. */
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD || isSecondsItem())
     {
-        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings();
         if (!CmdHandler_SendCurrentModuleConfig())
         {
             Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
@@ -329,17 +328,17 @@ static void centerPressed(void)
     }
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
-        ScrnCommon_SaveDeviceFlags(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings();
     }
     if (indexOfSettingMenu == ITEM_DELETE || indexOfSettingMenu == ITEM_NAME)
     {
-        ScrnCommon_SaveDeviceSettings(systemInfo.currentDeviceId);
+        ScrnCommon_SaveDeviceSettings();
     }
 
     /* A hidden or deleted device leaves the settings menu. */
     if (indexOfSettingMenu != ITEM_DELETE)
     {
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && deviceBuff[systemInfo.currentDeviceId].motorData[0].isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && storageData.DeviceConfig[systemInfo.currentDeviceId].isHide ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else
@@ -363,9 +362,9 @@ static uint8_t isSecondsItem(void)
     return indexOfSettingMenu == ITEM_ALARM_DELAY || indexOfSettingMenu == ITEM_AUTO_STATUS;
 }
 
-static MotorData_t *currentModule(void)
+static DeviceStorageData_t *currentConfig(void)
 {
-    return &deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId];
+    return &storageData.DeviceConfig[systemInfo.currentDeviceId];
 }
 
 static void createLabel(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye, char *text,
@@ -575,14 +574,14 @@ static void applySelection(void)
 {
     if (indexOfSettingMenu == ITEM_LOCK)
     {
-        currentModule()->isLock = (indexOfSelection + 1) % 2;
+        currentConfig()->isLock = (indexOfSelection + 1) % 2;
     }
     else if (indexOfSettingMenu == ITEM_HIDE)
     {
-        currentModule()->isHide = (indexOfSelection + 1) % 2;
+        currentConfig()->isHide = (indexOfSelection + 1) % 2;
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        deviceBuff[systemInfo.currentDeviceId].isDelete = (indexOfSelection + 1) % 2;
+        storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete = (indexOfSelection + 1) % 2;
     }
 }

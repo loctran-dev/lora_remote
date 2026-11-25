@@ -5,6 +5,7 @@
 #include "screens.h"
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 #include "cmsis_os.h"
 
 #define INFO_ROWS 7
@@ -90,7 +91,7 @@ static void render(void)
     uint32_t seconds;
 
     ScrnCommon_StatusBarUpdate();
-    if (id >= MAXIMUM_DEVICE || deviceBuff[id].isDelete)
+    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].isDelete)
     {
         UG_TextboxSetText(&window_1, 5, "No paired device");
         for (uint8_t row = 0; row < INFO_ROWS; row++)
@@ -108,16 +109,16 @@ static void render(void)
     {
         module = 0;
     }
-    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", device->factoryInfo.deviceTypeChar,
-        device->deviceIndex + 1, module + 1, device->motorData[module].name);
+    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar,
+        device->deviceIndex + 1, module + 1, storageData.DeviceConfig[id].name);
     UG_TextboxSetText(&window_1, 5, text);
-    snprintf(text, sizeof(text), "0x%08lX", (unsigned long)device->factoryInfo.serial);
+    snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.DeviceConfig[id].factoryInfo.serial);
     UG_TextboxSetText(&window_1, 7, text);
-    snprintf(text, sizeof(text), "0x%02X", device->nodeId);
+    snprintf(text, sizeof(text), "0x%02X", storageData.DeviceConfig[id].nodeIdConfig);
     UG_TextboxSetText(&window_1, 9, text);
-    snprintf(text, sizeof(text), "%c", device->factoryInfo.deviceTypeChar);
+    snprintf(text, sizeof(text), "%c", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar);
     UG_TextboxSetText(&window_1, 11, text);
-    snprintf(text, sizeof(text), "%u", device->factoryInfo.numberOfModule);
+    snprintf(text, sizeof(text), "%u", storageData.DeviceConfig[id].factoryInfo.numberOfModule);
     UG_TextboxSetText(&window_1, 13, text);
     snprintf(text, sizeof(text), "%u", module + 1);
     UG_TextboxSetText(&window_1, 15, text);

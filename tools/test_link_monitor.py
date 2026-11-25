@@ -10,7 +10,7 @@ class LinkTests(harness.FirmwareHarness):
     def setUp(self):
         super().setUp()
         self.add(0)
-        self.put(self.device + 1, 1)
+        self.put(self.cfg(0, harness.CFG_NODE), 1)
         self.put(self.system, 1)
         self.put(self.system + 68, 2)  # SystemInfo_t.runMode = eSystem_RunMode_Normal.
         self.cpu.mem_write(self.storage + self.fields["tUpdate"], struct.pack("<I", 1))
@@ -48,7 +48,7 @@ class LinkTests(harness.FirmwareHarness):
         self.call("Link_TxFinished", 0x20008800, success)
 
     def error(self, id=0):
-        return self.get(self.device + id * 396 + 32)
+        return self.get(self.dev(id, harness.DEV_CONNECTION_ERROR))
 
     def test_no_requests_before_or_at_timeout(self):
         for second in range(6):
@@ -114,7 +114,7 @@ class LinkTests(harness.FirmwareHarness):
 
     def test_receiving_from_one_device_does_not_mask_other(self):
         self.add(1)
-        self.put(self.device + 396 + 1, 2)
+        self.put(self.cfg(1, harness.CFG_NODE), 2)
         self.call("Link_Init", 0)
         self.call("Link_SetTimeoutSeconds", 5)
         self.call("Link_ClockStep", 6)
@@ -123,19 +123,19 @@ class LinkTests(harness.FirmwareHarness):
         self.assertEqual(self.queued[-1][4], 2)
 
     def test_hidden_and_locked_devices_are_still_monitored(self):
-        self.put(self.device + 36 + 56, 1)
-        self.put(self.device + 36 + 57, 1)
+        self.put(self.cfg(0, harness.CFG_LOCK), 1)
+        self.put(self.cfg(0, harness.CFG_HIDE), 1)
         self.at(6)
         self.assertEqual(len(self.queued), 1)
 
     def test_deleted_device_is_not_monitored(self):
-        self.put(self.device + 20, 1)
+        self.put(self.cfg(0, harness.CFG_DELETE), 1)
         self.at(100)
         self.assertFalse(self.queued)
 
     def test_deleted_pending_probe_is_canceled(self):
         self.at(6)
-        self.put(self.device + 20, 1)
+        self.put(self.cfg(0, harness.CFG_DELETE), 1)
         self.at(100)
         self.assertFalse(self.alerts)
         self.assertEqual(self.call("Link_IsBusy"), 0)
@@ -168,7 +168,7 @@ class LinkTests(harness.FirmwareHarness):
     def test_multiple_offline_nodes_do_not_starve_later_devices(self):
         for id in (1, 2):
             self.add(id)
-            self.put(self.device + id * 396 + 1, id + 1)
+            self.put(self.cfg(id, harness.CFG_NODE), id + 1)
         self.call("Link_Init", 0)
         self.call("Link_SetTimeoutSeconds", 5)
         self.at(6)
@@ -219,7 +219,7 @@ class LinkTests(harness.FirmwareHarness):
         self.at(10)
         self.assertEqual(len(self.queued),2)
     def test_startup_visits_hidden_and_locked_nodes_once_then_stops_polling(self):
-        self.add(1,True);self.put(self.device+396+1,2)
+        self.add(1,True);self.put(self.cfg(1, harness.CFG_NODE),2)
         self.call("Link_Init",0);self.call("Link_RequestStatusSync");self.at(0)
         self.status_reply(0);self.at(1);self.at(2)
         self.assertEqual([packet[4] for packet in self.queued],[1,2])

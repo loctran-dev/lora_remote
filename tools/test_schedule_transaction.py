@@ -25,7 +25,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.add(0)
         self.select(0)
         self.put(self.system, 1)
-        self.put(self.device + 1, 1)
+        self.put(self.cfg(0, h.CFG_NODE), 1)
         self.now(1000)
         self.packets = []
         self.queue_result = 0
@@ -90,7 +90,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.start()
         self.reply()
         self.assertEqual(self.state(), 2)
-        deadline = int.from_bytes(self.cpu.mem_read(self.device + 36 + self.fields_timer["scheduleTime"], 4), "little")
+        deadline = int.from_bytes(self.cpu.mem_read(self.dev(0, h.DEV_MODULE) + self.fields_timer["scheduleTime"], 4), "little")
         self.assertEqual(deadline, 1060)
         self.tick(10000)
         self.assertEqual(len(self.packets), 1)
@@ -153,7 +153,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.call("Schedule_CancelForNode", 1)
         self.reply()
         self.assertEqual(self.state(), 0)
-        deadline = int.from_bytes(self.cpu.mem_read(self.device + 36 + self.fields_timer["scheduleTime"], 4), "little")
+        deadline = int.from_bytes(self.cpu.mem_read(self.dev(0, h.DEV_MODULE) + self.fields_timer["scheduleTime"], 4), "little")
         self.assertEqual(deadline, 0)
 
 

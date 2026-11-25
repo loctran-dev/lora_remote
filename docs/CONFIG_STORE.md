@@ -45,8 +45,16 @@ no longer duplicated in SystemInfo_t. The application reads and edits them in
 and applies the new periods. `Config_Load()` corrects out-of-range values
 (net id, frequency, SF, intervals) once at start-up.
 
-Device settings still have a runtime copy in `deviceBuff[]` and are copied to
-`storageData.DeviceConfig[]` by the `ScrnCommon_Save*` functions.
+## Device settings have a single copy
+
+Node id, factory info, name, alarm threshold/delay, lock, hide and the deleted
+flag exist only in `storageData.DeviceConfig[]`. `DeviceInfo_t` and `MotorData_t`
+keep runtime state (status, currents, timer, link and RSSI), indexed like
+`DeviceConfig`. Editors write `storageData` directly and
+`ScrnCommon_SaveDeviceSettings()` only requests the flash write. At start-up
+`main()` normalises each slot in place (boolean flags, name terminated and
+"Default" when empty, type letter derived from the device type).
+`deviceBuff` shrinks from 7920 to 3840 bytes.
 
 ## Verification
 

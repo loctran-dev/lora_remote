@@ -120,8 +120,7 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction);
 
 /* screens.c: settings persistence */
 
-void ScrnCommon_SaveDeviceFlags(uint8_t id);
-void ScrnCommon_SaveDeviceSettings(uint8_t id);
+void ScrnCommon_SaveDeviceSettings(void);
 void ScrnCommon_SaveGeneralSettings(void);
 
 /* screens.c: status bar */

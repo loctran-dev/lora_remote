@@ -4,13 +4,13 @@
 #include "screens.h"
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 #include "link_monitor.h"
 
 #define ITEM_COUNT    7
 #define ROWS_PER_PAGE 4
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 
 uint8_t indexOfSettingMenu;
 
@@ -56,7 +56,7 @@ static void render(void)
 {
     char *labels[] = {"Low-current alarm", "Alarm delay", "Lock", "Hide", "Delete device", "Device name",
                       "Auto status interval"};
-    MotorData_t *module = &deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId];
+    const DeviceStorageData_t *module = &storageData.DeviceConfig[systemInfo.currentDeviceId];
     uint8_t page = menuIndex / ROWS_PER_PAGE * ROWS_PER_PAGE;
     uint8_t item;
     char value[32];
@@ -87,7 +87,7 @@ static void render(void)
                 strcpy(value, module->isHide ? "Yes" : "No");
                 break;
             case 4:
-                strcpy(value, deviceBuff[systemInfo.currentDeviceId].isDelete ? "Yes" : "No");
+                strcpy(value, storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete ? "Yes" : "No");
                 break;
             case 5:
                 snprintf(value, sizeof(value), "%.19s", module->name);

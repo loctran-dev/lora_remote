@@ -275,25 +275,21 @@ int main(void)
   systemInfo.netId = storageData.netIdConfig;
   systemInfo.runMode = eSystem_RunMode_Normal;
 
-  /* Device list. */
+  /* Device list: runtime state in deviceBuff, settings normalised in place in storageData. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
-    deviceBuff[devNo].nodeId = storageData.DeviceConfig[devNo].nodeIdConfig;
-    deviceBuff[devNo].isDelete = storageData.DeviceConfig[devNo].isDelete;
-    deviceBuff[devNo].motorData[0].alarmDelayTime = storageData.DeviceConfig[devNo].alarmDelayTime;
-    deviceBuff[devNo].motorData[0].alarmThreshold = storageData.DeviceConfig[devNo].alarmThreshold;
-    deviceBuff[devNo].motorData[0].isHide = storageData.DeviceConfig[devNo].isHide == TRUE;
-    deviceBuff[devNo].motorData[0].isLock = storageData.DeviceConfig[devNo].isLock == TRUE;
-    deviceBuff[devNo].motorData[0].moduleIndex = storageData.DeviceConfig[devNo].moduleIndex;
-    deviceBuff[devNo].factoryInfo = storageData.DeviceConfig[devNo].factoryInfo;
-    deviceBuff[devNo].factoryInfo.deviceTypeChar = deviceTypeChar(deviceBuff[devNo].factoryInfo.deviceType);
-    memcpy(deviceBuff[devNo].motorData[0].name, storageData.DeviceConfig[devNo].name,
-      sizeof(deviceBuff[devNo].motorData[0].name));
-    if (deviceBuff[devNo].motorData[0].name[0] == '\0')
+    DeviceStorageData_t *config = &storageData.DeviceConfig[devNo];
+
+    config->isDelete = config->isDelete != FALSE;
+    config->isHide = config->isHide == TRUE;
+    config->isLock = config->isLock == TRUE;
+    config->factoryInfo.deviceTypeChar = deviceTypeChar(config->factoryInfo.deviceType);
+    config->name[sizeof(config->name) - 1] = '\0';
+    if (config->name[0] == '\0')
     {
-      sprintf(deviceBuff[devNo].motorData[0].name, "Default");
+      sprintf(config->name, "Default");
     }
+    deviceBuff[devNo].motorData[0].moduleIndex = config->moduleIndex;
     deviceBuff[devNo].deviceIndex = devNo;
   }
 
@@ -303,7 +299,7 @@ int main(void)
   systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (deviceBuff[devNo].isDelete == FALSE)
+    if (storageData.DeviceConfig[devNo].isDelete == FALSE)
     {
       deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
       systemInfo.currentDeviceId = devNo;
@@ -956,17 +952,17 @@ void Main_SetMotorPower(uint8_t motorPower)
   {
     return;
   }
-  if (deviceBuff[systemInfo.currentDeviceId].motorData[systemInfo.currentModuleId].isLock)
+  if (storageData.DeviceConfig[systemInfo.currentDeviceId].isLock)
   {
     ScrnDcs_ShowMotorLocked(motorPower);
     Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
     return;
   }
 
-  if (deviceBuff[systemInfo.currentDeviceId].isDelete == FALSE)
+  if (storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete == FALSE)
   {
-    Schedule_CancelForNode(deviceBuff[systemInfo.currentDeviceId].nodeId);
-    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId,
+    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig);
+    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig,
       systemInfo.currentModuleId, motorPower);
     osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
   }
@@ -1007,7 +1003,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
     payload.scheduleTime = systemInfo.currentTime + time;
   }
 
-  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, deviceBuff[systemInfo.currentDeviceId].nodeId, payload);
+  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig, payload);
   Schedule_Track(&packageOut, &payload);
   if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
   {
@@ -1075,7 +1071,7 @@ void Main_ConnectToDevice(void)
   systemInfo.configDeviceResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
   slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
-  systemInfo.nextNodeId = slot >= 0 ? deviceBuff[slot].nodeId : getNotUsedNodeId();
+  systemInfo.nextNodeId = slot >= 0 ? storageData.DeviceConfig[slot].nodeIdConfig : getNotUsedNodeId();
 
   payload.serial = systemInfo.findDevicefactoryInfo.serial;
   payload.netId = storageData.netIdConfig;
@@ -1189,7 +1185,7 @@ static uint8_t getNotUsedNodeId(void)
     }
     for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-      if (deviceBuff[devNo].isDelete == 0x00 && deviceBuff[devNo].nodeId == nodeId)
+      if (!storageData.DeviceConfig[devNo].isDelete && storageData.DeviceConfig[devNo].nodeIdConfig == nodeId)
       {
         wasNodeIdUsed = TRUE;
         break;
@@ -1225,7 +1221,7 @@ static int8_t findPairedSlot(uint32_t serial)
 {
   for (int8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (!deviceBuff[devNo].isDelete && deviceBuff[devNo].factoryInfo.serial == serial)
+    if (!storageData.DeviceConfig[devNo].isDelete && storageData.DeviceConfig[devNo].factoryInfo.serial == serial)
     {
       return devNo;
     }
@@ -1244,7 +1240,7 @@ static int8_t storePairedDevice(void)
 
   for (int8_t devNo = 0; slot < 0 && devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (deviceBuff[devNo].isDelete == TRUE)
+    if (storageData.DeviceConfig[devNo].isDelete)
     {
       slot = devNo;
     }
@@ -1255,16 +1251,14 @@ static int8_t storePairedDevice(void)
   }
 
   memset(&deviceBuff[slot], 0, sizeof(deviceBuff[slot]));
-  memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
   deviceBuff[slot].deviceIndex = slot;
-  deviceBuff[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
-  deviceBuff[slot].nodeId = systemInfo.nextNodeId;
   deviceBuff[slot].lastCommTime = systemInfo.currentTime;
-  sprintf(deviceBuff[slot].motorData[0].name, "Default");
 
-  storageData.DeviceConfig[slot].factoryInfo = deviceBuff[slot].factoryInfo;
-  storageData.DeviceConfig[slot].nodeIdConfig = deviceBuff[slot].nodeId;
-  storageData.autoStatusSeconds[slot] = 0;
+  memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
+  storageData.DeviceConfig[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
+  storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.nextNodeId;
+  sprintf(storageData.DeviceConfig[slot].name, "Default");
+  Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
   systemInfo.isNeedSaveConfig = TRUE;
   return slot;
 }

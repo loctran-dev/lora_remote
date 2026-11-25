@@ -20,10 +20,10 @@ class DeviceMenuTests(MenuHarness):
         numeric = self.call("_get_lc_numeric", 0, 0)
         self.cpu.mem_write(locale + 12, struct.pack("<I", numeric))
         self.call("Link_SetAutoStatus", 0, 2)
-        self.module = self.device + 36
-        self.cpu.mem_write(self.module + 28, b"ABCDEFGHIJKLMNOPQRS\0")
-        self.cpu.mem_write(self.module + 48, struct.pack("<fI", 12.34, 30))
-        self.put(self.module + 56, 1)
+        self.module = self.dev(0, harness.DEV_MODULE)
+        self.cpu.mem_write(self.cfg(0, harness.CFG_NAME), b"ABCDEFGHIJKLMNOPQRS\0")
+        self.cpu.mem_write(self.cfg(0, harness.CFG_THRESHOLD), struct.pack("<fI", 12.34, 30))
+        self.put(self.cfg(0, harness.CFG_LOCK), 1)
         for screen, init, render in [("editDeviceSettingScreen", "screen_edss.o:init", "screen_edss.o:render"),
                                      ("deviceSettingScreen", "screen_dss.o:init", "screen_dss.o:render")]:
             self.cpu.mem_write(harness.symbol(screen)[0] + 4,
@@ -58,7 +58,7 @@ class DeviceMenuTests(MenuHarness):
 
     def test_all_seven_editors_keep_selection_on_actual_cancel_path(self):
         storage = bytes(self.cpu.mem_read(self.storage, 885))
-        device = bytes(self.cpu.mem_read(self.device, 396))
+        device = bytes(self.cpu.mem_read(self.device, harness.DEVICE_STRIDE))
         for position in range(7):
             self.call("screen_dss.o:centerClicked")
             self.assertEqual(self.get(harness.symbol("indexOfSettingMenu")[0]), position)
@@ -67,7 +67,7 @@ class DeviceMenuTests(MenuHarness):
             self.assertTrue(rows[position % 4][1][3])
             self.advance(1)
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 885)), storage)
-        self.assertEqual(bytes(self.cpu.mem_read(self.device, 396)), device)
+        self.assertEqual(bytes(self.cpu.mem_read(self.device, harness.DEVICE_STRIDE)), device)
 
     def test_bounds_and_new_control_entry_reset(self):
         self.advance(20)

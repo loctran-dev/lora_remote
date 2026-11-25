@@ -24,7 +24,7 @@ class TimerUiTests(h.FirmwareHarness):
         super().setUp()
         self.add(0)
         self.select(0)
-        self.module = self.device + 36
+        self.module = self.dev(0, h.DEV_MODULE)
         self.texts, self.backgrounds, self.rectangles = {}, {}, {}
         self.visible = {8: True}
         self.sent = []
@@ -144,10 +144,10 @@ class TimerUiTests(h.FirmwareHarness):
         self.cpu.mem_write(self.module + self.offset["scheduleTime"], struct.pack("<I", deadline))
         self.cpu.mem_write(self.system + self.offset["currentTime"], struct.pack("<I", now))
         self.put(self.module + self.offset["pwrState"], power)
-        self.put(self.device + 32, int(offline))
-        before = bytes(self.cpu.mem_read(self.module, 60))
+        self.put(self.dev(0, h.DEV_CONNECTION_ERROR), int(offline))
+        before = bytes(self.cpu.mem_read(self.module, h.MODULE_STRIDE))
         self.call("screen_dcs.o:countdownUpdate", self.device, self.module)
-        self.assertEqual(bytes(self.cpu.mem_read(self.module, 60)), before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.module, h.MODULE_STRIDE)), before)
 
     def test_active_countdown_separates_time_left_from_deadline(self):
         self.countdown(1060)
@@ -157,7 +157,7 @@ class TimerUiTests(h.FirmwareHarness):
         self.assertTrue(self.visible[8])
 
     def test_pending_and_failed_commands_are_not_displayed_as_not_set(self):
-        self.put(self.device + 1, 1)
+        self.put(self.cfg(0, h.CFG_NODE), 1)
         self.put(h.symbol("scheduleRequest")[0] + 15, 1)
         for state, label in [(1, "Sending"), (3, "Rejected"), (4, "No reply"), (5, "Queue err")]:
             self.put(h.symbol("scheduleRequest")[0] + 19, state)

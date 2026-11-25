@@ -35,19 +35,32 @@ def symbol(name):
     return int(match[1], 16), int(match[2])
 
 
+# DeviceInfo_t (runtime state only) and its first MotorData_t.
+DEVICE_STRIDE = 192       # sizeof(DeviceInfo_t)
+DEV_CONNECTION_ERROR = 20
+DEV_RSSI = 8
+DEV_MODULE = 24           # motorData[0]
+MODULE_STRIDE = 28        # sizeof(MotorData_t)
+# DeviceStorageData_t (packed), storageData.DeviceConfig[] at storage + 15: identity and settings.
+CFG_BASE, CFG_STRIDE = 15, 41
+CFG_NODE, CFG_SERIAL, CFG_TYPE, CFG_TYPE_CHAR, CFG_MODULES = 0, 2, 6, 7, 8
+CFG_NAME, CFG_THRESHOLD, CFG_DELAY, CFG_LOCK, CFG_HIDE, CFG_DELETE = 10, 30, 34, 38, 39, 40
+
+
 class FirmwareHarness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
-        for field, offsets in {"isHide": {57, 39}, "isLock": {56, 38},
-                               "isDelete": {20, 40}, "motorData": {36},
+        for field, offsets in {"isHide": {CFG_HIDE}, "isLock": {CFG_LOCK},
+                               "isDelete": {CFG_DELETE}, "motorData": {DEV_MODULE},
+                               "isConnectionError": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "currentDeviceId": {60}, "currentModuleId": {61},
                                "isNeedSaveConfig": {62}, "DeviceConfig": {15}}.items():
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
         cls.device, size = symbol("deviceBuff")
-        assert size == 20 * 396
+        assert size == 20 * DEVICE_STRIDE
         cls.system = symbol("systemInfo")[0]
         cls.storage = symbol("storageData")[0]
         cls.fields = {}
@@ -61,7 +74,7 @@ class FirmwareHarness(unittest.TestCase):
         self.cpu.mem_write(0x08008000, (ROOT / "dist/application.bin").read_bytes())
         self.cpu.mem_map(0x20000000, 0x10000)
         for i in range(20):
-            self.put(self.device + i * 396 + 20, 1)
+            self.put(self.cfg(i, CFG_DELETE), 1)
 
     def put(self, address, value):
         self.cpu.mem_write(address, bytes([value]))
@@ -69,9 +82,17 @@ class FirmwareHarness(unittest.TestCase):
     def get(self, address):
         return self.cpu.mem_read(address, 1)[0]
 
+    def dev(self, index, offset=0):
+        """Address in deviceBuff[index] (runtime state)."""
+        return self.device + index * DEVICE_STRIDE + offset
+
+    def cfg(self, index, offset=0):
+        """Address in storageData.DeviceConfig[index] (identity and settings)."""
+        return self.storage + CFG_BASE + index * CFG_STRIDE + offset
+
     def add(self, index, hidden=False):
-        self.put(self.device + index * 396 + 20, 0)
-        self.put(self.device + index * 396 + 36 + 57, int(hidden))
+        self.put(self.cfg(index, CFG_DELETE), 0)
+        self.put(self.cfg(index, CFG_HIDE), int(hidden))
 
     def select(self, index, module=0):
         self.put(self.system + 60, index)
@@ -148,41 +169,29 @@ class VisibilityTests(FirmwareHarness):
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
         self.assertEqual(self.get(self.system + 60), 2)
 
-    def test_save_flags_updates_only_flags_and_marks_dirty(self):
+    def test_save_device_settings_only_marks_dirty(self):
+        # Editors write storageData.DeviceConfig directly; saving only requests the flash write.
         self.add(2, True)
-        self.put(self.device + 2 * 396 + 36 + 56, 1)
+        self.put(self.cfg(2, CFG_LOCK), 1)
         before = bytes(self.cpu.mem_read(self.storage, 836))
-        self.call("ScrnCommon_SaveDeviceFlags", 2)
-        expected = bytearray(before)
-        expected[15 + 2 * 41 + 38:15 + 2 * 41 + 40] = b"\x01\x01"
-        self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), bytes(expected))
-        self.assertEqual(self.get(self.system + 62), 1)
-        self.put(self.system + 62, 0)
-        self.call("ScrnCommon_SaveDeviceFlags", 2)
-        self.assertEqual(self.get(self.system + 62), 0)
-
-    def test_save_invalid_id_does_not_modify_storage(self):
-        before = bytes(self.cpu.mem_read(self.storage, 836))
-        self.call("ScrnCommon_SaveDeviceFlags", 255)
+        self.call("ScrnCommon_SaveDeviceSettings")
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
-        self.assertEqual(self.get(self.system + 62), 0)
-
-    def test_device_name_delete_and_alarm_staged_for_flash(self):
-        self.add(2)
-        base = self.device + 2 * 396
-        # MotorData name/alarm offsets are fixed by the current checked layout.
-        self.cpu.mem_write(base + 36 + 28, b"Pump test\x00" + bytes(10))
-        self.cpu.mem_write(base + 36 + 48, struct.pack("<f", 12.34))
-        self.cpu.mem_write(base + 36 + 52, struct.pack("<I", 30))
-        self.put(base + 20, 1)
-        self.call("ScrnCommon_SaveDeviceSettings", 2)
-        target = self.storage + 15 + 2 * 41
-        self.assertEqual(bytes(self.cpu.mem_read(target + 10, 10)), b"Pump test\x00")
-        self.assertEqual(bytes(self.cpu.mem_read(target + 30, 4)), struct.pack("<f", 12.34))
-        self.assertEqual(bytes(self.cpu.mem_read(target + 34, 4)), struct.pack("<I", 30))
-        self.assertEqual(self.get(target + 40), 1)
         self.assertEqual(self.get(self.system + 62), 1)
+
+    def test_deleted_device_is_no_longer_visible(self):
+        self.add(2)
+        self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
+        self.put(self.cfg(2, CFG_DELETE), 1)
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 0)
+
+    def test_device_settings_have_no_runtime_copy(self):
+        # Runtime state must not change when settings are edited, and vice versa.
+        self.add(2)
+        runtime = bytes(self.cpu.mem_read(self.dev(2), DEVICE_STRIDE))
+        self.cpu.mem_write(self.cfg(2, CFG_NAME), b"Pump test\x00")
+        self.cpu.mem_write(self.cfg(2, CFG_THRESHOLD), struct.pack("<fI", 12.34, 30))
+        self.call("ScrnCommon_SaveDeviceSettings")
+        self.assertEqual(bytes(self.cpu.mem_read(self.dev(2), DEVICE_STRIDE)), runtime)
 
     def test_hidden_blocks_power_and_schedule_send(self):
         self.add(0, True)
@@ -216,7 +225,7 @@ class VisibilityTests(FirmwareHarness):
 
     def test_manager_can_restore_hidden_without_changing_selection_or_lock(self):
         self.add(2, True)
-        self.put(self.device + 2 * 396 + 36 + 56, 1)
+        self.put(self.cfg(2, CFG_LOCK), 1)
         self.select(0)
         self.put(symbol("managerCount")[0], 1)
         self.put(symbol("managerSelected")[0], 0)
@@ -224,8 +233,8 @@ class VisibilityTests(FirmwareHarness):
         self.call("screen_dvm.o:centerClicked")
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
         self.assertEqual(self.get(self.system + 60), 0)
-        self.assertEqual(self.get(self.device + 2 * 396 + 36 + 56), 1)
-        self.assertEqual(self.get(self.storage + 15 + 2 * 41 + 39), 0)
+        self.assertEqual(self.get(self.cfg(2, CFG_LOCK)), 1)
+        self.assertEqual(self.get(self.cfg(2, CFG_HIDE)), 0)
         self.assertEqual(self.get(self.system + 62), 1)
 
     def test_manager_navigation_and_empty_toggle(self):

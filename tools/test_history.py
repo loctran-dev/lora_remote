@@ -163,10 +163,10 @@ class JournalTests(unittest.TestCase):
     def globals_for_sync(self):
         if REMOTE:
             self.call("RemoteHistory_Init")
-            system=symbol("systemInfo"); device=symbol("deviceBuff")
+            system=symbol("systemInfo"); config=symbol("storageData")+15  # DeviceConfig[0]
             self.cpu.mem_write(system,b"\x01")
-            self.cpu.mem_write(device+1,b"\x01")
-            self.cpu.mem_write(device+4,struct.pack("<I",0xabcdef01))
+            self.cpu.mem_write(config+0,b"\x01")  # nodeIdConfig
+            self.cpu.mem_write(config+2,struct.pack("<I",0xabcdef01))  # factoryInfo.serial
         else:
             import test_persistence as old
             for field,value,size in [("netId",1,1),("nodeId",1,1),("sysState",2,1),

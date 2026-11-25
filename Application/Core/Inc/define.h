@@ -104,7 +104,7 @@ typedef struct
     uint8_t numberOfModule; ///< Motor modules on the device.
 } FactoryInfo_t;
 
-/** @brief State and settings of one motor module. */
+/** @brief Runtime state of one motor module; its settings are in storageData.DeviceConfig. */
 typedef struct
 {
     uint8_t moduleIndex; ///< Module index on the device.
@@ -116,25 +116,19 @@ typedef struct
     Motor_PowerState_e pwrState; ///< Last reported power state.
     float phaseCurrent[3];       ///< Last reported phase currents [A].
     uint32_t scheduleTime;       ///< Pending switch-off time (Unix); 0 = none.
-
-    /* Settings */
-    char name[20];           ///< Display name.
-    float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
-    uint32_t alarmDelayTime; ///< Time below the threshold before the alarm [s].
-    uint8_t isLock;          ///< Power commands are refused.
-    uint8_t isHide;          ///< Hidden from device control (device-level in practice).
 } MotorData_t;
 
-/** @brief Runtime state of one paired device slot. */
+/**
+ * @brief Runtime state of one device slot.
+ *
+ * Identity and settings (node id, factory info, name, alarm, lock, hide,
+ * deleted) live only in storageData.DeviceConfig[] at the same index.
+ */
 typedef struct
 {
-    uint8_t deviceIndex;       ///< Own index in deviceBuff.
-    uint8_t nodeId;            ///< LoRa node id.
-    FactoryInfo_t factoryInfo; ///< Identity from pairing.
-    uint32_t localTime;        ///< Device Unix time from the last status.
-    int rssi;                  ///< RSSI of the last packet from the device.
-
-    uint8_t isDelete; ///< Slot is free (no paired device).
+    uint8_t deviceIndex; ///< Own index in deviceBuff.
+    uint32_t localTime;  ///< Device Unix time from the last status.
+    int rssi;            ///< RSSI of the last packet from the device.
 
     uint32_t lastCommTick;     ///< RTOS tick of the last packet [ms].
     uint32_t lastCommTime;     ///< Remote Unix time of the last packet.

@@ -2,6 +2,7 @@
 #include "remote_history.h"
 #include "main.h"
 #include "define.h"
+#include "config_store.h"
 #include "utility.h"
 #include <stdio.h>
 #include <string.h>
@@ -299,9 +300,9 @@ static void renderPicker(char *text, uint16_t size)
         {
             continue;
         }
-        snprintf(text, size, "M%u1%s", id + 1, deviceBuff[id].motorData[0].isHide ? " [Hidden]" : "");
+        snprintf(text, size, "M%u1%s", id + 1, storageData.DeviceConfig[id].isHide ? " [Hidden]" : "");
         UG_TextboxSetText(&window_1, a, text);
-        UG_TextboxSetText(&window_1, b, deviceBuff[id].isDelete ? "Removed device" : deviceBuff[id].motorData[0].name);
+        UG_TextboxSetText(&window_1, b, storageData.DeviceConfig[id].isDelete ? "Removed device" : storageData.DeviceConfig[id].name);
         for (uint8_t cell = a; cell <= b; cell++)
         {
             UG_TextboxSetBackColor(&window_1, cell, id == chosenDevice ? C_DIM_GRAY : C_BLACK);
@@ -446,7 +447,7 @@ static uint8_t available(uint8_t id)
     uint16_t owner;
     const HistoryRecord *r;
 
-    if (!deviceBuff[id].isDelete)
+    if (!storageData.DeviceConfig[id].isDelete)
     {
         return 1;
     }
@@ -495,7 +496,7 @@ static void snapshot(void)
     for (uint16_t s = 0; s < HJ_SLOTS; s++)
     {
         r = HJ_Get(s);
-        if (!r || r->owner != owner || r->event.serial != deviceBuff[chosenDevice].factoryInfo.serial)
+        if (!r || r->owner != owner || r->event.serial != storageData.DeviceConfig[chosenDevice].factoryInfo.serial)
         {
             continue;
         }

@@ -4,6 +4,7 @@
 #include "image_data.h"
 #include "screens.h"
 #include "main.h"
+#include "config_store.h"
 #include "utility.h"
 #include "power_sleep.h"
 #include "schedule.h"
@@ -187,8 +188,8 @@ static void init(void)
     /* Title, RSSI and the three phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
     module = device.motorData[systemInfo.currentModuleId];
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", device.factoryInfo.deviceTypeChar, device.deviceIndex + 1,
-        module.moduleIndex + 1, module.name);
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
+        device.deviceIndex + 1, module.moduleIndex + 1, storageData.DeviceConfig[device.deviceIndex].name);
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -237,12 +238,12 @@ static void render(void)
     /* Title (or lock notice) and phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
     module = device.motorData[systemInfo.currentModuleId];
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", device.factoryInfo.deviceTypeChar, device.deviceIndex + 1,
-        module.moduleIndex + 1, module.name);
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
+        device.deviceIndex + 1, module.moduleIndex + 1, storageData.DeviceConfig[device.deviceIndex].name);
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
-    if (lockNoticeActive && (!module.isLock || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
+    if (lockNoticeActive && (!storageData.DeviceConfig[device.deviceIndex].isLock || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
     {
         lockNoticeActive = 0;
     }
@@ -519,11 +520,11 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
 {
     UG_COLOR color = C_ORANGE;
     char *status = "UNKNOWN";
-    uint8_t known = !device->isDelete && !device->isConnectionError &&
+    uint8_t known = !storageData.DeviceConfig[device->deviceIndex].isDelete && !device->isConnectionError &&
         (module->pwrState == eMotor_PowerState_On || module->pwrState == eMotor_PowerState_Off);
 
     /* Status text and colour. */
-    if (device->isDelete || device->isConnectionError)
+    if (storageData.DeviceConfig[device->deviceIndex].isDelete || device->isConnectionError)
     {
         status = "NO LINK";
     }
@@ -578,7 +579,7 @@ static void statusIconsUpdate(UG_WINDOW *window, UG_OBJECT *object)
 /* Request a redraw only when one of the drawn inputs changed. */
 static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    uint32_t key = (device->isDelete ? 1u : 0u) |
+    uint32_t key = (storageData.DeviceConfig[device->deviceIndex].isDelete ? 1u : 0u) |
         (device->isConnectionError ? 2u : 0u) |
         (module->isAlarmOccurred ? 4u : 0u) |
         ((uint32_t)module->pwrState << 8) |
@@ -690,7 +691,7 @@ static void createTimerScreen(void)
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
     device = &deviceBuff[systemInfo.currentDeviceId];
-    type = device->factoryInfo.deviceTypeChar;
+    type = storageData.DeviceConfig[device->deviceIndex].factoryInfo.deviceTypeChar;
     if (type < 32 || type > 126)
     {
         type = 'M';
@@ -772,7 +773,7 @@ static void formatRemaining(uint32_t seconds, char *text)
 /* Timer summary: pending/failed command, "Not set", or deadline and countdown. */
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    Schedule_State_e state = Schedule_GetStateForNode(device->nodeId);
+    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->deviceIndex].nodeIdConfig);
     uint8_t present;
     char text[16];
     uint32_t remaining;

@@ -1,6 +1,7 @@
 #include "remote_history.h"
 #include "main.h"
 #include "define.h"
+#include "config_store.h"
 #include "cmsis_os.h"
 #include "link_monitor.h"
 #include "utility.h"
@@ -46,7 +47,7 @@ void RemoteHistory_Init(void)
  */
 uint16_t RemoteHistory_Owner(uint8_t id)
 {
-    return ((uint16_t)systemInfo.netId << 8) | deviceBuff[id].nodeId;
+    return ((uint16_t)systemInfo.netId << 8) | storageData.DeviceConfig[id].nodeIdConfig;
 }
 
 /**
@@ -85,8 +86,8 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     /* Accept it only from the paired device with the same serial. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (deviceBuff[id].isDelete || deviceBuff[id].nodeId != packet.nodeId ||
-            deviceBuff[id].factoryInfo.serial != event.serial)
+        if (storageData.DeviceConfig[id].isDelete || storageData.DeviceConfig[id].nodeIdConfig != packet.nodeId ||
+            storageData.DeviceConfig[id].factoryInfo.serial != event.serial)
         {
             continue;
         }
@@ -106,12 +107,12 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
 {
     HistoryEvent event = {0};
 
-    if (id >= MAXIMUM_DEVICE || deviceBuff[id].isDelete)
+    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].isDelete)
     {
         return;
     }
 
-    event.serial = deviceBuff[id].factoryInfo.serial;
+    event.serial = storageData.DeviceConfig[id].factoryInfo.serial;
     event.timestamp = systemInfo.currentTime;
     event.action = restored ? HIST_LINK_RESTORED : HIST_LINK_LOST;
     event.source = HIST_MONITOR;

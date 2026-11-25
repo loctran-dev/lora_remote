@@ -68,18 +68,18 @@ class RtcSettingTests(h.FirmwareHarness):
         self.assertEqual(self.writes,[])
     def test_rejects_active_timer_on_any_supported_module(self):
         self.add(0)
-        # MotorData_t is 60 bytes; scheduleTime offset 24, power state offset 8.
-        base=self.device+36+60*5
+        # motorData[5] of device 0; scheduleTime offset 24, power state offset 8.
+        base=self.dev(0, h.DEV_MODULE+h.MODULE_STRIDE*5)
         self.put(base+8,1)
         self.cpu.mem_write(base+24,struct.pack("<I",1000))
         self.assertEqual(self.call("Rtc_Set",self.stamp),2)
         self.assertEqual(self.writes,[])
     def test_motor_on_without_timer_is_not_changed_or_commanded(self):
         self.add(0)
-        self.put(self.device+36+8,1)
-        before=bytes(self.cpu.mem_read(self.device,396*20))
+        self.put(self.dev(0, h.DEV_MODULE)+8,1)
+        before=bytes(self.cpu.mem_read(self.device,h.DEVICE_STRIDE*20))
         self.assertEqual(self.call("Rtc_Set",self.stamp),0)
-        self.assertEqual(bytes(self.cpu.mem_read(self.device,396*20)),before)
+        self.assertEqual(bytes(self.cpu.mem_read(self.device,h.DEVICE_STRIDE*20)),before)
         self.assertEqual(self.txs,[])
     def test_midnight_calendar_update_is_saved_for_next_boot(self):
         self.call("Rtc_Set",self.stamp)
