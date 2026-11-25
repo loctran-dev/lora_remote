@@ -963,6 +963,11 @@
               <FilePath>..\Library\power_sleep.c</FilePath>
             </File>
             <File>
+              <FileName>config_store.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\config_store.c</FilePath>
+            </File>
+            <File>
               <FileName>screens.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Library\screens.h</FilePath>

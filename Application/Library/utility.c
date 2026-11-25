@@ -91,3 +91,25 @@ void Util_ConvertTimestampToRTC(uint32_t timestamp, RTC_TimeTypeDef *sTime, RTC_
     sDate->Month = month + 1;
     sDate->Date = days + 1;
 }
+
+/**
+ * @brief  CRC-32 (IEEE 802.3, reflected) of a buffer.
+ * @param  data  Bytes to check.
+ * @param  size  Number of bytes.
+ * @return The CRC.
+ */
+uint32_t Util_Crc32(const void *data, uint32_t size)
+{
+    const uint8_t *p = data;
+    uint32_t crc = 0xFFFFFFFFu;
+
+    while (size--)
+    {
+        crc ^= *p++;
+        for (uint8_t b = 0; b < 8; b++)
+        {
+            crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
+        }
+    }
+    return ~crc;
+}

@@ -31,7 +31,7 @@
 #include "lora.h"
 #include "communication_lora.h"
 #include "utility.h"
-#include "flash.h"
+#include "config_store.h"
 #include "lcd.h"
 #include "screens.h"
 #include "link_monitor.h"
@@ -140,7 +140,6 @@ Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};   
 SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
 DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
 LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
-SystemStorageData_t storageData;         ///< RAM copy of the configuration block in flash.
 uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
 uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
 
@@ -241,34 +240,8 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
   HAL_TIM_Base_Start(&htim8);
 
-  /* Load the stored configuration, or defaults on first boot. */
-  memcpy(&storageData, (uint32_t *)CONFIG_DATA_ADDRESS, sizeof(SystemStorageData_t));
-  if (storageData.lastWriteSuccess != TRUE)
-  {
-    memset(&storageData, 0, sizeof(storageData));
-    storageData.netIdConfig = 0x01;
-    storageData.frequencyConfig = 433;
-    storageData.sfConfig = SF_7;
-    storageData.lastWriteSuccess = TRUE;
-    for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
-    {
-      storageData.DeviceConfig[devNo].isDelete = TRUE;
-    }
-    Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t *)&storageData, sizeof(SystemStorageData_t));
-  }
-
-  if (storageData.netIdConfig == 0 || storageData.netIdConfig == 255)
-  {
-    storageData.netIdConfig = 1;
-  }
-  if (storageData.frequencyConfig < 137 || storageData.frequencyConfig > 1020)
-  {
-    storageData.frequencyConfig = 433;
-  }
-  if (storageData.sfConfig < SF_7 || storageData.sfConfig > SF_12)
-  {
-    storageData.sfConfig = SF_7;
-  }
+  /* Load the stored configuration (newest valid slot, old format or defaults). */
+  Config_Load();
 
   /* LoRa module settings. */
   sLoRaCtrl = newLoRa();
@@ -1381,10 +1354,8 @@ void StartSystemTask(void *argument)
     /* Persist configuration. */
     if (systemInfo.isNeedSaveConfig == TRUE)
     {
-      storageData.lastWriteSuccess = TRUE;
       systemInfo.isNeedSaveConfig = FALSE;
-      if (Flash_WriteData(CONFIG_DATA_ADDRESS, (uint32_t *)&storageData, sizeof(SystemStorageData_t)) ||
-        memcmp((void *)CONFIG_DATA_ADDRESS, &storageData, sizeof(storageData)))
+      if (Config_Save())
       {
         Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
       }

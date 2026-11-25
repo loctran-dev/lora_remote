@@ -2,6 +2,7 @@
 
 Current sleep/link extensions and migration are documented in LINK_SLEEP.md;
 the disabled-sleep and 836-byte-only statements below describe the older build.
+Since 2026-11-25 the settings are saved to two A/B slots; see CONFIG_STORE.md.
 
 Implemented in the requested order: alarm settings on both boards, remote
 name/deletion, LoRa configuration, then general settings.

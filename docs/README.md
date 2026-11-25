@@ -29,7 +29,7 @@ and the BOOTLOADER command when regenerating code.
 | Bootloader, 32 KiB | 0x08000000 | 0x08007FFF |
 | Application, 218 KiB | 0x08008000 | 0x0803E7FF |
 | Commit metadata, 2 KiB | 0x0803E800 | 0x0803EFFF |
-| Existing settings, 4 KiB | 0x0803F000 | 0x0803FFFF |
+| Settings, 4 KiB (two 2 KiB slots, see CONFIG_STORE.md) | 0x0803F000 | 0x0803FFFF |
 
 Bootloader accepts writes only in the application partition and its own metadata
 page. It checks size, sequential offsets, each transport CRC, flash read-back,
