@@ -4,6 +4,7 @@
 #include "screens.h"
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 #include "link_monitor.h"
 
 #define GENERAL_MENU_COUNT (sizeof(menuOrder) / sizeof(menuOrder[0]))
@@ -77,22 +78,22 @@ static void render(void)
         switch (item)
         {
             case 0:
-                strcpy(value, systemInfo.sleepMode ? "Yes" : "No");
+                strcpy(value, storageData.sleepMode ? "Yes" : "No");
                 break;
             case 1:
-                sprintf(value, "%lu s", (unsigned long)systemInfo.tUpdate);
+                sprintf(value, "%lu s", (unsigned long)storageData.tUpdate);
                 break;
             case 2:
-                sprintf(value, "%lu s", (unsigned long)systemInfo.tSleepUpdate);
+                sprintf(value, "%lu s", (unsigned long)storageData.tSleepUpdate);
                 break;
             case 3:
-                sprintf(value, "%02X", systemInfo.netIdConfig);
+                sprintf(value, "%02X", storageData.netIdConfig);
                 break;
             case 4:
-                sprintf(value, "%d MHz", systemInfo.frequencyConfig);
+                sprintf(value, "%d MHz", storageData.frequencyConfig);
                 break;
             case 5:
-                sprintf(value, "SF%u", systemInfo.sfConfig);
+                sprintf(value, "SF%u", storageData.sfConfig);
                 break;
             case 6:
                 sprintf(value, "%u s", Link_GetIdleSeconds());

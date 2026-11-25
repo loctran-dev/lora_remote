@@ -41,8 +41,8 @@ class FirmwareHarness(unittest.TestCase):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
         for field, offsets in {"isHide": {69, 39}, "isLock": {68, 38},
                                "isDelete": {20, 40}, "motorData": {36},
-                               "currentDeviceId": {80}, "currentModuleId": {81},
-                               "isNeedSaveConfig": {82}, "DeviceConfig": {15}}.items():
+                               "currentDeviceId": {60}, "currentModuleId": {61},
+                               "isNeedSaveConfig": {62}, "DeviceConfig": {15}}.items():
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
@@ -74,8 +74,8 @@ class FirmwareHarness(unittest.TestCase):
         self.put(self.device + index * 396 + 36 + 57, int(hidden))
 
     def select(self, index, module=0):
-        self.put(self.system + 80, index)
-        self.put(self.system + 81, module)
+        self.put(self.system + 60, index)
+        self.put(self.system + 61, module)
 
     def call(self, name, argument=0, argument1=0, argument2=0):
         stop = 0x0807FFF0
@@ -99,8 +99,8 @@ class VisibilityTests(FirmwareHarness):
         self.add(1)
         self.select(0, 2)
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
-        self.assertEqual(self.get(self.system + 80), 1)
-        self.assertEqual(self.get(self.system + 81), 0)
+        self.assertEqual(self.get(self.system + 60), 1)
+        self.assertEqual(self.get(self.system + 61), 0)
 
     def test_hide_last_falls_back_to_previous(self):
         self.add(0)
@@ -108,21 +108,21 @@ class VisibilityTests(FirmwareHarness):
         self.add(19, True)
         self.select(19)
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
-        self.assertEqual(self.get(self.system + 80), 7)
+        self.assertEqual(self.get(self.system + 60), 7)
 
     def test_all_hidden_safe_indices(self):
         self.add(0, True)
         self.add(1, True)
         self.select(1)
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 0)
-        self.assertEqual(self.get(self.system + 80), 0)
-        self.assertEqual(self.get(self.system + 81), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
+        self.assertEqual(self.get(self.system + 61), 0)
 
     def test_empty_and_restore_visibility(self):
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 0)
         self.add(3)
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
-        self.assertEqual(self.get(self.system + 80), 3)
+        self.assertEqual(self.get(self.system + 60), 3)
 
     def test_next_previous_skip_hidden_and_deleted(self):
         self.add(0)
@@ -130,23 +130,23 @@ class VisibilityTests(FirmwareHarness):
         self.add(3)
         self.select(0)
         self.call("ScrnCommon_SelectAdjacentVisible", 1)
-        self.assertEqual(self.get(self.system + 80), 3)
+        self.assertEqual(self.get(self.system + 60), 3)
         self.call("ScrnCommon_SelectAdjacentVisible", -1)
-        self.assertEqual(self.get(self.system + 80), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
 
     def test_navigation_boundaries_no_underflow(self):
         self.add(0)
         self.select(0)
         self.call("ScrnCommon_SelectAdjacentVisible", -1)
-        self.assertEqual(self.get(self.system + 80), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
         self.call("ScrnCommon_SelectAdjacentVisible", 1)
-        self.assertEqual(self.get(self.system + 80), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
 
     def test_invalid_start_recovered(self):
         self.add(2)
         self.select(255)
         self.assertEqual(self.call("ScrnCommon_EnsureVisibleDevice"), 1)
-        self.assertEqual(self.get(self.system + 80), 2)
+        self.assertEqual(self.get(self.system + 60), 2)
 
     def test_save_flags_updates_only_flags_and_marks_dirty(self):
         self.add(2, True)
@@ -156,16 +156,16 @@ class VisibilityTests(FirmwareHarness):
         expected = bytearray(before)
         expected[15 + 2 * 41 + 38:15 + 2 * 41 + 40] = b"\x01\x01"
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), bytes(expected))
-        self.assertEqual(self.get(self.system + 82), 1)
-        self.put(self.system + 82, 0)
+        self.assertEqual(self.get(self.system + 62), 1)
+        self.put(self.system + 62, 0)
         self.call("ScrnCommon_SaveDeviceFlags", 2)
-        self.assertEqual(self.get(self.system + 82), 0)
+        self.assertEqual(self.get(self.system + 62), 0)
 
     def test_save_invalid_id_does_not_modify_storage(self):
         before = bytes(self.cpu.mem_read(self.storage, 836))
         self.call("ScrnCommon_SaveDeviceFlags", 255)
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 836)), before)
-        self.assertEqual(self.get(self.system + 82), 0)
+        self.assertEqual(self.get(self.system + 62), 0)
 
     def test_device_name_delete_and_alarm_staged_for_flash(self):
         self.add(2)
@@ -181,7 +181,7 @@ class VisibilityTests(FirmwareHarness):
         self.assertEqual(bytes(self.cpu.mem_read(target + 30, 4)), struct.pack("<f", 12.34))
         self.assertEqual(bytes(self.cpu.mem_read(target + 34, 4)), struct.pack("<I", 30))
         self.assertEqual(self.get(target + 40), 1)
-        self.assertEqual(self.get(self.system + 82), 1)
+        self.assertEqual(self.get(self.system + 62), 1)
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 0)
 
     def test_hidden_blocks_power_and_schedule_send(self):
@@ -199,7 +199,7 @@ class VisibilityTests(FirmwareHarness):
         values = {"netIdConfig": (2, 1), "frequencyConfig": (434, 4), "sfConfig": (8, 1),
                   "sleepMode": (1, 1), "tUpdate": (6, 4), "tSleepUpdate": (301, 4)}
         for name, (value, size) in values.items():
-            self.cpu.mem_write(self.system + self.fields[name], value.to_bytes(size, "little"))
+            self.cpu.mem_write(self.storage + self.fields[name], value.to_bytes(size, "little"))
         self.cpu.mem_write(symbol("GetDevStatusTimerHandle")[0], struct.pack("<I", 0x20008000))
         calls = []
         def timer(cpu, address, size, data):
@@ -210,7 +210,7 @@ class VisibilityTests(FirmwareHarness):
         self.cpu.hook_add(UC_HOOK_CODE, timer, begin=address, end=address)
         self.call("ScrnCommon_SaveGeneralSettings")
         self.assertEqual(bytes(self.cpu.mem_read(self.storage, 15)), struct.pack("<BIBBII", 2, 434, 8, 1, 6, 301))
-        self.assertEqual(self.get(self.system + 82), 1)
+        self.assertEqual(self.get(self.system + 62), 1)
         self.assertEqual(calls, [0x20008000])
         self.assertNotRegex(MAP, r"^\s+osTimerStart\s+0x", "Unconditional polling timer must stay unlinked")
 
@@ -223,10 +223,10 @@ class VisibilityTests(FirmwareHarness):
         self.put(symbol("managerIds")[0], 2)
         self.call("screen_dvm.o:centerClicked")
         self.assertEqual(self.call("ScrnCommon_DeviceVisible", 2), 1)
-        self.assertEqual(self.get(self.system + 80), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
         self.assertEqual(self.get(self.device + 2 * 396 + 36 + 56), 1)
         self.assertEqual(self.get(self.storage + 15 + 2 * 41 + 39), 0)
-        self.assertEqual(self.get(self.system + 82), 1)
+        self.assertEqual(self.get(self.system + 62), 1)
 
     def test_manager_navigation_and_empty_toggle(self):
         selected = symbol("managerSelected")[0]

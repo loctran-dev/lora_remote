@@ -4,6 +4,7 @@
 #include "link_monitor.h"
 #include "screens.h"
 #include "main.h"
+#include "config_store.h"
 #include "cmsis_os.h"
 #include "usbd_def.h"
 #include <string.h>
@@ -144,14 +145,14 @@ void Power_Tick(void)
     if (powerSleep.rtcPending)
     {
         powerSleep.rtcPending = 0;
-        powerSleep.nextRtc = Link_Now() + systemInfo.tSleepUpdate;
+        powerSleep.nextRtc = Link_Now() + storageData.tSleepUpdate;
         Link_RequestScan();
     }
-    if (systemInfo.runMode == eSystem_RunMode_Sleep && (!systemInfo.sleepMode || usbActive()))
+    if (systemInfo.runMode == eSystem_RunMode_Sleep && (!storageData.sleepMode || usbActive()))
     {
         Power_UserActivity();
     }
-    if (!systemInfo.sleepMode || usbActive() || systemInfo.runMode == eSystem_RunMode_Alarm ||
+    if (!storageData.sleepMode || usbActive() || systemInfo.runMode == eSystem_RunMode_Alarm ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
         ScrnDcs_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
@@ -163,7 +164,7 @@ void Power_Tick(void)
         Link_Now() - powerSleep.lastUser >= Link_GetIdleSeconds())
     {
         systemInfo.runMode = eSystem_RunMode_Sleep;
-        powerSleep.nextRtc = Link_Now() + systemInfo.tSleepUpdate;
+        powerSleep.nextRtc = Link_Now() + storageData.tSleepUpdate;
         LCD_Backlight_Off();
     }
 }

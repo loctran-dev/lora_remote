@@ -17,8 +17,8 @@ class DateTimeUiTests(m.MenuHarness):
                     "UG_TextboxSetScrollEnabled","UG_WindowShow","UG_Update","Main_SetBuzzerMode",
                     "UG_WindowHide","UG_WindowDelete","screen_gss.o:init","screen_gss.o:render","Power_WakeForError",
                     "ScrnCommon_StatusBarCreate","ScrnCommon_StatusBarUpdate"])
-        self.cpu.mem_write(self.system+28,bytes([12,34,56]))
-        self.cpu.mem_write(self.system+31,bytes([4,11,19,26]))
+        self.cpu.mem_write(self.system+20,bytes([12,34,56]))
+        self.cpu.mem_write(self.system+23,bytes([4,11,19,26]))
         self.cpu.mem_write(h.symbol("currentScreen")[0],struct.pack("<I",h.symbol("dateTimeScreen")[0]))
         self.save_result=0;self.saved=[]
         def save(cpu,address,size,data):

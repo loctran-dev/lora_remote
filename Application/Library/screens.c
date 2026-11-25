@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 
 #define EDIT_CHARACTERS_MAX 19
 
 extern SystemInfo_t systemInfo;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
-extern SystemStorageData_t storageData;
 
 /* uGUI objects shared by every screen. */
 UG_WINDOW window_1;
@@ -58,7 +58,6 @@ static void createWindow(void);
 static void createText(UG_TEXTBOX *box, uint8_t id, int x, int y, int xe, int ye,
     char *text, UG_COLOR background);
 static void createSettingsMenu(char *title, uint8_t stacked);
-static void saveRadioSettings(void);
 
 /**
  * @brief  Close the current window and open another screen (init() then render()).
@@ -189,13 +188,13 @@ void ScrnCommon_SaveDeviceSettings(uint8_t id)
     systemInfo.isNeedSaveConfig = 1;
 }
 
-/** @brief Copy the radio, sleep and update-period settings from systemInfo to storageData. */
+/**
+ * @brief  Commit the general settings edited in storageData: save them and apply the new periods.
+ * @note   Flash is written later by systemTask (isNeedSaveConfig).
+ */
 void ScrnCommon_SaveGeneralSettings(void)
 {
-    saveRadioSettings();
-    storageData.sleepMode = systemInfo.sleepMode;
-    storageData.tUpdate = systemInfo.tUpdate;
-    storageData.tSleepUpdate = systemInfo.tSleepUpdate;
+    systemInfo.isNeedSaveConfig = 1;
     Main_UpdateStatusPeriod();
 }
 
@@ -505,12 +504,4 @@ static void createSettingsMenu(char *title, uint8_t stacked)
     createText(&textbox_4, 3, 36, 144, 91, 159, "Change", C_RED);
     createText(&textbox_5, 4, 92, 144, 127, 159, "Down", C_RED);
     UG_WindowShow(&window_1);
-}
-
-static void saveRadioSettings(void)
-{
-    storageData.netIdConfig = systemInfo.netIdConfig;
-    storageData.frequencyConfig = systemInfo.frequencyConfig;
-    storageData.sfConfig = systemInfo.sfConfig;
-    systemInfo.isNeedSaveConfig = 1;
 }

@@ -32,6 +32,7 @@
 #include "schedule.h"
 #include "remote_history.h"
 #include "rtc_setting.h"
+#include "config_store.h"
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "task.h"
@@ -460,9 +461,9 @@ void CDC_ProcessEcho_FS(void)
     {
       echoLength = sprintf((char*)UserRxBufferFS,
         "CONFIG NET=%u FREQ=%d SF=%u SLEEP=%u UPDATE=%lu SLEEP_UPDATE=%lu ACTIVE_NET=%u ACTIVE_FREQ=%u ACTIVE_SF=%u IDLE=%u LOST=%u AUTO=%u\n",
-        systemInfo.netIdConfig, systemInfo.frequencyConfig, systemInfo.sfConfig,
-        systemInfo.sleepMode, (unsigned long)systemInfo.tUpdate,
-        (unsigned long)systemInfo.tSleepUpdate, systemInfo.netId,
+        storageData.netIdConfig, storageData.frequencyConfig, storageData.sfConfig,
+        storageData.sleepMode, (unsigned long)storageData.tUpdate,
+        (unsigned long)storageData.tSleepUpdate, systemInfo.netId,
         sLoRaCtrl.frequency, sLoRaCtrl.spredingFactor, Link_GetIdleSeconds(),
         Link_GetTimeoutSeconds(), Link_GetAutoStatus(systemInfo.currentDeviceId));
       responsePrepared = 1;

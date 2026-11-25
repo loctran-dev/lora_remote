@@ -2,10 +2,11 @@
  * @file    define.h
  * @brief   Shared application types: device and system state, and the flash configuration block.
  *
- * deviceBuff[] and systemInfo (defined in main.c) hold the runtime state;
- * storageData is the RAM copy of SystemStorageData_t at CONFIG_DATA_ADDRESS.
- * The layout of the packed storage structs is the flash format: append new
- * fields at the end only.
+ * deviceBuff[] and systemInfo (defined in main.c) hold the runtime state.
+ * storageData (config_store.c) is the only copy of the settings; general
+ * settings are read and edited there directly, device settings are copied
+ * from deviceBuff by the ScrnCommon_Save* functions. The layout of the packed
+ * storage structs is the flash format: append new fields at the end only.
  *
  * @defgroup define Shared types
  * @{
@@ -145,10 +146,7 @@ typedef struct
 /** @brief Runtime state of the remote. */
 typedef struct
 {
-    uint8_t netId;       ///< Network id the radio uses now (the default while pairing).
-    uint8_t netIdConfig; ///< Configured network id.
-    int frequencyConfig; ///< Configured radio frequency [MHz].
-    uint8_t sfConfig;    ///< Configured LoRa spreading factor.
+    uint8_t netId; ///< Network id the radio uses now (the default while pairing).
 
     uint8_t batteryUsage;    ///< Battery charge [%].
     uint32_t batteryAdc;     ///< Raw ADC sample, written by DMA.
@@ -160,10 +158,6 @@ typedef struct
     uint32_t currentTime;    ///< Unix time of time/date.
     uint8_t isChanging;      ///< Charger reports charging.
     uint8_t isFullBattery;   ///< Charger reports full (standby).
-
-    uint8_t sleepMode;     ///< 1 = the remote may sleep when idle.
-    uint32_t tUpdate;      ///< Link scan period outside SLEEP [s].
-    uint32_t tSleepUpdate; ///< RTC wake-up period in SLEEP [s].
 
     /* New connection process */
     Process_Step_e findDeviceStep;       ///< Device search step.

@@ -37,6 +37,17 @@ slot B is not supported: it would read slot A only.
 If neither slot nor the old format is valid, the defaults are loaded and saved
 to slot A immediately, as before.
 
+## General settings have a single copy
+
+netIdConfig, frequencyConfig, sfConfig, sleepMode, tUpdate and tSleepUpdate are
+no longer duplicated in SystemInfo_t. The application reads and edits them in
+`storageData`; `ScrnCommon_SaveGeneralSettings()` only requests the flash write
+and applies the new periods. `Config_Load()` corrects out-of-range values
+(net id, frequency, SF, intervals) once at start-up.
+
+Device settings still have a runtime copy in `deviceBuff[]` and are copied to
+`storageData.DeviceConfig[]` by the `ScrnCommon_Save*` functions.
+
 ## Verification
 
 Host tests (gcc, flash mocked at the real addresses) covered blank flash,

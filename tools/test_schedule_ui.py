@@ -196,7 +196,7 @@ class TimerUiTests(h.FirmwareHarness):
         self.add(1)
         self.call("ScrnDcs_ShowConnectionError", 1)
         self.assertEqual(self.minutes(), 61)
-        self.assertEqual(self.get(self.system + 80), 0)
+        self.assertEqual(self.get(self.system + 60), 0)
         self.assertEqual(self.creates, 0)
 
 

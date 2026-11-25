@@ -5,6 +5,7 @@
 #include "screens.h"
 #include "image_data.h"
 #include "main.h"
+#include "config_store.h"
 #include "lora.h"
 
 /* Items of the general settings menu (indexOfGeneralSettingMenu). */
@@ -113,7 +114,7 @@ static void init(void)
         createCaption("Enable sleep mode");
         createLabel(&textbox_8, TXB_ID_7, 15, 57, 120, 67, "Yes", C_BLACK, ALIGN_CENTER);
         createLabel(&textbox_9, TXB_ID_8, 15, 70, 120, 80, "No", C_BLACK, ALIGN_CENTER);
-        if (systemInfo.sleepMode == 1)
+        if (storageData.sleepMode == 1)
         {
             UG_TextboxSetBackColor(&window_1, TXB_ID_7, C_DIM_GRAY);
             indexOfSelection = 0;
@@ -132,12 +133,12 @@ static void init(void)
             indexOfGeneralSettingMenu == ITEM_SLEEP_CHECK ? "Sleep check interval" : "Link scan interval");
         if (indexOfGeneralSettingMenu == ITEM_SLEEP_CHECK)
         {
-            sprintf(text, "%04d s", systemInfo.tSleepUpdate);
+            sprintf(text, "%04d s", storageData.tSleepUpdate);
         }
         else
         {
             sprintf(text, "%04d s", indexOfGeneralSettingMenu == ITEM_SLEEP_AFTER ? Link_GetIdleSeconds() :
-                indexOfGeneralSettingMenu == ITEM_LINK_TIMEOUT ? Link_GetTimeoutSeconds() : systemInfo.tUpdate);
+                indexOfGeneralSettingMenu == ITEM_LINK_TIMEOUT ? Link_GetTimeoutSeconds() : storageData.tUpdate);
         }
         createValue(text);
         indexOfEdittingValue = 0;
@@ -146,7 +147,7 @@ static void init(void)
     {
         createButtons(" Inc", "Next", "Dec ");
         createCaption("LoRa network ID");
-        sprintf(text, "%02X", systemInfo.netIdConfig);
+        sprintf(text, "%02X", storageData.netIdConfig);
         createValue(text);
         indexOfEdittingValue = 0;
     }
@@ -154,7 +155,7 @@ static void init(void)
     {
         createButtons(" Inc", "Next", "Dec ");
         createCaption("LoRa frequency (MHz)");
-        sprintf(text, "%03d Mhz", systemInfo.frequencyConfig);
+        sprintf(text, "%03d Mhz", storageData.frequencyConfig);
         createValue(text);
         indexOfEdittingValue = 0;
     }
@@ -221,7 +222,7 @@ static void centerClicked(void)
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE)
     {
-        systemInfo.sleepMode = (indexOfSelection + 1) % 2;
+        storageData.sleepMode = (indexOfSelection + 1) % 2;
     }
     else if (isSecondsItem())
     {
@@ -237,7 +238,7 @@ static void centerClicked(void)
     }
     else if (indexOfGeneralSettingMenu == ITEM_SPREAD_FACTOR)
     {
-        systemInfo.sfConfig = indexOfSelection + SF_7;
+        storageData.sfConfig = indexOfSelection + SF_7;
     }
 
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE || indexOfGeneralSettingMenu == ITEM_SPREAD_FACTOR)
@@ -265,7 +266,7 @@ static void centerPressed(void)
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfGeneralSettingMenu == ITEM_SLEEP_MODE)
     {
-        systemInfo.sleepMode = (indexOfSelection + 1) % 2;
+        storageData.sleepMode = (indexOfSelection + 1) % 2;
     }
     else if (indexOfGeneralSettingMenu == ITEM_SCAN_INTERVAL || indexOfGeneralSettingMenu == ITEM_SLEEP_CHECK)
     {
@@ -281,11 +282,11 @@ static void centerPressed(void)
             }
             if (indexOfGeneralSettingMenu == ITEM_SCAN_INTERVAL)
             {
-                systemInfo.tUpdate = value;
+                storageData.tUpdate = value;
             }
             else
             {
-                systemInfo.tSleepUpdate = value;
+                storageData.tSleepUpdate = value;
             }
         }
         free(valueText);
@@ -300,7 +301,7 @@ static void centerPressed(void)
             Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
             return;
         }
-        systemInfo.netIdConfig = net;
+        storageData.netIdConfig = net;
         free(valueText);
     }
     else if (indexOfGeneralSettingMenu == ITEM_FREQUENCY)
@@ -314,13 +315,13 @@ static void centerPressed(void)
                 Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
                 return;
             }
-            systemInfo.frequencyConfig = value;
+            storageData.frequencyConfig = value;
         }
         free(valueText);
     }
     else if (indexOfGeneralSettingMenu == ITEM_SPREAD_FACTOR)
     {
-        systemInfo.sfConfig = indexOfSelection + SF_7;
+        storageData.sfConfig = indexOfSelection + SF_7;
     }
     else if (indexOfGeneralSettingMenu == ITEM_SLEEP_AFTER || indexOfGeneralSettingMenu == ITEM_LINK_TIMEOUT)
     {
@@ -411,10 +412,10 @@ static void createSpreadFactorList(void)
         y = 57 + i * 13;
         createLabel(boxes[i], TXB_ID_7 + i, 15, y, 120, y + 10, names[i], C_BLACK, ALIGN_CENTER);
     }
-    if (systemInfo.sfConfig >= SF_7 && systemInfo.sfConfig <= SF_12)
+    if (storageData.sfConfig >= SF_7 && storageData.sfConfig <= SF_12)
     {
-        UG_TextboxSetBackColor(&window_1, systemInfo.sfConfig - SF_7 + TXB_ID_7, C_DIM_GRAY);
-        indexOfSelection = systemInfo.sfConfig - SF_7;
+        UG_TextboxSetBackColor(&window_1, storageData.sfConfig - SF_7 + TXB_ID_7, C_DIM_GRAY);
+        indexOfSelection = storageData.sfConfig - SF_7;
     }
     else
     {

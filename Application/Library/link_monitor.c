@@ -1,5 +1,6 @@
 #include "link_monitor.h"
 #include "main.h"
+#include "config_store.h"
 #include "screens.h"
 #include "utility.h"
 #include "remote_history.h"
@@ -12,7 +13,6 @@
 #define LINK_REPLY_TIMEOUT_SECONDS 10
 
 extern SystemInfo_t systemInfo;
-extern SystemStorageData_t storageData;
 extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
 extern osMessageQueueId_t txMsgQueueHandle;
 
@@ -379,7 +379,7 @@ void Link_Tick(void)
 
     /* Start a new probe for the next device that needs one. */
     if (systemInfo.runMode != eSystem_RunMode_Sleep &&
-        uptimeSeconds - lastScan >= systemInfo.tUpdate)
+        uptimeSeconds - lastScan >= storageData.tUpdate)
     {
         scanRequested = 1;
     }

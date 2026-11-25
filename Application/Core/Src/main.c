@@ -270,13 +270,6 @@ int main(void)
   systemInfo.batteryVoltageMin = 3.0f;
   systemInfo.batteryVoltageMax = 4.2f;
   systemInfo.netId = storageData.netIdConfig;
-  systemInfo.netIdConfig = storageData.netIdConfig;
-  systemInfo.frequencyConfig = storageData.frequencyConfig;
-  systemInfo.sfConfig = storageData.sfConfig;
-  systemInfo.sleepMode = storageData.sleepMode == TRUE;
-  systemInfo.tUpdate = storageData.tUpdate >= 1 && storageData.tUpdate <= 9999 ? storageData.tUpdate : 5;
-  systemInfo.tSleepUpdate = storageData.tSleepUpdate >= 1 && storageData.tSleepUpdate <= 9999 ?
-    storageData.tSleepUpdate : 300;
   systemInfo.runMode = eSystem_RunMode_Normal;
 
   /* Device list. */
@@ -1076,10 +1069,10 @@ void Main_ConnectToDevice(void)
   systemInfo.nextNodeId = getNotUsedNodeId();
 
   payload.serial = systemInfo.findDevicefactoryInfo.serial;
-  payload.netId = systemInfo.netIdConfig;
+  payload.netId = storageData.netIdConfig;
   payload.nodeId = systemInfo.nextNodeId;
-  payload.frequency = systemInfo.frequencyConfig;
-  payload.sf = systemInfo.sfConfig;
+  payload.frequency = storageData.frequencyConfig;
+  payload.sf = storageData.sfConfig;
 
   LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
   osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));

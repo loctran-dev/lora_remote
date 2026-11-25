@@ -12,8 +12,8 @@ class LinkTests(harness.FirmwareHarness):
         self.add(0)
         self.put(self.device + 1, 1)
         self.put(self.system, 1)
-        self.put(self.system + 88, 2)  # SystemInfo_t.runMode = eSystem_RunMode_Normal.
-        self.cpu.mem_write(self.system + self.fields["tUpdate"], struct.pack("<I", 1))
+        self.put(self.system + 68, 2)  # SystemInfo_t.runMode = eSystem_RunMode_Normal.
+        self.cpu.mem_write(self.storage + self.fields["tUpdate"], struct.pack("<I", 1))
         self.queue_ok = True
         self.queued, self.alerts = [], []
         self.history_events=[]
@@ -105,7 +105,7 @@ class LinkTests(harness.FirmwareHarness):
         self.assertFalse(self.queued)
 
     def test_sleep_waits_for_rtc_or_radio_scan_request(self):
-        self.put(self.system + 88, 1)
+        self.put(self.system + 68, 1)
         self.at(20)
         self.assertFalse(self.queued)
         self.call("Link_RequestScan")
@@ -200,7 +200,7 @@ class LinkTests(harness.FirmwareHarness):
         self.call("Link_RecordStatusReply",id,transaction)
 
     def test_startup_sync_sends_before_timeout_with_current_clock(self):
-        self.cpu.mem_write(self.system+36,struct.pack("<I",1795046400))
+        self.cpu.mem_write(self.system+28,struct.pack("<I",1795046400))
         self.call("Link_RequestStatusSync")
         self.assertEqual(self.call("Link_IsBusy"),1)
         self.assertEqual(self.queued,[])  # Safe even if requested from USB IRQ.
