@@ -1111,21 +1111,6 @@ void StartSystemTask(void *argument)
 		osMutexAcquire(uiMutex, osWaitForever);
 		Power_Tick();
 		CDC_ProcessEcho_FS();
-//		if ((systemInfo.runMode == SYS_MODE_NORMAL && idleTimeTick > pdMS_TO_TICKS(15000)) ||
-//			(systemInfo.runMode == SYS_MODE_SLEEP && sleepProcessTick > pdMS_TO_TICKS(1000)))
-//		{
-//			LCD_Backlight_Off();
-//			systemInfo.runMode = SYS_MODE_SLEEP;
-//			Main_SetRtcAlarmRelative(300);
-//			
-//			HAL_SuspendTick();
-//			HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-//			//Stop CPU...
-//			
-//			//Resume CPU
-//			SystemClock_Config(); 
-//			HAL_ResumeTick();
-//		}
 		// Read the date time value
 		HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
 		HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
@@ -1280,24 +1265,6 @@ void StartSystemTask(void *argument)
 		}	
 		
 		/* Connection state is owned by Link_Tick(), including sleep-aware retries. */
-//		for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) 
-//		{
-//			if (deviceBuff[devNo].isDelete == FALSE) 
-//			{
-//				if (deviceBuff[devNo].isConnectionError == TRUE || deviceBuff[devNo].isAlarmOccurred == TRUE)
-//				{
-//					deviceBuff[devNo].isSelect = TRUE;
-//					systemInfo.currentWindow = WD_DEVICE_CTRL;
-//					systemInfo.currentTab = WDT_DEV_MESSAGE;
-//					Main_SetBuzzerMode(BUZZER_ALARM_LONG);
-//					systemInfo.lastActionTick = xTaskGetTickCount();
-//					if (systemInfo.runMode == SYS_MODE_SLEEP) 
-//					{
-//						systemInfo.runMode = SYS_MODE_ALARM;
-//					}
-//				}
-//			}
-//		}
 		
 		if (systemInfo.isNeedSaveConfig == TRUE) 
 		{
@@ -1362,52 +1329,6 @@ void StartLcdTask(void *argument)
 		if (LCD_Recover()) UG_WindowShow(&window_1); /* Redraw existing widgets on next tick. */
 		LCD_ProcessProbe();
 		osMutexRelease(uiMutex);
-//		if (systemInfo.runMode == SYS_MODE_NORMAL) 
-//		{
-//			if (lastWindow != systemInfo.currentWindow || lastTab != systemInfo.currentTab) 
-//			{
-////				ST7735_FillScreen(ST7735_BLACK);
-//				lastWindow = systemInfo.currentWindow;
-//				lastTab = systemInfo.currentTab;
-//			}
-//			updateStatusBar(systemInfo);
-//			switch (lastWindow) 
-//			{
-//				case WD_DEVICE_CTRL:
-//				{
-//					for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo ++) 
-//					{
-//						if (deviceBuff[devNo].isDelete == 0 && deviceBuff[devNo].isSelect == 1) 
-//						{
-//							updateCtrlUI(deviceBuff[devNo], systemInfo.currentTab);
-//						}
-//					}
-//				}
-//				break;
-//				case WD_NEW_CONNECTION:
-//					updateConnectionUI(systemInfo.currentTab);
-//				break;
-//				case WD_GENERAL_SETTING:
-//					updateSettingUI(systemInfo.currentTab);
-//				break;
-//			}	
-//		}
-//		else if (systemInfo.runMode == SYS_MODE_ALARM) 
-//		{
-//			static uint8_t blinkState;
-//			if (blinkState == FALSE)
-//			{
-//				LCD_Backlight_On();
-////				ST7735_FillScreen(ST7735_WHITE);
-//				blinkState = TRUE;
-//			}
-//			else 
-//			{
-//				LCD_Backlight_Off();
-////				ST7735_FillScreen(ST7735_WHITE);
-//				blinkState = FALSE;
-//			}
-//		}
     osDelay(200);
   }
   /* USER CODE END StartLcdTask */
