@@ -1311,6 +1311,7 @@ static int8_t storePairedDevice(void)
   storageData.devices[slot].factoryInfo = systemInfo.foundDevice;
   storageData.devices[slot].nodeId = systemInfo.pairNodeId;
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
+  CmdHandler_RequestConfigSync(slot); /* the slave still has its old I/D/A (KI-10) */
   systemInfo.configSavePending = TRUE;
   return slot;
 }
@@ -1459,6 +1460,7 @@ void StartSystemTask(void *argument)
     {
       Link_Tick();
     }
+    CmdHandler_ConfigSyncTick(HAL_GetTick());
     Power_TryStop();
     osMutexRelease(uiMutex);
     osDelay(pdMS_TO_TICKS(100));

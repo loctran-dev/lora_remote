@@ -28,6 +28,8 @@ typedef struct
 extern const CmdMapping_t cmdTable[10];
 
 uint8_t CmdHandler_SendCurrentModuleConfig(void);
+void CmdHandler_RequestConfigSync(uint8_t devNo);
+void CmdHandler_ConfigSyncTick(uint32_t now);
 
 #endif
 /** @} */
