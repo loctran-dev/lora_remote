@@ -146,7 +146,12 @@ uint8_t ScrnCommon_EnsureVisibleDevice(void)
  */
 void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 {
-    selectPosition(nearestVisible(selectionPosition(), direction));
+    int current;
+    int target;
+
+    current = selectionPosition();
+    target = nearestVisible(current, direction);
+    selectPosition(target);
 }
 
 /**
