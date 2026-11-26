@@ -160,6 +160,41 @@ typedef struct PayloadResponseGetStatus_t
 } PayloadResponseGetStatus_t;
 #pragma pack()
 
+/**
+ * @name CMD_GET_STATUS for every motor of a device
+ * A request with moduleIndex = LORA_MODULE_ALL is answered with one
+ * PayloadResponseGetStatusAll_t: a 6-byte header, then count records. The
+ * device sends only the motors it has (1 .. LORA_STATUS_RECORDS_MAX). Its
+ * autonomous reports use the same layout.
+ * @{
+ */
+#define LORA_MODULE_ALL         0xFF ///< moduleIndex meaning "every motor of the device".
+#define LORA_STATUS_RECORDS_MAX 6    ///< Largest count in PayloadResponseGetStatusAll_t.
+
+/** @brief Status of one motor inside PayloadResponseGetStatusAll_t (13 bytes). */
+#pragma pack(1)
+typedef struct PayloadStatusRecord_t
+{
+    uint8_t moduleIndex;      ///< Motor module, 0 .. LORA_STATUS_RECORDS_MAX-1.
+    uint8_t result;           ///< 1 = valid status.
+    uint8_t powerState;       ///< A Motor_PowerState_e value.
+    uint16_t phaseCurrent[3]; ///< Phase currents [0.01 A].
+    uint32_t scheduleTime;    ///< Unix time of the pending switch-off; 0 = none.
+} PayloadStatusRecord_t;
+#pragma pack()
+
+/** @brief Response payload of CMD_GET_STATUS with moduleIndex LORA_MODULE_ALL; only count records are sent. */
+#pragma pack(1)
+typedef struct PayloadResponseGetStatusAll_t
+{
+    uint8_t moduleIndex; ///< LORA_MODULE_ALL.
+    uint32_t localTime;  ///< Device Unix time.
+    uint8_t count;       ///< Records that follow, 1 .. LORA_STATUS_RECORDS_MAX.
+    PayloadStatusRecord_t records[LORA_STATUS_RECORDS_MAX]; ///< One per motor.
+} PayloadResponseGetStatusAll_t;
+#pragma pack()
+/** @} */
+
 /** @brief Response payload of CMD_GET_FACTORY_INFO. */
 #pragma pack(1)
 typedef struct PayloadResponseGetFactoryInfo_t
@@ -203,6 +238,7 @@ uint8_t Comm_ParsePayloadReqSyncTime(LoraPackage_t package, PayloadRequestSyncTi
 uint8_t Comm_ParsePayloadReqConfigConnection(LoraPackage_t package, PayloadRequestConfigConnection_t *payload);
 uint8_t Comm_ParsePayloadReqAlarm(LoraPackage_t package, PayloadRequestAlarm_t *payload);
 uint8_t Comm_ParsePayloadResGetStatus(LoraPackage_t package, PayloadResponseGetStatus_t *payload);
+uint8_t Comm_ParsePayloadResGetStatusAll(LoraPackage_t package, PayloadResponseGetStatusAll_t *payload);
 uint8_t Comm_ParsePayloadResGetFactoryInfo(LoraPackage_t package, PayloadResponseGetFactoryInfo_t *payload);
 uint8_t Comm_ParsePayloadResConfigConnection(LoraPackage_t package, PayloadResponseConfigConnection_t *payload);
 

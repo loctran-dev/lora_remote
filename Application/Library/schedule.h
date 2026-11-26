@@ -46,8 +46,8 @@ typedef struct Schedule_RequestState_t
 
 void Schedule_Track(const LoraPackage_t *packet, const PayloadRequestSetSchedule_t *payload);
 void Schedule_QueueFailed(void);
-void Schedule_CancelForNode(uint8_t node);
-Schedule_State_e Schedule_GetStateForNode(uint8_t node);
+void Schedule_CancelForMotor(uint8_t node, uint8_t module);
+Schedule_State_e Schedule_GetStateForMotor(uint8_t node, uint8_t module);
 
 /* Transmit path */
 

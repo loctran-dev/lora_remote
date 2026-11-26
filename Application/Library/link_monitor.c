@@ -471,7 +471,7 @@ static void sendProbe(void)
     PayloadRequestGetStatus_t payload;
     LoraPackage_t packet;
 
-    payload.moduleIndex = 0;
+    payload.moduleIndex = LORA_MODULE_ALL; /* one reply refreshes every motor of the device */
     /* Never overwrite a slave's valid clock with the default January 2000 RTC. */
     payload.syncTime = systemInfo.currentTime >= 1704067200u ? systemInfo.currentTime : 0;
     packet = Comm_CreateReqGetStatus(systemInfo.netId, storageData.devices[id].nodeId, payload);

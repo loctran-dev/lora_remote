@@ -1,5 +1,6 @@
 #include "communication_lora.h"
 #include "string.h"
+#include <stddef.h>
 #include "utility.h"
 #include "lora.h"
 #include "main.h"
@@ -329,6 +330,35 @@ uint8_t Comm_ParsePayloadResGetStatus(LoraPackage_t package, PayloadResponseGetS
     }
     memset(payload, 0x00, sizeof(PayloadResponseGetStatus_t));
     memcpy(payload, &package.rawData[LORA_PACKAGE_HEADER_SIZE], payloadLength);
+    return TRUE;
+}
+
+/**
+ * @brief  Copy the payload of a CMD_GET_STATUS response for every motor (moduleIndex LORA_MODULE_ALL).
+ * @param  package  Received frame.
+ * @param  payload  Filled on success; records beyond count are zero.
+ * @return TRUE if the code and marker match, count is 1 .. LORA_STATUS_RECORDS_MAX
+ *         and the payload holds exactly count records, FALSE otherwise.
+ */
+uint8_t Comm_ParsePayloadResGetStatusAll(LoraPackage_t package, PayloadResponseGetStatusAll_t *payload)
+{
+    int payloadLength = package.byteCount - LORA_PACKAGE_HEADER_SIZE - sizeof(package.checkSum);
+    const uint8_t *data = &package.rawData[LORA_PACKAGE_HEADER_SIZE];
+    uint8_t count;
+
+    if (package.code != CMD_GET_STATUS || payloadLength < (int)offsetof(PayloadResponseGetStatusAll_t, records) ||
+        data[0] != LORA_MODULE_ALL)
+    {
+        return FALSE;
+    }
+    count = data[offsetof(PayloadResponseGetStatusAll_t, count)];
+    if (count == 0 || count > LORA_STATUS_RECORDS_MAX ||
+        payloadLength != (int)(offsetof(PayloadResponseGetStatusAll_t, records) + count * sizeof(PayloadStatusRecord_t)))
+    {
+        return FALSE;
+    }
+    memset(payload, 0x00, sizeof(PayloadResponseGetStatusAll_t));
+    memcpy(payload, data, payloadLength);
     return TRUE;
 }
 

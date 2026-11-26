@@ -235,6 +235,9 @@ class LinkTests(harness.FirmwareHarness):
         self.assertEqual(len(self.queued),3)
         self.assertEqual(self.alerts,[0])
         self.assertEqual(self.call("Link_IsBusy"),0)
+    def test_probe_asks_for_every_module_of_the_device(self):
+        self.call("Link_RequestStatusSync");self.at(0)
+        self.assertEqual(self.queued[-1][27],0xFF)  # moduleIndex = LORA_MODULE_ALL
     def test_unset_remote_clock_is_not_sent_as_a_sync_timestamp(self):
         self.call("Link_RequestStatusSync");self.at(0)
         self.assertEqual(struct.unpack_from("<I",self.queued[-1],28)[0],0)

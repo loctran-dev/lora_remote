@@ -30,6 +30,8 @@ static void handleSyncTime(LoraPackage_t packet);
 static void handleGetFactoryInfo(LoraPackage_t packet);
 static void handleConfigConnection(LoraPackage_t packet);
 static void handleAlarmMessage(LoraPackage_t packet);
+static void applyMotorStatus(uint8_t devNo, const LoraPackage_t *packet, const PayloadStatusRecord_t *record,
+    uint32_t localTime);
 
 /* Command dispatch table. Keep this order aligned with implementations below. */
 const CmdMapping_t cmdTable[] = {
@@ -102,9 +104,17 @@ static void handleSetConfig(LoraPackage_t packet)
     Main_SetBuzzerMode(reply.result ? eBuzzer_Mode_2ShortBeep : eBuzzer_Mode_LongBeep);
 }
 
+/*
+ * Status of one motor (moduleIndex 0..5) or of every motor of the device
+ * (moduleIndex LORA_MODULE_ALL, also used by autonomous reports). Both forms
+ * are brought to the multi-record layout, then each valid record updates the
+ * state and tracked schedule of its own module.
+ */
 static void handleGetStatus(LoraPackage_t fwPackage)
 {
-    PayloadResponseGetStatus_t payloadResponse;
+    PayloadResponseGetStatusAll_t status;
+    PayloadResponseGetStatus_t single;
+    uint8_t valid = 0;
 
     if ((fwPackage.netId != systemInfo.netId) ||
         (fwPackage.nodeId == LORA_NODE_ID_DEFAULT || fwPackage.nodeId == LORA_NODE_ID_BROADCAST) ||
@@ -116,11 +126,25 @@ static void handleGetStatus(LoraPackage_t fwPackage)
     {
         return;
     }
-    if (Comm_ParsePayloadResGetStatus(fwPackage, &payloadResponse) == FALSE)
+    if (Comm_ParsePayloadResGetStatusAll(fwPackage, &status) == FALSE)
     {
-        return;
+        if (Comm_ParsePayloadResGetStatus(fwPackage, &single) == FALSE)
+        {
+            return;
+        }
+        status.localTime = single.localTime;
+        status.count = 1;
+        status.records[0].moduleIndex = single.moduleIndex;
+        status.records[0].result = single.result;
+        status.records[0].powerState = single.powerState;
+        memcpy(status.records[0].phaseCurrent, single.phaseCurrent, sizeof(single.phaseCurrent));
+        status.records[0].scheduleTime = single.scheduleTime;
     }
-    if (payloadResponse.result != 1 || payloadResponse.moduleIndex != 0)
+    for (uint8_t i = 0; i < status.count; i++)
+    {
+        valid |= status.records[i].result == 1 && status.records[i].moduleIndex < MAXIMUM_MODULE;
+    }
+    if (!valid)
     {
         return;
     }
@@ -129,24 +153,47 @@ static void handleGetStatus(LoraPackage_t fwPackage)
     {
         if (storageData.devices[devNo].deleted == 0 && storageData.devices[devNo].nodeId == fwPackage.nodeId)
         {
-            MotorData_t *motor = Main_MotorState(devNo, 0);
-
             Link_RecordPacket(devNo, 1);
             Link_RecordStatusReply(devNo, fwPackage.transactionID);
-            devicesInfo[devNo].devTime = payloadResponse.localTime;
-            Schedule_HandleStatus(&fwPackage, &payloadResponse);
-            if (motor)
+            devicesInfo[devNo].devTime = status.localTime;
+            for (uint8_t i = 0; i < status.count; i++)
             {
-                motor->pwrState = (Motor_PowerState_e)payloadResponse.powerState;
-                motor->autoOffTime = payloadResponse.scheduleTime;
-                motor->phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
-                motor->phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
-                motor->phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
+                applyMotorStatus(devNo, &fwPackage, &status.records[i], status.localTime);
             }
             devicesInfo[devNo].lastRxTick = xTaskGetTickCount();
             devicesInfo[devNo].lastRxTime = systemInfo.currentTime;
             devicesInfo[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
+    }
+}
+
+/* One status record: confirm a matching schedule, then store it in the motor's state if it has a slot. */
+static void applyMotorStatus(uint8_t devNo, const LoraPackage_t *packet, const PayloadStatusRecord_t *record,
+    uint32_t localTime)
+{
+    PayloadResponseGetStatus_t status;
+    MotorData_t *motor;
+
+    if (record->result != 1 || record->moduleIndex >= MAXIMUM_MODULE)
+    {
+        return;
+    }
+    status.moduleIndex = record->moduleIndex;
+    status.result = record->result;
+    status.powerState = record->powerState;
+    memcpy(status.phaseCurrent, record->phaseCurrent, sizeof(status.phaseCurrent));
+    status.localTime = localTime;
+    status.scheduleTime = record->scheduleTime;
+    Schedule_HandleStatus(packet, &status);
+
+    motor = Main_MotorState(devNo, record->moduleIndex);
+    if (motor)
+    {
+        motor->pwrState = (Motor_PowerState_e)record->powerState;
+        motor->autoOffTime = record->scheduleTime;
+        motor->phaseCurrent[0] = (float)record->phaseCurrent[0] * 0.01f;
+        motor->phaseCurrent[1] = (float)record->phaseCurrent[1] * 0.01f;
+        motor->phaseCurrent[2] = (float)record->phaseCurrent[2] * 0.01f;
     }
 }
 
@@ -330,7 +377,7 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
     {
         return;
     }
-    if (fwPackage.type != LORA_PACKAGE_TYPE_REQUEST || payloadRequest.moduleIndex != 0)
+    if (fwPackage.type != LORA_PACKAGE_TYPE_REQUEST || payloadRequest.moduleIndex >= MAXIMUM_MODULE)
     {
         return;
     }
@@ -340,7 +387,7 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
     {
         if (storageData.devices[devNo].deleted == 0 && storageData.devices[devNo].nodeId == fwPackage.nodeId)
         {
-            MotorData_t *motor = Main_MotorState(devNo, 0);
+            MotorData_t *motor = Main_MotorState(devNo, payloadRequest.moduleIndex);
 
             Power_WakeForError();
             if (motor)

@@ -16,7 +16,7 @@ class MotorNavigationTests(h.FirmwareHarness):
     def setUp(self):
         super().setUp()
         self.queued = 0
-        names = ["Main_SetBuzzerMode", "osMessageQueuePut", "ScrnDcs_ShowMotorLocked", "Schedule_CancelForNode"]
+        names = ["Main_SetBuzzerMode", "osMessageQueuePut", "ScrnDcs_ShowMotorLocked", "Schedule_CancelForMotor"]
         hooks = {h.symbol(n)[0] & ~1: n for n in names}
 
         def intercept(cpu, address, size, data):

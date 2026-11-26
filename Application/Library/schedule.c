@@ -43,26 +43,28 @@ void Schedule_QueueFailed(void)
 }
 
 /**
- * @brief  Stop tracking the request for a node.
- * @param  node  Node id; ignored if it is not the tracked node.
- * @note   Called before a power command, which replaces the schedule.
+ * @brief  Stop tracking the request for one motor.
+ * @param  node    Node id of its device.
+ * @param  module  Module index; another motor's request on the same node is kept.
+ * @note   Called before a power command, which replaces that motor's schedule.
  */
-void Schedule_CancelForNode(uint8_t node)
+void Schedule_CancelForMotor(uint8_t node, uint8_t module)
 {
-    if (scheduleRequest.node == node)
+    if (scheduleRequest.node == node && scheduleRequest.module == module)
     {
         scheduleRequest.state = eSchedule_State_Idle;
     }
 }
 
 /**
- * @brief  State of the request for a node.
- * @param  node  Node id.
- * @return The tracked state, or eSchedule_State_Idle for another node.
+ * @brief  State of the request for one motor.
+ * @param  node    Node id of its device.
+ * @param  module  Module index.
+ * @return The tracked state, or eSchedule_State_Idle for another motor.
  */
-Schedule_State_e Schedule_GetStateForNode(uint8_t node)
+Schedule_State_e Schedule_GetStateForMotor(uint8_t node, uint8_t module)
 {
-    if (scheduleRequest.node != node)
+    if (scheduleRequest.node != node || scheduleRequest.module != module)
     {
         return eSchedule_State_Idle;
     }
@@ -153,7 +155,7 @@ void Schedule_Tick(void)
 }
 
 /**
- * @brief  Confirm the request when a status report shows the same schedule.
+ * @brief  Confirm the request when a status report of the same motor shows the same schedule.
  * @param  packet   Received CMD_GET_STATUS response.
  * @param  payload  Its payload.
  */
@@ -161,7 +163,8 @@ void Schedule_HandleStatus(const LoraPackage_t *packet, const PayloadResponseGet
 {
     if ((scheduleRequest.state != eSchedule_State_Waiting &&
          scheduleRequest.state != eSchedule_State_Timeout) ||
-        packet->nodeId != scheduleRequest.node || payload->scheduleTime != scheduleRequest.deadline ||
+        packet->nodeId != scheduleRequest.node || payload->moduleIndex != scheduleRequest.module ||
+        payload->scheduleTime != scheduleRequest.deadline ||
         (scheduleRequest.deadline && payload->powerState != eMotor_PowerState_On))
     {
         return;

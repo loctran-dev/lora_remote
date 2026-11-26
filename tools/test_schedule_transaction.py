@@ -130,7 +130,7 @@ class TimerTransactionTests(h.FirmwareHarness):
 
     def test_other_node_cancel_does_not_cancel_current_request(self):
         self.start()
-        self.call("Schedule_CancelForNode", 2)
+        self.call("Schedule_CancelForMotor", 2, 0)
         self.assertEqual(self.state(), 1)
 
     def test_expired_deadline_is_not_retransmitted(self):
@@ -150,7 +150,7 @@ class TimerTransactionTests(h.FirmwareHarness):
 
     def test_ack_after_explicit_cancel_cannot_restore_old_timer(self):
         self.start()
-        self.call("Schedule_CancelForNode", 1)
+        self.call("Schedule_CancelForMotor", 1, 0)
         self.reply()
         self.assertEqual(self.state(), 0)
         deadline = int.from_bytes(self.cpu.mem_read(self.state_of(0) + self.fields_timer["autoOffTime"], 4), "little")

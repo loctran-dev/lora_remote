@@ -964,7 +964,7 @@ void Main_SetMotorPower(uint8_t motorPower)
 
   if (storageData.devices[systemInfo.curDevice].deleted == FALSE)
   {
-    Schedule_CancelForNode(storageData.devices[systemInfo.curDevice].nodeId);
+    Schedule_CancelForMotor(storageData.devices[systemInfo.curDevice].nodeId, systemInfo.curModule);
     LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.devices[systemInfo.curDevice].nodeId,
       systemInfo.curModule, motorPower);
     osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
