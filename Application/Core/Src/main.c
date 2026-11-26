@@ -49,7 +49,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define PAIRING_TIMEOUT_MS 5000 ///< Wait for the reply to a search or connection request.
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -174,6 +174,11 @@ static int8_t findPairedSlot(uint32_t serial);
 static int8_t pairingSlot(void);
 static int8_t storePairedDevice(void);
 static void handleButton(Button_t *button, void (*onClick)(void), void (*onLongPress)(void));
+static uint8_t pairingScreenAt(uint8_t step);
+static void showPairingStep(uint8_t step);
+static uint8_t pairingTimedOut(uint32_t startTick);
+static void handlePairingSearch(void);
+static void handlePairingConnection(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -1324,6 +1329,70 @@ static void handleButton(Button_t *button, void (*onClick)(void), void (*onLongP
     onLongPress();
   }
 }
+/* Whether the pairing screen is open and still shows step. */
+static uint8_t pairingScreenAt(uint8_t step)
+{
+  return currentScreen == &devicePairingScreen && pairingUI_Step == step;
+}
+
+/* Redraw the pairing screen at a new step. */
+static void showPairingStep(uint8_t step)
+{
+  pairingUI_Step = step;
+  currentScreen->init();
+}
+
+/* Whether a request sent at startTick has waited PAIRING_TIMEOUT_MS without a reply. */
+static uint8_t pairingTimedOut(uint32_t startTick)
+{
+  return xTaskGetTickCount() - startTick > pdMS_TO_TICKS(PAIRING_TIMEOUT_MS);
+}
+
+/* Show the result of the device search: FOUND on a reply, NOT_FOUND on timeout. */
+static void handlePairingSearch(void)
+{
+  if (systemInfo.searchStep == eProcess_Step_Done)
+  {
+    if (pairingScreenAt(PAIRING_STATE_SEARCHING) && systemInfo.searchResult == eProcess_Result_Passed)
+    {
+      systemInfo.foundDevice.typeChar = deviceTypeChar(systemInfo.foundDevice.type);
+      showPairingStep(PAIRING_STATE_FOUND);
+    }
+    systemInfo.searchStep = eProcess_Step_None;
+  }
+  else if (systemInfo.searchStep == eProcess_Step_Processing && pairingTimedOut(systemInfo.searchTick))
+  {
+    if (pairingScreenAt(PAIRING_STATE_SEARCHING))
+    {
+      showPairingStep(PAIRING_STATE_NOT_FOUND);
+    }
+    systemInfo.searchStep = eProcess_Step_None;
+  }
+}
+
+/* Store the device once it accepted the connection: SUCCESS, or FAILED on timeout or no room. */
+static void handlePairingConnection(void)
+{
+  uint8_t step;
+
+  if (systemInfo.connectStep == eProcess_Step_Done)
+  {
+    if (pairingScreenAt(PAIRING_STATE_CONNECTING) && systemInfo.connectResult == eProcess_Result_Passed)
+    {
+      step = storePairedDevice() >= 0 ? PAIRING_STATE_SUCCESS : PAIRING_STATE_FAILED;
+      showPairingStep(step);
+    }
+    systemInfo.connectStep = eProcess_Step_None;
+  }
+  else if (systemInfo.connectStep == eProcess_Step_Processing && pairingTimedOut(systemInfo.connectTick))
+  {
+    if (pairingScreenAt(PAIRING_STATE_CONNECTING))
+    {
+      showPairingStep(PAIRING_STATE_FAILED);
+    }
+    systemInfo.connectStep = eProcess_Step_None;
+  }
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartSystemTask */
@@ -1368,67 +1437,9 @@ void StartSystemTask(void *argument)
     handleButton(&onButton, currentScreen->bleftButtonClickedCallback, currentScreen->bleftButtonPressedCallback);
     handleButton(&offButton, currentScreen->brightButtonClickedCallback, currentScreen->brightButtonPressedCallback);
 
-    /* Device search. */
-    if (systemInfo.searchStep == eProcess_Step_Done)
-    {
-      if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
-        systemInfo.searchResult == eProcess_Result_Passed)
-      {
-        systemInfo.foundDevice.typeChar = deviceTypeChar(systemInfo.foundDevice.type);
-        pairingUI_Step = PAIRING_STATE_FOUND;
-        currentScreen = &devicePairingScreen;
-        currentScreen->init();
-      }
-      systemInfo.searchStep = eProcess_Step_None;
-    }
-    else if (systemInfo.searchStep == eProcess_Step_Processing)
-    {
-      if (xTaskGetTickCount() - systemInfo.searchTick > pdMS_TO_TICKS(5000))
-      {
-        if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING)
-        {
-          pairingUI_Step = PAIRING_STATE_NOT_FOUND;
-          currentScreen = &devicePairingScreen;
-          currentScreen->init();
-        }
-        systemInfo.searchStep = eProcess_Step_None;
-      }
-    }
-
-    /* Device connection. */
-    if (systemInfo.connectStep == eProcess_Step_Done)
-    {
-      if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING &&
-        systemInfo.connectResult == eProcess_Result_Passed)
-      {
-        if (storePairedDevice() >= 0)
-        {
-          pairingUI_Step = PAIRING_STATE_SUCCESS;
-          currentScreen = &devicePairingScreen;
-          currentScreen->init();
-        }
-        else
-        {
-          pairingUI_Step = PAIRING_STATE_FAILED;
-          currentScreen = &devicePairingScreen;
-          currentScreen->init();
-        }
-      }
-      systemInfo.connectStep = eProcess_Step_None;
-    }
-    else if (systemInfo.connectStep == eProcess_Step_Processing)
-    {
-      if (xTaskGetTickCount() - systemInfo.connectTick > pdMS_TO_TICKS(5000))
-      {
-        if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING)
-        {
-          pairingUI_Step = PAIRING_STATE_FAILED;
-          currentScreen = &devicePairingScreen;
-          currentScreen->init();
-        }
-        systemInfo.connectStep = eProcess_Step_None;
-      }
-    }
+    /* Pairing: device search, then connection. */
+    handlePairingSearch();
+    handlePairingConnection();
 
     /* Connection state is owned by Link_Tick(), including sleep-aware retries. */
 
