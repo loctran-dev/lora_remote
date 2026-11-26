@@ -103,13 +103,6 @@ issues under "Open" with the same fields.
 - Fix: add a module field to the journal format on both firmwares, with a
   migration for stored journals.
 
-### KI-13: Flash_WriteData is dead code
-
-- Where: `Application/Library/flash.c:74`, `flash.h:17`.
-- Problem: no caller since config_store uses Flash_Erase/Flash_Program; the
-  linker drops it.
-- Fix: remove it from flash.c/flash.h.
-
 ### KI-14: config_store host test has not been run since CFG3
 
 - Where: `tools/config_store_host/test_config.c` (`tools/test_config_store.py`).
@@ -121,6 +114,12 @@ issues under "Open" with the same fields.
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
 ## Fixed
+
+### KI-13: Flash_WriteData is dead code
+
+- Fixed: 2026-11-27, commit "refactor: remove dead Flash_WriteData (KI-13)".
+- How: removed from flash.c/flash.h. The linker already dropped it, so the
+  application binary is unchanged (CRC32 E80B8C75).
 
 ### KI-10: Pairing resets motor settings on the remote but not on the slave
 

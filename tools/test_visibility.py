@@ -300,8 +300,7 @@ class VisibilityTests(FirmwareHarness):
         self.cpu.hook_add(UC_HOOK_CODE, intercept)
         return calls
 
-    # Flash_WriteData() has no caller since config_store, so the linker drops it;
-    # Config_Save() uses Flash_Erase() + Flash_Program(), which are checked here.
+    # Config_Save() writes through Flash_Erase() + Flash_Program(), checked here.
     def test_flash_byte_count_not_word_count(self):
         calls = self.flash_mocks()
         source = 0x20008000

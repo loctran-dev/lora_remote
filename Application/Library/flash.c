@@ -62,23 +62,3 @@ uint32_t Flash_Program(uint32_t address, const uint32_t *data, uint16_t length)
     HAL_FLASH_Lock();
     return 0;
 }
-
-/**
- * @brief  Erase the pages covering the data, then program it word by word.
- * @param  address  Page-aligned flash address.
- * @param  data     Data to write.
- * @param  length   Data size [bytes]; the last word is padded with 0xFF.
- * @return 0 on success, otherwise the HAL flash error code.
- * @warning Erases whole 2 KiB pages; anything else in them is lost.
- */
-uint32_t Flash_WriteData(uint32_t address, uint32_t *data, uint16_t length)
-{
-    uint32_t error;
-
-    error = Flash_Erase(address, length);
-    if (error)
-    {
-        return error;
-    }
-    return Flash_Program(address, data, length);
-}
