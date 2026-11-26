@@ -49,9 +49,9 @@ issues under "Open" with the same fields.
   after the update.
 - Status: waiting for owner decision. Is this one-time wipe intended? If not,
   add a CFG2 -> CFG3 conversion (move each DeviceConfig's motor fields into
-  MotorConfig module 0) before the defaults fallback.
+  storageData.motors module 0) before the defaults fallback.
 
-### KI-4: Editing a motor without a MotorConfig slot is lost silently
+### KI-4: Editing a motor without a storageData.motors slot is lost silently
 
 - Where: `Application/Library/screen_edss.c:1615`; ScrnCommon_CurrentMotor().
 - Problem: when Config_Motor() returns NULL, a static placeholder (re-zeroed on

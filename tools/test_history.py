@@ -163,11 +163,11 @@ class JournalTests(unittest.TestCase):
     def globals_for_sync(self):
         if REMOTE:
             self.call("RemoteHistory_Init")
-            system=symbol("systemInfo"); config=symbol("storageData")+15  # DeviceConfig[0]
+            system=symbol("systemInfo"); config=symbol("storageData")+15  # devices[0]
             self.cpu.mem_write(system,b"\x01")
             self.cpu.mem_write(config+0,b"\x01")  # nodeId
             self.cpu.mem_write(config+1,struct.pack("<I",0xabcdef01))  # factoryInfo.serial
-            motors=symbol("storageData")+215  # MotorConfig[40], 32 bytes each
+            motors=symbol("storageData")+215  # motors[40], 32 bytes each
             for slot in range(40):self.cpu.mem_write(motors+slot*32,b"\xff")  # free
             self.cpu.mem_write(motors,b"\x00\x00Default\x00")  # device 0, module 0
         else:

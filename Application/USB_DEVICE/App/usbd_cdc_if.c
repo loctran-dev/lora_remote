@@ -461,9 +461,9 @@ void CDC_ProcessEcho_FS(void)
     {
       echoLength = sprintf((char*)UserRxBufferFS,
         "CONFIG NET=%u FREQ=%d SF=%u SLEEP=%u UPDATE=%lu SLEEP_UPDATE=%lu ACTIVE_NET=%u ACTIVE_FREQ=%u ACTIVE_SF=%u IDLE=%u LOST=%u AUTO=%u\n",
-        storageData.netIdConfig, storageData.frequencyConfig, storageData.sfConfig,
-        storageData.sleepMode, (unsigned long)storageData.tUpdate,
-        (unsigned long)storageData.tSleepUpdate, systemInfo.netId,
+        storageData.netId, storageData.freqMhz, storageData.spreadFactor,
+        storageData.sleepEnabled, (unsigned long)storageData.scanPeriod,
+        (unsigned long)storageData.sleepScanPeriod, systemInfo.netId,
         sLoRaCtrl.frequency, sLoRaCtrl.spredingFactor, Link_GetIdleSeconds(),
         Link_GetTimeoutSeconds(), Link_GetAutoStatus(systemInfo.curDevice));
       responsePrepared = 1;

@@ -84,7 +84,7 @@ void ScrnCommon_Switch(Screen_t *next)
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
-    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].deleted && !Config_DeviceHidden(id);
+    return id < MAXIMUM_DEVICE && !storageData.devices[id].deleted && !Config_DeviceHidden(id);
 }
 
 /**
@@ -96,7 +96,7 @@ uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module)
 {
     const MotorStorageData_t *motor;
 
-    if (device >= MAXIMUM_DEVICE || storageData.DeviceConfig[device].deleted)
+    if (device >= MAXIMUM_DEVICE || storageData.devices[device].deleted)
     {
         return 0;
     }
@@ -156,7 +156,7 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 
 /**
  * @brief  Settings of the selected motor (systemInfo.curDevice/curModule).
- * @return Its MotorConfig slot, or a blank placeholder if it has none, so screens
+ * @return Its storageData.motors slot, or a blank placeholder if it has none, so screens
  *         never dereference NULL; writes to the placeholder are discarded.
  */
 MotorStorageData_t *ScrnCommon_CurrentMotor(void)
@@ -194,7 +194,7 @@ MotorData_t *ScrnCommon_CurrentMotorState(void)
 
 /**
  * @brief  Display name of a motor.
- * @return Its stored name, or "Default" if it has no MotorConfig slot.
+ * @return Its stored name, or "Default" if it has no storageData.motors slot.
  */
 const char *ScrnCommon_MotorName(uint8_t device, uint8_t module)
 {
@@ -564,10 +564,10 @@ static int nearestVisible(int position, int8_t direction)
 
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        const MotorStorageData_t *motor = &storageData.MotorConfig[slot];
+        const MotorStorageData_t *motor = &storageData.motors[slot];
 
         if (motor->device >= MAXIMUM_DEVICE || motor->module >= MAXIMUM_MODULE ||
-            storageData.DeviceConfig[motor->device].deleted || motor->hidden)
+            storageData.devices[motor->device].deleted || motor->hidden)
         {
             continue;
         }

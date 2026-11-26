@@ -12,7 +12,7 @@
  * Slots carry the magic "CFG3". Blocks of older formats are not read; a board
  * holding only those starts from the defaults.
  *
- * Motor settings live in the shared pool storageData.MotorConfig; a device gets
+ * Motor settings live in the shared pool storageData.motors; a device gets
  * one slot per module when it is paired. Find a motor's slot with Config_Motor().
  *
  * @defgroup config Configuration storage

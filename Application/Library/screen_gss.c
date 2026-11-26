@@ -78,22 +78,22 @@ static void render(void)
         switch (item)
         {
             case 0:
-                strcpy(value, storageData.sleepMode ? "Yes" : "No");
+                strcpy(value, storageData.sleepEnabled ? "Yes" : "No");
                 break;
             case 1:
-                sprintf(value, "%lu s", (unsigned long)storageData.tUpdate);
+                sprintf(value, "%lu s", (unsigned long)storageData.scanPeriod);
                 break;
             case 2:
-                sprintf(value, "%lu s", (unsigned long)storageData.tSleepUpdate);
+                sprintf(value, "%lu s", (unsigned long)storageData.sleepScanPeriod);
                 break;
             case 3:
-                sprintf(value, "%02X", storageData.netIdConfig);
+                sprintf(value, "%02X", storageData.netId);
                 break;
             case 4:
-                sprintf(value, "%d MHz", storageData.frequencyConfig);
+                sprintf(value, "%d MHz", storageData.freqMhz);
                 break;
             case 5:
-                sprintf(value, "SF%u", storageData.sfConfig);
+                sprintf(value, "SF%u", storageData.spreadFactor);
                 break;
             case 6:
                 sprintf(value, "%u s", Link_GetIdleSeconds());

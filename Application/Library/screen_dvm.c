@@ -62,7 +62,7 @@ static void init(void)
     managerPage = 0xFF;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted)
+        if (!storageData.devices[id].deleted)
         {
             managerIds[managerCount++] = id;
         }
@@ -116,7 +116,7 @@ static void render(void)
         {
             UG_TextboxShow(&window_1, id);
         }
-        device = &storageData.DeviceConfig[managerIds[item]];
+        device = &storageData.devices[managerIds[item]];
         snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
             device->factoryInfo.typeChar, managerIds[item] + 1,
             Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible",

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#define CONFIG_MAGIC 0x33474643u /* "CFG3": SystemStorageData_t with the MotorConfig pool */
+#define CONFIG_MAGIC 0x33474643u /* "CFG3": SystemStorageData_t with the storageData.motors pool */
 
 /* Header at the start of each slot; the payload follows it. */
 typedef struct
@@ -79,7 +79,7 @@ uint32_t Config_Save(void)
     uint32_t address = target ? CONFIG_SLOT_B : CONFIG_SLOT_A;
     uint32_t error;
 
-    storageData.lastWriteSuccess = TRUE;
+    storageData.reserved = TRUE;
     header.sequence = activeSequence + 1;
     header.length = sizeof(storageData);
     header.reserved = 0xFFFFu;
@@ -116,7 +116,7 @@ uint32_t Config_Save(void)
 
 /**
  * @brief  Settings slot of a motor.
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  * @param  module  Module index on that device.
  * @return The slot, or NULL if the motor has none (not paired, or the pool was full).
  */
@@ -124,12 +124,12 @@ MotorStorageData_t *Config_Motor(uint8_t device, uint8_t module)
 {
     int8_t slot = Config_MotorSlot(device, module);
 
-    return slot < 0 ? NULL : &storageData.MotorConfig[slot];
+    return slot < 0 ? NULL : &storageData.motors[slot];
 }
 
 /**
  * @brief  Pool index of a motor; motorBuff uses the same index for its runtime state.
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  * @param  module  Module index on that device.
  * @return 0 .. MAXIMUM_MOTOR-1, or -1 if the motor has no slot.
  */
@@ -137,7 +137,7 @@ int8_t Config_MotorSlot(uint8_t device, uint8_t module)
 {
     for (int8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == device && storageData.MotorConfig[slot].module == module)
+        if (storageData.motors[slot].device == device && storageData.motors[slot].module == module)
         {
             return slot;
         }
@@ -160,7 +160,7 @@ uint8_t Config_ModuleCount(uint8_t numberOfModule)
 
 /**
  * @brief  Whether a device could get count motor slots, reusing the slots it holds.
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  * @param  count   Motors needed.
  */
 uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count)
@@ -169,8 +169,8 @@ uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count)
 
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == MOTOR_SLOT_FREE ||
-            storageData.MotorConfig[slot].device == device)
+        if (storageData.motors[slot].device == MOTOR_SLOT_FREE ||
+            storageData.motors[slot].device == device)
         {
             available++;
         }
@@ -184,7 +184,7 @@ uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count)
  * The slots the device held before are released first. Nothing changes if the
  * pool cannot hold count motors.
  *
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  * @param  count   Motors, 1 .. MAXIMUM_MODULE.
  * @return TRUE on success, FALSE if the pool is too full.
  * @note   Flash is written later by systemTask (configSavePending); the caller sets it.
@@ -205,28 +205,28 @@ uint8_t Config_AllocateMotors(uint8_t device, uint8_t count)
 
 /**
  * @brief  Release every motor slot of a device (unpairing).
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  */
 void Config_FreeMotors(uint8_t device)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == device)
+        if (storageData.motors[slot].device == device)
         {
-            freeMotorSlot(&storageData.MotorConfig[slot]);
+            freeMotorSlot(&storageData.motors[slot]);
         }
     }
 }
 
 /**
  * @brief  Whether a device has no visible motor (all hidden, or none allocated).
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  */
 uint8_t Config_DeviceHidden(uint8_t device)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == device && !storageData.MotorConfig[slot].hidden)
+        if (storageData.motors[slot].device == device && !storageData.motors[slot].hidden)
         {
             return FALSE;
         }
@@ -236,16 +236,16 @@ uint8_t Config_DeviceHidden(uint8_t device)
 
 /**
  * @brief  Hide or show every motor of a device (device manager).
- * @param  device  Index in DeviceConfig.
+ * @param  device  Index in storageData.devices.
  * @param  hidden  TRUE to hide.
  */
 void Config_SetDeviceHidden(uint8_t device, uint8_t hidden)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == device)
+        if (storageData.motors[slot].device == device)
         {
-            storageData.MotorConfig[slot].hidden = hidden != FALSE;
+            storageData.motors[slot].hidden = hidden != FALSE;
         }
     }
 }
@@ -283,17 +283,17 @@ static int8_t newestSlot(void)
 static void loadDefaults(void)
 {
     memset(&storageData, 0, sizeof(storageData));
-    storageData.netIdConfig = 0x01;
-    storageData.frequencyConfig = 433;
-    storageData.sfConfig = SF_7;
-    storageData.lastWriteSuccess = TRUE;
+    storageData.netId = 0x01;
+    storageData.freqMhz = 433;
+    storageData.spreadFactor = SF_7;
+    storageData.reserved = TRUE;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        storageData.DeviceConfig[id].deleted = TRUE;
+        storageData.devices[id].deleted = TRUE;
     }
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        freeMotorSlot(&storageData.MotorConfig[slot]);
+        freeMotorSlot(&storageData.motors[slot]);
     }
 }
 
@@ -302,7 +302,7 @@ static MotorStorageData_t *takeMotorSlot(uint8_t device, uint8_t module)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        MotorStorageData_t *motor = &storageData.MotorConfig[slot];
+        MotorStorageData_t *motor = &storageData.motors[slot];
 
         if (motor->device == MOTOR_SLOT_FREE)
         {
@@ -324,30 +324,30 @@ static void freeMotorSlot(MotorStorageData_t *motor)
 
 static void sanitize(void)
 {
-    if (storageData.netIdConfig == 0 || storageData.netIdConfig == 255)
+    if (storageData.netId == 0 || storageData.netId == 255)
     {
-        storageData.netIdConfig = 1;
+        storageData.netId = 1;
     }
-    if (storageData.frequencyConfig < 137 || storageData.frequencyConfig > 1020)
+    if (storageData.freqMhz < 137 || storageData.freqMhz > 1020)
     {
-        storageData.frequencyConfig = 433;
+        storageData.freqMhz = 433;
     }
-    if (storageData.sfConfig < SF_7 || storageData.sfConfig > SF_12)
+    if (storageData.spreadFactor < SF_7 || storageData.spreadFactor > SF_12)
     {
-        storageData.sfConfig = SF_7;
+        storageData.spreadFactor = SF_7;
     }
-    storageData.sleepMode = storageData.sleepMode == TRUE;
-    if (storageData.tUpdate < 1 || storageData.tUpdate > 9999)
+    storageData.sleepEnabled = storageData.sleepEnabled == TRUE;
+    if (storageData.scanPeriod < 1 || storageData.scanPeriod > 9999)
     {
-        storageData.tUpdate = 5;
+        storageData.scanPeriod = 5;
     }
-    if (storageData.tSleepUpdate < 1 || storageData.tSleepUpdate > 9999)
+    if (storageData.sleepScanPeriod < 1 || storageData.sleepScanPeriod > 9999)
     {
-        storageData.tSleepUpdate = 300;
+        storageData.sleepScanPeriod = 300;
     }
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        storageData.DeviceConfig[id].deleted = storageData.DeviceConfig[id].deleted != FALSE;
+        storageData.devices[id].deleted = storageData.devices[id].deleted != FALSE;
     }
     sanitizeMotors();
 }
@@ -361,13 +361,13 @@ static void sanitizeMotors(void)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        MotorStorageData_t *motor = &storageData.MotorConfig[slot];
+        MotorStorageData_t *motor = &storageData.motors[slot];
 
         if (motor->device == MOTOR_SLOT_FREE)
         {
             continue;
         }
-        if (motor->device >= MAXIMUM_DEVICE || storageData.DeviceConfig[motor->device].deleted ||
+        if (motor->device >= MAXIMUM_DEVICE || storageData.devices[motor->device].deleted ||
             motor->module >= MAXIMUM_MODULE || Config_Motor(motor->device, motor->module) != motor)
         {
             freeMotorSlot(motor);
@@ -383,7 +383,7 @@ static void sanitizeMotors(void)
     }
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted && Config_Motor(id, 0) == NULL)
+        if (!storageData.devices[id].deleted && Config_Motor(id, 0) == NULL)
         {
             takeMotorSlot(id, 0);
         }

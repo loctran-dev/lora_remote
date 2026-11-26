@@ -87,7 +87,7 @@ class ConfigLoadTests(h.FirmwareHarness):
         header = struct.pack("<IHHII", 5, len(payload), 0xFFFF, self.crc32(payload), CFG2)
         self.cpu.mem_write(SLOT_B, header + payload)
         raw = bytearray(b"\x00" * 885)
-        raw[0], raw[835] = 9, 1                                         # net 9, lastWriteSuccess
+        raw[0], raw[835] = 9, 1                                         # net 9, reserved
         self.cpu.mem_write(SLOT_A, bytes(raw))
         self.fw("Config_Load")
         self.assertEqual(self.stored(0, 1), b"\x01")                     # default net, not 9

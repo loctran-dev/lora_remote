@@ -31,8 +31,8 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.call("Link_Init", 0)
         self.call("Power_Init")
         self.call("Link_SetIdleSeconds", 5)
-        self.cpu.mem_write(self.storage + self.fields["tSleepUpdate"], struct.pack("<I", 5))
-        self.put(self.storage + self.fields["sleepMode"], 1)
+        self.cpu.mem_write(self.storage + self.fields["sleepScanPeriod"], struct.pack("<I", 5))
+        self.put(self.storage + self.fields["sleepEnabled"], 1)
         self.put(self.system + 68, 2)
         self.put(self.system + 62, 0)  # Simulate the completed settings save.
 
@@ -85,10 +85,10 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.assertEqual(self.get(self.system + 68), 2)
 
     def test_disabled_sleep_and_pending_flash_do_not_sleep(self):
-        self.put(self.storage + self.fields["sleepMode"], 0)
+        self.put(self.storage + self.fields["sleepEnabled"], 0)
         self.at(100)
         self.assertEqual(self.get(self.system + 68), 2)
-        self.put(self.storage + self.fields["sleepMode"], 1)
+        self.put(self.storage + self.fields["sleepEnabled"], 1)
         self.put(self.system + 62, 1)
         self.at(101)
         self.assertEqual(self.get(self.system + 68), 2)

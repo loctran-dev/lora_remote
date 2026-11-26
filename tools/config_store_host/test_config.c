@@ -44,29 +44,29 @@ int main(void)
 
     /* 1. Blank flash: defaults, saved to slot A. */
     erase_all(); boot();
-    CHECK(storageData.netIdConfig == 1 && storageData.frequencyConfig == 433 && storageData.sfConfig == 7, "defaults");
-    CHECK(storageData.tUpdate == 5 && storageData.tSleepUpdate == 300 && storageData.DeviceConfig[3].deleted == 1, "defaults 2");
+    CHECK(storageData.netId == 1 && storageData.freqMhz == 433 && storageData.spreadFactor == 7, "defaults");
+    CHECK(storageData.scanPeriod == 5 && storageData.sleepScanPeriod == 300 && storageData.devices[3].deleted == 1, "defaults 2");
     CHECK(seq(0) == 1, "defaults saved to A with sequence 1");
 
     /* 2. Alternating saves; reload picks the newest. */
-    storageData.tUpdate = 42; CHECK(Config_Save() == 0, "save B");
+    storageData.scanPeriod = 42; CHECK(Config_Save() == 0, "save B");
     CHECK(seq(1) == 2, "B sequence 2");
-    storageData.tUpdate = 43; CHECK(Config_Save() == 0, "save A");
+    storageData.scanPeriod = 43; CHECK(Config_Save() == 0, "save A");
     CHECK(seq(0) == 3, "A sequence 3");
-    boot(); CHECK(storageData.tUpdate == 43, "newest wins");
-    storageData.tUpdate = 44; CHECK(Config_Save() == 0, "save after reload goes to B"); CHECK(seq(1) == 4, "B sequence 4");
-    boot(); CHECK(storageData.tUpdate == 44, "reload 44");
+    boot(); CHECK(storageData.scanPeriod == 43, "newest wins");
+    storageData.scanPeriod = 44; CHECK(Config_Save() == 0, "save after reload goes to B"); CHECK(seq(1) == 4, "B sequence 4");
+    boot(); CHECK(storageData.scanPeriod == 44, "reload 44");
 
     /* 3. Power loss at every flash operation of a save keeps the last committed copy. */
     for (long k = 0; k < 400; k++)
     {
         boot(); memcpy(&saved, &storageData, sizeof(saved));
-        storageData.tUpdate = 1000 + k; storageData.MotorConfig[5].name[0] = 'Z';
+        storageData.scanPeriod = 1000 + k; storageData.motors[5].name[0] = 'Z';
         ops = 0; budget = k;
         uint32_t r = Config_Save();
         budget = -1;
         boot();
-        if (r == 0) { CHECK(storageData.tUpdate == 1000 + k, "completed save visible"); }
+        if (r == 0) { CHECK(storageData.scanPeriod == 1000 + k, "completed save visible"); }
         else { CHECK(memcmp(&storageData, &saved, sizeof(saved)) == 0, "interrupted save keeps previous copy"); }
         if (r == 0) break;
     }
@@ -74,26 +74,26 @@ int main(void)
     /* 4. Older formats (a raw 885-byte block with lastWriteSuccess set) are not read: defaults. */
     erase_all();
     memset(flash, 0, 885); flash[0] = 9; flash[835] = 1;
-    boot(); CHECK(storageData.netIdConfig == 1 && storageData.DeviceConfig[2].deleted == 1, "old format ignored");
+    boot(); CHECK(storageData.netId == 1 && storageData.devices[2].deleted == 1, "old format ignored");
     CHECK(seq(0) == 1, "defaults saved over the old block in A");
-    storageData.tUpdate = 10; CHECK(Config_Save() == 0, "save to B"); CHECK(seq(1) == 2, "B sequence 2");
-    boot(); CHECK(storageData.tUpdate == 10, "reload 10");
+    storageData.scanPeriod = 10; CHECK(Config_Save() == 0, "save to B"); CHECK(seq(1) == 2, "B sequence 2");
+    boot(); CHECK(storageData.scanPeriod == 10, "reload 10");
 
     /* 5. Both slots corrupt: defaults. */
     flash[0x10 + 3] ^= 1; flash[0x800 + 0x10 + 3] ^= 1;
-    boot(); CHECK(storageData.netIdConfig == 1 && storageData.tUpdate == 5, "corrupt -> defaults");
+    boot(); CHECK(storageData.netId == 1 && storageData.scanPeriod == 5, "corrupt -> defaults");
 
     /* 6. Sequence wrap: 0 is newer than 0xFFFFFFFF. */
     erase_all(); boot();                             /* A seq 1 */
-    storageData.tUpdate = 11; Config_Save();          /* B seq 2 */
+    storageData.scanPeriod = 11; Config_Save();          /* B seq 2 */
     /* forge sequences: rewrite headers with wrapped values (CRC covers only the payload) */
     *(uint32_t *)(flash) = 0xFFFFFFFFu; *(uint32_t *)(flash + 0x800) = 0;
-    boot(); CHECK(storageData.tUpdate == 11, "wrapped sequence 0 beats 0xFFFFFFFF");
+    boot(); CHECK(storageData.scanPeriod == 11, "wrapped sequence 0 beats 0xFFFFFFFF");
 
     /* 7. Sanitising out-of-range values. */
-    storageData.sfConfig = 3; storageData.frequencyConfig = 50; storageData.tUpdate = 0; storageData.sleepMode = 5;
+    storageData.spreadFactor = 3; storageData.freqMhz = 50; storageData.scanPeriod = 0; storageData.sleepEnabled = 5;
     Config_Save(); boot();
-    CHECK(storageData.sfConfig == 7 && storageData.frequencyConfig == 433 && storageData.tUpdate == 5 && storageData.sleepMode == 0, "sanitised");
+    CHECK(storageData.spreadFactor == 7 && storageData.freqMhz == 433 && storageData.scanPeriod == 5 && storageData.sleepEnabled == 0, "sanitised");
 
     printf("%s (%d failures), sizeof(SystemStorageData_t) = %zu\n", failures ? "FAILED" : "ALL PASSED", failures, sizeof(SystemStorageData_t));
     return failures != 0;

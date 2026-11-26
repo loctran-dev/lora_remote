@@ -41,7 +41,7 @@ static void sendProbe(void);
  */
 uint16_t Link_GetIdleSeconds(void)
 {
-    return storageData.sleepAfterIdleSeconds;
+    return storageData.idleTimeout;
 }
 
 /**
@@ -50,7 +50,7 @@ uint16_t Link_GetIdleSeconds(void)
  */
 uint16_t Link_GetTimeoutSeconds(void)
 {
-    return storageData.connectionTimeoutSeconds;
+    return storageData.linkTimeout;
 }
 
 /**
@@ -60,7 +60,7 @@ uint16_t Link_GetTimeoutSeconds(void)
  */
 uint16_t Link_GetAutoStatus(uint8_t id)
 {
-    return id < MAXIMUM_DEVICE ? storageData.autoStatusSeconds[id] : 0;
+    return id < MAXIMUM_DEVICE ? storageData.autoStatusPeriod[id] : 0;
 }
 
 /**
@@ -72,7 +72,7 @@ void Link_SetAutoStatus(uint8_t id, uint16_t seconds)
 {
     if (id < MAXIMUM_DEVICE && seconds <= 9999)
     {
-        storageData.autoStatusSeconds[id] = seconds;
+        storageData.autoStatusPeriod[id] = seconds;
         saveSettings();
     }
 }
@@ -85,7 +85,7 @@ void Link_SetIdleSeconds(uint16_t seconds)
 {
     if (seconds && seconds <= 9999)
     {
-        storageData.sleepAfterIdleSeconds = seconds;
+        storageData.idleTimeout = seconds;
         saveSettings();
     }
 }
@@ -98,7 +98,7 @@ void Link_SetTimeoutSeconds(uint16_t seconds)
 {
     if (seconds && seconds <= 9999)
     {
-        storageData.connectionTimeoutSeconds = seconds;
+        storageData.linkTimeout = seconds;
         saveSettings();
     }
 }
@@ -114,26 +114,26 @@ void Link_SetTimeoutSeconds(uint16_t seconds)
  */
 void Link_Init(uint32_t rtcSecond)
 {
-    uint8_t valid = storageData.linkSettingsMagic == LINK_MAGIC &&
-        storageData.linkSettingsChecksum == extensionChecksum() &&
-        storageData.sleepAfterIdleSeconds && storageData.sleepAfterIdleSeconds <= 9999 &&
-        storageData.connectionTimeoutSeconds && storageData.connectionTimeoutSeconds <= 9999;
+    uint8_t valid = storageData.linkMagic == LINK_MAGIC &&
+        storageData.linkCrc == extensionChecksum() &&
+        storageData.idleTimeout && storageData.idleTimeout <= 9999 &&
+        storageData.linkTimeout && storageData.linkTimeout <= 9999;
 
     /* Validate stored settings; fall back to defaults when corrupt. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (storageData.autoStatusSeconds[id] > 9999)
+        if (storageData.autoStatusPeriod[id] > 9999)
         {
             valid = 0;
         }
     }
     if (!valid)
     {
-        storageData.sleepAfterIdleSeconds = 60;
-        storageData.connectionTimeoutSeconds = 180;
+        storageData.idleTimeout = 60;
+        storageData.linkTimeout = 180;
         for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
         {
-            storageData.autoStatusSeconds[id] = 60;
+            storageData.autoStatusPeriod[id] = 60;
         }
         saveSettings();
     }
@@ -150,7 +150,7 @@ void Link_Init(uint32_t rtcSecond)
     syncRequested = 0;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        linkDevices[id].node = storageData.DeviceConfig[id].nodeId;
+        linkDevices[id].node = storageData.devices[id].nodeId;
     }
 }
 
@@ -239,7 +239,7 @@ void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
  */
 void Link_RecordPacket(uint8_t id, uint8_t status)
 {
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
+    if (id >= MAXIMUM_DEVICE || storageData.devices[id].deleted)
     {
         return;
     }
@@ -267,7 +267,7 @@ void Link_RecordNodePacket(uint8_t node, uint8_t status)
 {
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId == node)
+        if (!storageData.devices[id].deleted && storageData.devices[id].nodeId == node)
         {
             Link_RecordPacket(id, status);
             return;
@@ -289,7 +289,7 @@ uint8_t Link_ShouldTransmit(const LoraPackage_t *packet)
         return 1;
     }
     return linkProbe.device >= 0 && packet->transactionID == linkProbe.transaction &&
-        packet->nodeId == storageData.DeviceConfig[linkProbe.device].nodeId && packet->netId == systemInfo.netId;
+        packet->nodeId == storageData.devices[linkProbe.device].nodeId && packet->netId == systemInfo.netId;
 }
 
 /**
@@ -314,7 +314,7 @@ void Link_TxFinished(const LoraPackage_t *packet, uint8_t success)
  *
  * Resets devices that were re-paired or deleted, retries a probe whose reply
  * timed out (up to 3 attempts) and marks the device as a connection error
- * when all attempts fail. Outside SLEEP a scan starts every tUpdate seconds.
+ * when all attempts fail. Outside SLEEP a scan starts every scanPeriod seconds.
  * Does nothing while the pairing screen is open.
  *
  * @note   Call from systemTask with uiMutex held; skipped while a LoRa packet
@@ -336,10 +336,10 @@ void Link_Tick(void)
     /* Reset link state of devices that were re-paired or deleted. */
     for (id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (linkDevices[id].node != storageData.DeviceConfig[id].nodeId || storageData.DeviceConfig[id].deleted)
+        if (linkDevices[id].node != storageData.devices[id].nodeId || storageData.devices[id].deleted)
         {
             syncPending &= ~(1u << id);
-            linkDevices[id].node = storageData.DeviceConfig[id].nodeId;
+            linkDevices[id].node = storageData.devices[id].nodeId;
             linkDevices[id].lastRx = uptimeSeconds;
             linkDevices[id].retryAt = 0;
             deviceBuff[id].linkLost = 0;
@@ -379,7 +379,7 @@ void Link_Tick(void)
 
     /* Start a new probe for the next device that needs one. */
     if (systemInfo.runMode != eSystem_RunMode_Sleep &&
-        uptimeSeconds - lastScan >= storageData.tUpdate)
+        uptimeSeconds - lastScan >= storageData.scanPeriod)
     {
         scanRequested = 1;
     }
@@ -392,7 +392,7 @@ void Link_Tick(void)
     for (uint8_t offset = 0; offset < MAXIMUM_DEVICE; offset++)
     {
         id = (nextDevice + offset) % MAXIMUM_DEVICE;
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId && storageData.DeviceConfig[id].nodeId != 255 &&
+        if (!storageData.devices[id].deleted && storageData.devices[id].nodeId && storageData.devices[id].nodeId != 255 &&
             ((syncPending & (1u << id)) ||
              (uptimeSeconds - linkDevices[id].lastRx > Link_GetTimeoutSeconds() &&
               (!linkDevices[id].retryAt || (int32_t)(uptimeSeconds - linkDevices[id].retryAt) >= 0))))
@@ -410,15 +410,15 @@ void Link_Tick(void)
 
 static uint8_t extensionChecksum(void)
 {
-    return Util_CalculateCRC((uint8_t *)&storageData.linkSettingsMagic,
-        offsetof(SystemStorageData_t, linkSettingsChecksum) -
-        offsetof(SystemStorageData_t, linkSettingsMagic));
+    return Util_CalculateCRC((uint8_t *)&storageData.linkMagic,
+        offsetof(SystemStorageData_t, linkCrc) -
+        offsetof(SystemStorageData_t, linkMagic));
 }
 
 static void saveSettings(void)
 {
-    storageData.linkSettingsMagic = LINK_MAGIC;
-    storageData.linkSettingsChecksum = extensionChecksum();
+    storageData.linkMagic = LINK_MAGIC;
+    storageData.linkCrc = extensionChecksum();
     systemInfo.configSavePending = 1;
 }
 
@@ -433,7 +433,7 @@ static void beginStatusSync(void)
     syncReply = 0;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId && storageData.DeviceConfig[id].nodeId != 255)
+        if (!storageData.devices[id].deleted && storageData.devices[id].nodeId && storageData.devices[id].nodeId != 255)
         {
             syncPending |= 1u << id;
         }
@@ -474,7 +474,7 @@ static void sendProbe(void)
     payload.moduleIndex = 0;
     /* Never overwrite a slave's valid clock with the default January 2000 RTC. */
     payload.syncTime = systemInfo.currentTime >= 1704067200u ? systemInfo.currentTime : 0;
-    packet = Comm_CreateReqGetStatus(systemInfo.netId, storageData.DeviceConfig[id].nodeId, payload);
+    packet = Comm_CreateReqGetStatus(systemInfo.netId, storageData.devices[id].nodeId, payload);
     /* Publish before queueing: the higher-priority sender can run immediately. */
     linkProbe.transaction = packet.transactionID;
     linkProbe.state = 1;

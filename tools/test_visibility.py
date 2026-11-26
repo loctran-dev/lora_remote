@@ -39,29 +39,29 @@ def symbol(name):
 DEVICE_STRIDE = 24        # sizeof(DeviceInfo_t)
 DEV_CONNECTION_ERROR = 20
 DEV_RSSI = 8
-# MotorData_t: runtime state of a motor, motorBuff[i] belongs to MotorConfig[i].
+# MotorData_t: runtime state of a motor, motorBuff[i] belongs to motors[i].
 MODULE_STRIDE = 28        # sizeof(MotorData_t)
-# DeviceStorageData_t (packed), storageData.DeviceConfig[] at storage + 15: device identity.
+# DeviceStorageData_t (packed), storageData.devices[] at storage + 15: device identity.
 CFG_BASE, CFG_STRIDE = 15, 10
 CFG_NODE, CFG_SERIAL, CFG_TYPE, CFG_TYPE_CHAR, CFG_MODULES, CFG_DELETE = 0, 1, 5, 6, 7, 9
-# MotorStorageData_t (packed), storageData.MotorConfig[40] at storage + 215: settings of one motor.
+# MotorStorageData_t (packed), storageData.motors[40] at storage + 215: settings of one motor.
 MOTOR_BASE, MOTOR_STRIDE, MOTOR_SLOTS, MOTOR_FREE = 215, 32, 40, 0xFF
 MOT_DEVICE, MOT_MODULE, MOT_NAME, MOT_THRESHOLD, MOT_DELAY, MOT_LOCK, MOT_HIDE = 0, 1, 2, 22, 26, 30, 31
 STORAGE_SIZE = 1545       # sizeof(SystemStorageData_t)
-AUTO_STATUS = 1504        # storageData.autoStatusSeconds[]
+AUTO_STATUS = 1504        # storageData.autoStatusPeriod[]
 
 
 class FirmwareHarness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
-        # autoStatusSeconds also sits at offset 5 of PayloadRequestSetConfig_t.
+        # autoStatusSeconds is at offset 5 of PayloadRequestSetConfig_t.
         for field, offsets in {"hidden": {MOT_HIDE}, "locked": {MOT_LOCK},
                                "deleted": {CFG_DELETE},
-                               "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, AUTO_STATUS},
+                               "motors": {MOTOR_BASE}, "autoStatusSeconds": {5}, "autoStatusPeriod": {AUTO_STATUS},
                                "linkLost": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "curDevice": {60}, "curModule": {61},
-                               "configSavePending": {62}, "DeviceConfig": {15}}.items():
+                               "configSavePending": {62}, "devices": {15}}.items():
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
@@ -72,7 +72,8 @@ class FirmwareHarness(unittest.TestCase):
         cls.system = symbol("systemInfo")[0]
         cls.storage = symbol("storageData")[0]
         cls.fields = {}
-        for name in ["netIdConfig", "frequencyConfig", "sfConfig", "sleepMode", "tUpdate", "tSleepUpdate"]:
+        cls.fields["netId"] = 0  # first member; the name netId is shared with SystemInfo_t and LoraPackage_t
+        for name in ["freqMhz", "spreadFactor", "sleepEnabled", "scanPeriod", "sleepScanPeriod"]:
             offsets = re.findall(r"DW_AT_name " + name + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)
             cls.fields[name] = max(map(int, offsets))
 
@@ -97,15 +98,15 @@ class FirmwareHarness(unittest.TestCase):
         return self.device + index * DEVICE_STRIDE + offset
 
     def cfg(self, index, offset=0):
-        """Address in storageData.DeviceConfig[index] (identity and settings)."""
+        """Address in storageData.devices[index] (identity and settings)."""
         return self.storage + CFG_BASE + index * CFG_STRIDE + offset
 
     def mot(self, slot, offset=0):
-        """Address in storageData.MotorConfig[slot]; add(i) gives device i's module 0 slot i."""
+        """Address in storageData.motors[slot]; add(i) gives device i's module 0 slot i."""
         return self.storage + MOTOR_BASE + slot * MOTOR_STRIDE + offset
 
     def state_of(self, slot, offset=0):
-        """Address in motorBuff[slot], the runtime state of the motor in MotorConfig[slot]."""
+        """Address in motorBuff[slot], the runtime state of the motor in storageData.motors[slot]."""
         return self.motor_state + slot * MODULE_STRIDE + offset
 
     def add(self, index, hidden=False):
@@ -191,7 +192,7 @@ class VisibilityTests(FirmwareHarness):
         self.assertEqual(self.get(self.system + 60), 2)
 
     def test_save_device_settings_only_marks_dirty(self):
-        # Editors write storageData.DeviceConfig directly; saving only requests the flash write.
+        # Editors write storageData.devices directly; saving only requests the flash write.
         self.add(2, True)
         self.put(self.mot(2, MOT_LOCK), 1)
         before = bytes(self.cpu.mem_read(self.storage, STORAGE_SIZE))
@@ -226,8 +227,8 @@ class VisibilityTests(FirmwareHarness):
         self.call("Main_SetScheduleTimeToCurrentModule", 1800)
 
     def test_general_settings_saved_without_periodic_poll(self):
-        values = {"netIdConfig": (2, 1), "frequencyConfig": (434, 4), "sfConfig": (8, 1),
-                  "sleepMode": (1, 1), "tUpdate": (6, 4), "tSleepUpdate": (301, 4)}
+        values = {"netId": (2, 1), "freqMhz": (434, 4), "spreadFactor": (8, 1),
+                  "sleepEnabled": (1, 1), "scanPeriod": (6, 4), "sleepScanPeriod": (301, 4)}
         for name, (value, size) in values.items():
             self.cpu.mem_write(self.storage + self.fields[name], value.to_bytes(size, "little"))
         self.cpu.mem_write(symbol("GetDevStatusTimerHandle")[0], struct.pack("<I", 0x20008000))

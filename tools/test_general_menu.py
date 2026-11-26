@@ -53,8 +53,8 @@ class GeneralMenuTests(MenuHarness):
                            struct.pack("<II",harness.symbol("screen_dts.o:init")[0]|1,harness.symbol("screen_dts.o:render")[0]|1))
         self.call("Link_SetIdleSeconds", 45)
         self.call("Link_SetTimeoutSeconds", 180)
-        self.cpu.mem_write(self.storage + self.fields["tUpdate"], struct.pack("<I", 5))
-        self.cpu.mem_write(self.storage + self.fields["tSleepUpdate"], struct.pack("<I", 300))
+        self.cpu.mem_write(self.storage + self.fields["scanPeriod"], struct.pack("<I", 5))
+        self.cpu.mem_write(self.storage + self.fields["sleepScanPeriod"], struct.pack("<I", 300))
         self.call("ScrnGss_ResetSelection")
         self.call("screen_gss.o:init")
 

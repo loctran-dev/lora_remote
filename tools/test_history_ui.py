@@ -81,7 +81,7 @@ class HistoryUiTests(unittest.TestCase):
         self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.cpu.mem_read(h.symbol("historyScreenMode"),1),b"\x01")
     def test_hidden_device_is_still_selectable(self):
-        self.cpu.mem_write(h.symbol("storageData")+215+31,b"\x01")  # MotorConfig[0].hidden (device 0)
+        self.cpu.mem_write(h.symbol("storageData")+215+31,b"\x01")  # motors[0].hidden (device 0)
         self.call("ScrnHs_OpenHistory")
         self.assertIn("[Hidden]",self.text[7])
         self.call("screen_hs.o:centerClicked");self.assertEqual(self.text[7],"No history yet")

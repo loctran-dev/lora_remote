@@ -18,7 +18,7 @@
 
 #define MAXIMUM_DEVICE 20 ///< Paired device slots.
 #define MAXIMUM_MODULE 6  ///< Motor modules per device.
-#define MAXIMUM_MOTOR  40 ///< Motor settings slots shared by all devices (storageData.MotorConfig).
+#define MAXIMUM_MOTOR  40 ///< Motor settings slots shared by all devices (storageData.motors).
 #define MOTOR_SLOT_FREE 0xFFu ///< MotorStorageData_t.device of an unused motor slot.
 
 /** @name Battery icon steps [%] (not used; see ScrnCommon_UpdateBattery()) */
@@ -110,7 +110,7 @@ typedef struct
 /**
  * @brief Runtime state of one motor, an entry of motorBuff.
  *
- * motorBuff[i] belongs to the motor that owns storageData.MotorConfig[i]
+ * motorBuff[i] belongs to the motor that owns storageData.motors[i]
  * (device, module); find it with Main_MotorState().
  */
 typedef struct
@@ -127,8 +127,8 @@ typedef struct
 /**
  * @brief Runtime state of one device slot.
  *
- * Identity lives in storageData.DeviceConfig[] at the same index; each motor
- * has its settings in storageData.MotorConfig and its state in motorBuff.
+ * Identity lives in storageData.devices[] at the same index; each motor
+ * has its settings in storageData.motors and its state in motorBuff.
  */
 typedef struct
 {
@@ -175,7 +175,7 @@ typedef struct
     System_RunMode_e runMode;  ///< Power mode.
 } SystemInfo_t;
 
-/** @brief Stored identity of one device slot (flash format); its motors are in MotorConfig. */
+/** @brief Stored identity of one device slot (flash format); its motors are in storageData.motors. */
 #pragma pack(1)
 typedef struct DeviceStorageData_t
 {
@@ -186,7 +186,7 @@ typedef struct DeviceStorageData_t
 #pragma pack()
 
 /**
- * @brief Stored settings of one motor (flash format), a slot of the shared MotorConfig pool.
+ * @brief Stored settings of one motor (flash format), a slot of the shared storageData.motors pool.
  *
  * A slot belongs to the motor (device, module); device == MOTOR_SLOT_FREE marks
  * an unused slot. Use Config_Motor() to find the slot of a motor.
@@ -194,7 +194,7 @@ typedef struct DeviceStorageData_t
 #pragma pack(1)
 typedef struct MotorStorageData_t
 {
-    uint8_t device;          ///< Owner index in DeviceConfig, or MOTOR_SLOT_FREE.
+    uint8_t device;          ///< Owner index in storageData.devices, or MOTOR_SLOT_FREE.
     uint8_t module;          ///< Module index on that device, 0 .. MAXIMUM_MODULE-1.
     char name[20];           ///< Display name.
     float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
@@ -208,24 +208,24 @@ typedef struct MotorStorageData_t
 #pragma pack(1)
 typedef struct SystemStorageData_t
 {
-    uint8_t netIdConfig; ///< Network id.
-    int frequencyConfig; ///< Radio frequency [MHz].
-    uint8_t sfConfig;    ///< LoRa spreading factor.
+    uint8_t netId;        ///< Network id.
+    int freqMhz;          ///< Radio frequency [MHz].
+    uint8_t spreadFactor; ///< LoRa spreading factor.
 
-    uint8_t sleepMode;     ///< 1 = sleep allowed.
-    uint32_t tUpdate;      ///< Link scan period outside SLEEP [s].
-    uint32_t tSleepUpdate; ///< RTC wake-up period in SLEEP [s].
+    uint8_t sleepEnabled;     ///< SLEEP is allowed.
+    uint32_t scanPeriod;      ///< Link scan period outside SLEEP [s].
+    uint32_t sleepScanPeriod; ///< RTC wake-up (scan) period in SLEEP [s].
 
-    DeviceStorageData_t DeviceConfig[MAXIMUM_DEVICE]; ///< Device slots.
-    MotorStorageData_t MotorConfig[MAXIMUM_MOTOR];    ///< Motor settings pool shared by all devices.
+    DeviceStorageData_t devices[MAXIMUM_DEVICE]; ///< Device slots.
+    MotorStorageData_t motors[MAXIMUM_MOTOR];    ///< Motor settings pool shared by all devices.
 
-    uint8_t lastWriteSuccess; ///< Always TRUE when saved; no longer read, kept so the CFG3 layout stays put.
-    /* Link settings; covered by linkSettingsChecksum, change them through Link_Set...(). */
-    uint32_t linkSettingsMagic;                 ///< Marks the link settings as present.
-    uint16_t sleepAfterIdleSeconds;             ///< Idle time before SLEEP [s].
-    uint16_t connectionTimeoutSeconds;          ///< Silence before a device is probed [s].
-    uint16_t autoStatusSeconds[MAXIMUM_DEVICE]; ///< Auto-status period per device [s].
-    uint8_t linkSettingsChecksum;               ///< Util_CalculateCRC() of the link settings.
+    uint8_t reserved; ///< Always TRUE when saved; not read, kept so the CFG3 layout stays put.
+    /* Link settings; covered by linkCrc, change them through Link_Set...(). */
+    uint32_t linkMagic;                        ///< Marks the link settings as present.
+    uint16_t idleTimeout;                      ///< Idle time before SLEEP [s].
+    uint16_t linkTimeout;                      ///< Silence before a device is probed [s].
+    uint16_t autoStatusPeriod[MAXIMUM_DEVICE]; ///< Auto-status period per device [s].
+    uint8_t linkCrc;                           ///< Util_CalculateCRC() of the link settings.
 } SystemStorageData_t;
 #pragma pack()
 

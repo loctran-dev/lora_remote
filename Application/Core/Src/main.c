@@ -139,7 +139,7 @@ Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};    
 Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};    ///< OFF (PC7), wakes from STOP.
 SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
 DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
-MotorData_t motorBuff[MAXIMUM_MOTOR];    ///< Motor runtime state, indexed like storageData.MotorConfig.
+MotorData_t motorBuff[MAXIMUM_MOTOR];    ///< Motor runtime state, indexed like storageData.motors.
 LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
 uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
 uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
@@ -259,8 +259,8 @@ int main(void)
   sLoRaCtrl.DIO0_port = LORA_DIO_GPIO_Port;
   sLoRaCtrl.DIO0_pin = LORA_DIO_Pin;
 
-  sLoRaCtrl.frequency = storageData.frequencyConfig;
-  sLoRaCtrl.spredingFactor = storageData.sfConfig;
+  sLoRaCtrl.frequency = storageData.freqMhz;
+  sLoRaCtrl.spredingFactor = storageData.spreadFactor;
   sLoRaCtrl.bandWidth = BW_125KHz;          /* default = BW_125KHz */
   sLoRaCtrl.crcRate = CR_4_5;               /* default = CR_4_5 */
   sLoRaCtrl.power = POWER_17db;             /* default = 20db */
@@ -274,14 +274,14 @@ int main(void)
   /* System settings. */
   systemInfo.batteryVoltageMin = 3.0f;
   systemInfo.batteryVoltageMax = 4.2f;
-  systemInfo.netId = storageData.netIdConfig;
+  systemInfo.netId = storageData.netId;
   systemInfo.runMode = eSystem_RunMode_Normal;
 
   /* Device list: runtime state in deviceBuff; Config_Load() has already checked the settings. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    storageData.DeviceConfig[devNo].factoryInfo.typeChar =
-      deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.type);
+    storageData.devices[devNo].factoryInfo.typeChar =
+      deviceTypeChar(storageData.devices[devNo].factoryInfo.type);
     deviceBuff[devNo].index = devNo;
   }
 
@@ -291,7 +291,7 @@ int main(void)
   systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.rtcTime, &systemInfo.rtcDate);
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (storageData.DeviceConfig[devNo].deleted == FALSE)
+    if (storageData.devices[devNo].deleted == FALSE)
     {
       deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
       systemInfo.curDevice = devNo;
@@ -957,10 +957,10 @@ void Main_SetMotorPower(uint8_t motorPower)
     return;
   }
 
-  if (storageData.DeviceConfig[systemInfo.curDevice].deleted == FALSE)
+  if (storageData.devices[systemInfo.curDevice].deleted == FALSE)
   {
-    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.curDevice].nodeId);
-    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeId,
+    Schedule_CancelForNode(storageData.devices[systemInfo.curDevice].nodeId);
+    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.devices[systemInfo.curDevice].nodeId,
       systemInfo.curModule, motorPower);
     osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
   }
@@ -1001,7 +1001,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
     payload.scheduleTime = systemInfo.currentTime + time;
   }
 
-  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeId, payload);
+  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.devices[systemInfo.curDevice].nodeId, payload);
   Schedule_Track(&packageOut, &payload);
   if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
   {
@@ -1038,7 +1038,7 @@ void Main_ScanNewDevice(void)
  * @brief  Runtime state of a motor (status, currents, timer, alarm).
  * @param  device  Index in deviceBuff.
  * @param  module  Module index on that device.
- * @return Its motorBuff entry, or NULL if the motor has no MotorConfig slot.
+ * @return Its motorBuff entry, or NULL if the motor has no storageData.motors slot.
  */
 MotorData_t *Main_MotorState(uint8_t device, uint8_t module)
 {
@@ -1058,9 +1058,9 @@ void Main_RestoreRadio(void)
   osMutexAcquire(radioMutex, osWaitForever);
   systemInfo.searchStep = eProcess_Step_None;
   systemInfo.connectStep = eProcess_Step_None;
-  systemInfo.netId = storageData.netIdConfig;
-  sLoRaCtrl.frequency = storageData.frequencyConfig;
-  sLoRaCtrl.spredingFactor = storageData.sfConfig;
+  systemInfo.netId = storageData.netId;
+  sLoRaCtrl.frequency = storageData.freqMhz;
+  sLoRaCtrl.spredingFactor = storageData.spreadFactor;
   LoRa_init(&sLoRaCtrl);
   LoRa_startReceiving(&sLoRaCtrl);
   osMutexRelease(radioMutex);
@@ -1091,13 +1091,13 @@ uint8_t Main_ConnectToDevice(void)
   systemInfo.connectResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
   systemInfo.pairNodeId = findPairedSlot(systemInfo.foundDevice.serial) == slot ?
-    storageData.DeviceConfig[slot].nodeId : getNotUsedNodeId();
+    storageData.devices[slot].nodeId : getNotUsedNodeId();
 
   payload.serial = systemInfo.foundDevice.serial;
-  payload.netId = storageData.netIdConfig;
+  payload.netId = storageData.netId;
   payload.nodeId = systemInfo.pairNodeId;
-  payload.frequency = storageData.frequencyConfig;
-  payload.sf = storageData.sfConfig;
+  payload.frequency = storageData.freqMhz;
+  payload.sf = storageData.spreadFactor;
 
   LoraPackage_t packageOut = Comm_CreateReqConfigConnection(LORA_NET_ID_DEFAULT, LORA_NODE_ID_DEFAULT, payload);
   osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
@@ -1206,7 +1206,7 @@ static uint8_t getNotUsedNodeId(void)
     }
     for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-      if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].nodeId == nodeId)
+      if (!storageData.devices[devNo].deleted && storageData.devices[devNo].nodeId == nodeId)
       {
         wasNodeIdUsed = TRUE;
         break;
@@ -1242,7 +1242,7 @@ static int8_t findPairedSlot(uint32_t serial)
 {
   for (int8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].factoryInfo.serial == serial)
+    if (!storageData.devices[devNo].deleted && storageData.devices[devNo].factoryInfo.serial == serial)
     {
       return devNo;
     }
@@ -1261,7 +1261,7 @@ static int8_t pairingSlot(void)
 
   for (int8_t devNo = 0; slot < 0 && devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (storageData.DeviceConfig[devNo].deleted)
+    if (storageData.devices[devNo].deleted)
     {
       slot = devNo;
     }
@@ -1302,9 +1302,9 @@ static int8_t storePairedDevice(void)
     }
   }
 
-  memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
-  storageData.DeviceConfig[slot].factoryInfo = systemInfo.foundDevice;
-  storageData.DeviceConfig[slot].nodeId = systemInfo.pairNodeId;
+  memset(&storageData.devices[slot], 0, sizeof(storageData.devices[slot]));
+  storageData.devices[slot].factoryInfo = systemInfo.foundDevice;
+  storageData.devices[slot].nodeId = systemInfo.pairNodeId;
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
   systemInfo.configSavePending = TRUE;
   return slot;

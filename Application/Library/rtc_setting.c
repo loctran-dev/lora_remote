@@ -134,7 +134,7 @@ uint8_t Rtc_Set(uint32_t timestamp)
     /* Every allocated pool slot belongs to a paired motor; its state shares the index. */
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device != MOTOR_SLOT_FREE &&
+        if (storageData.motors[slot].device != MOTOR_SLOT_FREE &&
             motorBuff[slot].pwrState == eMotor_PowerState_On && motorBuff[slot].autoOffTime)
         {
             return eRtc_SetResult_Busy;

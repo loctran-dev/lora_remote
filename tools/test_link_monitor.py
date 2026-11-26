@@ -13,7 +13,7 @@ class LinkTests(harness.FirmwareHarness):
         self.put(self.cfg(0, harness.CFG_NODE), 1)
         self.put(self.system, 1)
         self.put(self.system + 68, 2)  # SystemInfo_t.runMode = eSystem_RunMode_Normal.
-        self.cpu.mem_write(self.storage + self.fields["tUpdate"], struct.pack("<I", 1))
+        self.cpu.mem_write(self.storage + self.fields["scanPeriod"], struct.pack("<I", 1))
         self.queue_ok = True
         self.queued, self.alerts = [], []
         self.history_events=[]

@@ -302,7 +302,7 @@ static void renderPicker(char *text, uint16_t size)
         }
         snprintf(text, size, "M%u1%s", id + 1, Config_DeviceHidden(id) ? " [Hidden]" : "");
         UG_TextboxSetText(&window_1, a, text);
-        UG_TextboxSetText(&window_1, b, storageData.DeviceConfig[id].deleted ? "Removed device" : (char *)ScrnCommon_MotorName(id, 0)); /* kept by uGUI; storage or literal */
+        UG_TextboxSetText(&window_1, b, storageData.devices[id].deleted ? "Removed device" : (char *)ScrnCommon_MotorName(id, 0)); /* kept by uGUI; storage or literal */
         for (uint8_t cell = a; cell <= b; cell++)
         {
             UG_TextboxSetBackColor(&window_1, cell, id == chosenDevice ? C_DIM_GRAY : C_BLACK);
@@ -447,7 +447,7 @@ static uint8_t available(uint8_t id)
     uint16_t owner;
     const HistoryRecord *r;
 
-    if (!storageData.DeviceConfig[id].deleted)
+    if (!storageData.devices[id].deleted)
     {
         return 1;
     }
@@ -496,7 +496,7 @@ static void snapshot(void)
     for (uint16_t s = 0; s < HJ_SLOTS; s++)
     {
         r = HJ_Get(s);
-        if (!r || r->owner != owner || r->event.serial != storageData.DeviceConfig[chosenDevice].factoryInfo.serial)
+        if (!r || r->owner != owner || r->event.serial != storageData.devices[chosenDevice].factoryInfo.serial)
         {
             continue;
         }

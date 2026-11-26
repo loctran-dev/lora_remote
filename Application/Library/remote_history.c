@@ -47,7 +47,7 @@ void RemoteHistory_Init(void)
  */
 uint16_t RemoteHistory_Owner(uint8_t id)
 {
-    return ((uint16_t)systemInfo.netId << 8) | storageData.DeviceConfig[id].nodeId;
+    return ((uint16_t)systemInfo.netId << 8) | storageData.devices[id].nodeId;
 }
 
 /**
@@ -86,8 +86,8 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     /* Accept it only from the paired device with the same serial. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (storageData.DeviceConfig[id].deleted || storageData.DeviceConfig[id].nodeId != packet.nodeId ||
-            storageData.DeviceConfig[id].factoryInfo.serial != event.serial)
+        if (storageData.devices[id].deleted || storageData.devices[id].nodeId != packet.nodeId ||
+            storageData.devices[id].factoryInfo.serial != event.serial)
         {
             continue;
         }
@@ -107,12 +107,12 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
 {
     HistoryEvent event = {0};
 
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
+    if (id >= MAXIMUM_DEVICE || storageData.devices[id].deleted)
     {
         return;
     }
 
-    event.serial = storageData.DeviceConfig[id].factoryInfo.serial;
+    event.serial = storageData.devices[id].factoryInfo.serial;
     event.timestamp = systemInfo.currentTime;
     event.action = restored ? HIST_LINK_RESTORED : HIST_LINK_LOST;
     event.source = HIST_MONITOR;

@@ -189,7 +189,7 @@ static void init(void)
     /* Title, RSSI and the three phase currents. */
     device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.typeChar,
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.devices[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
         ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
@@ -240,7 +240,7 @@ static void render(void)
     /* Title (or lock notice) and phase currents. */
     device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.typeChar,
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.devices[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
         ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
@@ -523,11 +523,11 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
 {
     UG_COLOR color = C_ORANGE;
     char *status = "UNKNOWN";
-    uint8_t known = !storageData.DeviceConfig[device->index].deleted && !device->linkLost &&
+    uint8_t known = !storageData.devices[device->index].deleted && !device->linkLost &&
         (module->pwrState == eMotor_PowerState_On || module->pwrState == eMotor_PowerState_Off);
 
     /* Status text and colour. */
-    if (storageData.DeviceConfig[device->index].deleted || device->linkLost)
+    if (storageData.devices[device->index].deleted || device->linkLost)
     {
         status = "NO LINK";
     }
@@ -582,7 +582,7 @@ static void statusIconsUpdate(UG_WINDOW *window, UG_OBJECT *object)
 /* Request a redraw only when one of the drawn inputs changed. */
 static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    uint32_t key = (storageData.DeviceConfig[device->index].deleted ? 1u : 0u) |
+    uint32_t key = (storageData.devices[device->index].deleted ? 1u : 0u) |
         (device->linkLost ? 2u : 0u) |
         (module->alarmReported ? 4u : 0u) |
         ((uint32_t)module->pwrState << 8) |
@@ -694,7 +694,7 @@ static void createTimerScreen(void)
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
     device = &deviceBuff[systemInfo.curDevice];
-    type = storageData.DeviceConfig[device->index].factoryInfo.typeChar;
+    type = storageData.devices[device->index].factoryInfo.typeChar;
     if (type < 32 || type > 126)
     {
         type = 'M';
@@ -776,7 +776,7 @@ static void formatRemaining(uint32_t seconds, char *text)
 /* Timer summary: pending/failed command, "Not set", or deadline and countdown. */
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->index].nodeId);
+    Schedule_State_e state = Schedule_GetStateForNode(storageData.devices[device->index].nodeId);
     uint8_t present;
     char text[16];
     uint32_t remaining;

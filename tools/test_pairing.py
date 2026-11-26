@@ -214,7 +214,7 @@ class PairingTests(h.FirmwareHarness):
         self.assertEqual(self.get(self.mot(0, MOT_DEVICE)), MOTOR_FREE)
 
     def test_pairing_keeps_link_settings_valid_across_reboot(self):
-        # autoStatusSeconds is covered by the link-settings checksum; a raw write made
+        # autoStatusPeriod is covered by the link-settings checksum; a raw write made
         # Link_Init() reset every link setting to its default on the next boot.
         self.call("Link_SetIdleSeconds", 45)
         self.call("Link_SetTimeoutSeconds", 180)
@@ -229,7 +229,7 @@ class PairingTests(h.FirmwareHarness):
         self.assertEqual(self.call("Link_GetAutoStatus", 3) & 0xFFFF, 0)
 
     def test_pairing_clears_runtime_state_left_in_reused_pool_slots(self):
-        # motorBuff[i] follows MotorConfig[i]; a freed slot still holds the old motor's state.
+        # motorBuff[i] follows motors[i]; a freed slot still holds the old motor's state.
         self.cpu.mem_write(self.state_of(0), b"\x01" * h.MODULE_STRIDE)
         self.found(SERIAL_B, 2)
         self.assertEqual(self.call("main.o:storePairedDevice") & 0xFF, 0)

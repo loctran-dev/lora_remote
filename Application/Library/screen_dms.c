@@ -91,7 +91,7 @@ static void render(void)
     uint32_t seconds;
 
     ScrnCommon_StatusBarUpdate();
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
+    if (id >= MAXIMUM_DEVICE || storageData.devices[id].deleted)
     {
         UG_TextboxSetText(&window_1, 5, "No paired device");
         for (uint8_t row = 0; row < INFO_ROWS; row++)
@@ -109,16 +109,16 @@ static void render(void)
     {
         module = 0;
     }
-    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.DeviceConfig[id].factoryInfo.typeChar,
+    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.devices[id].factoryInfo.typeChar,
         device->index + 1, module + 1, ScrnCommon_MotorName(id, module));
     UG_TextboxSetText(&window_1, 5, text);
-    snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.DeviceConfig[id].factoryInfo.serial);
+    snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.devices[id].factoryInfo.serial);
     UG_TextboxSetText(&window_1, 7, text);
-    snprintf(text, sizeof(text), "0x%02X", storageData.DeviceConfig[id].nodeId);
+    snprintf(text, sizeof(text), "0x%02X", storageData.devices[id].nodeId);
     UG_TextboxSetText(&window_1, 9, text);
-    snprintf(text, sizeof(text), "%c", storageData.DeviceConfig[id].factoryInfo.typeChar);
+    snprintf(text, sizeof(text), "%c", storageData.devices[id].factoryInfo.typeChar);
     UG_TextboxSetText(&window_1, 11, text);
-    snprintf(text, sizeof(text), "%u", storageData.DeviceConfig[id].factoryInfo.moduleCount);
+    snprintf(text, sizeof(text), "%u", storageData.devices[id].factoryInfo.moduleCount);
     UG_TextboxSetText(&window_1, 13, text);
     snprintf(text, sizeof(text), "%u", module + 1);
     UG_TextboxSetText(&window_1, 15, text);

@@ -31,14 +31,14 @@ Only "CFG3" slots are read. The earlier formats (the raw single-copy block at
 0x0803F000 and "CFG2" slots with one set of settings per device) were converted
 by firmware 55588a5; that conversion was removed on 2026-11-26 once the only
 remote had saved CFG3. A board that still holds only an older format starts
-from the defaults and loses its pairings. `lastWriteSuccess` is no longer read
+from the defaults and loses its pairings. `reserved` (formerly `lastWriteSuccess`) is no longer read
 but stays in SystemStorageData_t so the CFG3 layout does not change.
 
 If no slot is valid, the defaults are loaded and saved to slot A immediately.
 
 ## General settings have a single copy
 
-netIdConfig, frequencyConfig, sfConfig, sleepMode, tUpdate and tSleepUpdate are
+netId, freqMhz, spreadFactor, sleepEnabled, scanPeriod and sleepScanPeriod are
 no longer duplicated in SystemInfo_t. The application reads and edits them in
 `storageData`; `ScrnCommon_SaveGeneralSettings()` only requests the flash write
 and applies the new periods. `Config_Load()` corrects out-of-range values
@@ -47,10 +47,10 @@ and applies the new periods. `Config_Load()` corrects out-of-range values
 ## Device settings have a single copy
 
 Device identity (node id, factory info, deleted flag) exists only in
-`storageData.DeviceConfig[]`, motor settings only in the motor pool below.
+`storageData.devices[]`, motor settings only in the motor pool below.
 Runtime state mirrors that split: `deviceBuff[]` (`DeviceInfo_t`: link, RSSI,
-device time) is indexed like `DeviceConfig`, and `motorBuff[]` (`MotorData_t`:
-power, currents, timer, alarm) like `MotorConfig`, so a motor's settings and
+device time) is indexed like `devices`, and `motorBuff[]` (`MotorData_t`:
+power, currents, timer, alarm) like `motors`, so a motor's settings and
 state share its pool index. `Main_MotorState(device, module)` finds the state;
 screens use `ScrnCommon_CurrentMotorState()`, which never returns NULL.
 Pairing clears the state of the pool slots it hands out. Editors write
@@ -62,16 +62,16 @@ for `deviceBuff` alone, with six motors per device).
 
 A device can drive up to `MAXIMUM_MODULE` (6) motors. Name, alarm
 threshold/delay, lock and hide are per motor and live in a pool shared by all
-devices, `storageData.MotorConfig[MAXIMUM_MOTOR]` (40 slots). Each slot names
+devices, `storageData.motors[MAXIMUM_MOTOR]` (40 slots). Each slot names
 its owner, `(device, module)`; `device == MOTOR_SLOT_FREE` (0xFF) marks an
 unused slot.
 
 | Part | Bytes |
 | --- | --- |
 | General settings | 15 |
-| `DeviceConfig[20]`: node 1, factoryInfo 8, deleted 1 | 200 |
-| `MotorConfig[40]`: device 1, module 1, name 20, threshold 4, delay 4, lock 1, hide 1 | 1280 |
-| `lastWriteSuccess` | 1 |
+| `devices[20]`: node 1, factoryInfo 8, deleted 1 | 200 |
+| `motors[40]`: device 1, module 1, name 20, threshold 4, delay 4, lock 1, hide 1 | 1280 |
+| `reserved` | 1 |
 | Link settings (magic, idle, timeout, autoStatus[20], checksum) | 49 |
 | Total | 1545 (slot payload limit 2032) |
 

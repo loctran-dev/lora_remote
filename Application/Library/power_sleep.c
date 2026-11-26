@@ -145,14 +145,14 @@ void Power_Tick(void)
     if (powerSleep.rtcPending)
     {
         powerSleep.rtcPending = 0;
-        powerSleep.nextRtc = Link_Now() + storageData.tSleepUpdate;
+        powerSleep.nextRtc = Link_Now() + storageData.sleepScanPeriod;
         Link_RequestScan();
     }
-    if (systemInfo.runMode == eSystem_RunMode_Sleep && (!storageData.sleepMode || usbActive()))
+    if (systemInfo.runMode == eSystem_RunMode_Sleep && (!storageData.sleepEnabled || usbActive()))
     {
         Power_UserActivity();
     }
-    if (!storageData.sleepMode || usbActive() || systemInfo.runMode == eSystem_RunMode_Alarm ||
+    if (!storageData.sleepEnabled || usbActive() || systemInfo.runMode == eSystem_RunMode_Alarm ||
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
         ScrnDcs_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
@@ -164,7 +164,7 @@ void Power_Tick(void)
         Link_Now() - powerSleep.lastUser >= Link_GetIdleSeconds())
     {
         systemInfo.runMode = eSystem_RunMode_Sleep;
-        powerSleep.nextRtc = Link_Now() + storageData.tSleepUpdate;
+        powerSleep.nextRtc = Link_Now() + storageData.sleepScanPeriod;
         LCD_Backlight_Off();
     }
 }
