@@ -77,7 +77,7 @@ class PairingTests(h.FirmwareHarness):
             self.put(self.mot(slot, MOT_MODULE), slot)  # distinct keys; modules >= 6 never looked up
 
     def assert_defaults(self, device, serial, node, modules=1):
-        self.assertEqual(self.get(self.dev(device, 0)), device)                    # deviceIndex
+        self.assertEqual(self.get(self.dev(device, 0)), device)                    # index
         self.assertEqual(self.get(self.dev(device, h.DEV_CONNECTION_ERROR)), 0)    # runtime state cleared
         self.assertEqual(self.get(self.cfg(device, CFG_NODE)), node)
         self.assertEqual(self.u32(self.cfg(device, CFG_SERIAL)), serial)

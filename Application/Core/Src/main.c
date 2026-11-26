@@ -282,7 +282,7 @@ int main(void)
   {
     storageData.DeviceConfig[devNo].factoryInfo.deviceTypeChar =
       deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.deviceType);
-    deviceBuff[devNo].deviceIndex = devNo;
+    deviceBuff[devNo].index = devNo;
   }
 
   /* Select the first paired device. */
@@ -293,7 +293,7 @@ int main(void)
   {
     if (storageData.DeviceConfig[devNo].deleted == FALSE)
     {
-      deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+      deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
       systemInfo.currentDeviceId = devNo;
       systemInfo.currentModuleId = 0;
       break;
@@ -1290,8 +1290,8 @@ static int8_t storePairedDevice(void)
   }
 
   memset(&deviceBuff[slot], 0, sizeof(deviceBuff[slot]));
-  deviceBuff[slot].deviceIndex = slot;
-  deviceBuff[slot].lastCommTime = systemInfo.currentTime;
+  deviceBuff[slot].index = slot;
+  deviceBuff[slot].lastRxTime = systemInfo.currentTime;
   for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
   {
     MotorData_t *motor = Main_MotorState(slot, module);

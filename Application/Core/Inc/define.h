@@ -132,13 +132,13 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t deviceIndex; ///< Own index in deviceBuff.
-    uint32_t localTime;  ///< Device Unix time from the last status.
-    int rssi;            ///< RSSI of the last packet from the device.
+    uint8_t index;    ///< Own index in deviceBuff.
+    uint32_t devTime; ///< Device Unix time from the last status (device clock).
+    int rssi;         ///< RSSI of the last packet from the device [dBm].
 
-    uint32_t lastCommTick; ///< RTOS tick of the last packet [ms].
-    uint32_t lastCommTime; ///< Remote Unix time of the last packet.
-    uint8_t linkLost;      ///< Set by the link monitor when probes fail.
+    uint32_t lastRxTick; ///< RTOS tick of the last packet from the device [ms].
+    uint32_t lastRxTime; ///< Remote Unix time of the last packet (also set at boot and pairing).
+    uint8_t linkLost;    ///< Set by the link monitor when probes fail.
 } DeviceInfo_t;
 
 /** @brief Runtime state of the remote. */

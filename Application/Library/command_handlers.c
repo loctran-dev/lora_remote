@@ -133,7 +133,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
 
             Link_RecordPacket(devNo, 1);
             Link_RecordStatusReply(devNo, fwPackage.transactionID);
-            deviceBuff[devNo].localTime = payloadResponse.localTime;
+            deviceBuff[devNo].devTime = payloadResponse.localTime;
             Schedule_HandleStatus(&fwPackage, &payloadResponse);
             if (motor)
             {
@@ -143,8 +143,8 @@ static void handleGetStatus(LoraPackage_t fwPackage)
                 motor->phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
                 motor->phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
             }
-            deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
-            deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+            deviceBuff[devNo].lastRxTick = xTaskGetTickCount();
+            deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
     }
@@ -172,8 +172,8 @@ static void handleControlPower(LoraPackage_t fwPackage)
         if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
-            deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
-            deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+            deviceBuff[devNo].lastRxTick = xTaskGetTickCount();
+            deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
     }
@@ -214,8 +214,8 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
                 Main_MotorState(devNo, payloadResponse.moduleIndex)->autoOffTime = deadline;
             }
             Link_RecordPacket(devNo, 0);
-            deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
-            deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+            deviceBuff[devNo].lastRxTick = xTaskGetTickCount();
+            deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
     }
@@ -243,8 +243,8 @@ static void handleSyncTime(LoraPackage_t fwPackage)
         if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
-            deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
-            deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+            deviceBuff[devNo].lastRxTick = xTaskGetTickCount();
+            deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
     }
@@ -349,8 +349,8 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
                 motor->alarmCode = (Alarm_Name_e)payloadRequest.alarmCode;
                 motor->alarmDevTime = payloadRequest.alarmTime;
             }
-            deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
-            deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
+            deviceBuff[devNo].lastRxTick = xTaskGetTickCount();
+            deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
             deviceBuff[devNo].rssi = LoRa_getRSSI(&sLoRaCtrl);
         }
     }

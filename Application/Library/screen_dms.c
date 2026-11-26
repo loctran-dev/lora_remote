@@ -110,7 +110,7 @@ static void render(void)
         module = 0;
     }
     snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar,
-        device->deviceIndex + 1, module + 1, ScrnCommon_MotorName(id, module));
+        device->index + 1, module + 1, ScrnCommon_MotorName(id, module));
     UG_TextboxSetText(&window_1, 5, text);
     snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.DeviceConfig[id].factoryInfo.serial);
     UG_TextboxSetText(&window_1, 7, text);

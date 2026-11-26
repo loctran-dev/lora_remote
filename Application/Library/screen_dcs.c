@@ -189,9 +189,9 @@ static void init(void)
     /* Title, RSSI and the three phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, systemInfo.currentModuleId + 1,
-        ScrnCommon_MotorName(device.deviceIndex, systemInfo.currentModuleId));
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
+        device.index + 1, systemInfo.currentModuleId + 1,
+        ScrnCommon_MotorName(device.index, systemInfo.currentModuleId));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -240,9 +240,9 @@ static void render(void)
     /* Title (or lock notice) and phase currents. */
     device = deviceBuff[systemInfo.currentDeviceId];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.deviceIndex].factoryInfo.deviceTypeChar,
-        device.deviceIndex + 1, systemInfo.currentModuleId + 1,
-        ScrnCommon_MotorName(device.deviceIndex, systemInfo.currentModuleId));
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
+        device.index + 1, systemInfo.currentModuleId + 1,
+        ScrnCommon_MotorName(device.index, systemInfo.currentModuleId));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -523,11 +523,11 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
 {
     UG_COLOR color = C_ORANGE;
     char *status = "UNKNOWN";
-    uint8_t known = !storageData.DeviceConfig[device->deviceIndex].deleted && !device->linkLost &&
+    uint8_t known = !storageData.DeviceConfig[device->index].deleted && !device->linkLost &&
         (module->pwrState == eMotor_PowerState_On || module->pwrState == eMotor_PowerState_Off);
 
     /* Status text and colour. */
-    if (storageData.DeviceConfig[device->deviceIndex].deleted || device->linkLost)
+    if (storageData.DeviceConfig[device->index].deleted || device->linkLost)
     {
         status = "NO LINK";
     }
@@ -582,7 +582,7 @@ static void statusIconsUpdate(UG_WINDOW *window, UG_OBJECT *object)
 /* Request a redraw only when one of the drawn inputs changed. */
 static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    uint32_t key = (storageData.DeviceConfig[device->deviceIndex].deleted ? 1u : 0u) |
+    uint32_t key = (storageData.DeviceConfig[device->index].deleted ? 1u : 0u) |
         (device->linkLost ? 2u : 0u) |
         (module->alarmReported ? 4u : 0u) |
         ((uint32_t)module->pwrState << 8) |
@@ -694,12 +694,12 @@ static void createTimerScreen(void)
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
     device = &deviceBuff[systemInfo.currentDeviceId];
-    type = storageData.DeviceConfig[device->deviceIndex].factoryInfo.deviceTypeChar;
+    type = storageData.DeviceConfig[device->index].factoryInfo.deviceTypeChar;
     if (type < 32 || type > 126)
     {
         type = 'M';
     }
-    snprintf(title, sizeof(title), "%c%u%u Timer", type, device->deviceIndex + 1, systemInfo.currentModuleId + 1);
+    snprintf(title, sizeof(title), "%c%u%u Timer", type, device->index + 1, systemInfo.currentModuleId + 1);
     createText(&textbox_10, 9, 0, 20, 80, 37, title, DEFAULT_FONT, C_DARK_SLATE_BLUE);
     createText(&textbox_11, 10, 81, 20, 127, 37, adjustingScheduleValue ? "HH:MM" : "", DEFAULT_FONT,
         C_DARK_SLATE_BLUE);
@@ -776,7 +776,7 @@ static void formatRemaining(uint32_t seconds, char *text)
 /* Timer summary: pending/failed command, "Not set", or deadline and countdown. */
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->deviceIndex].nodeIdConfig);
+    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->index].nodeIdConfig);
     uint8_t present;
     char text[16];
     uint32_t remaining;
