@@ -82,19 +82,6 @@ issues under "Open" with the same fields.
 - Fix: unknown; first check whether STOP mode is entered while USB is attached
   (SOF detection) and whether the CDC receive is re-armed after wake-up.
 
-### KI-10: Pairing resets motor settings on the remote but not on the slave
-
-- Where: `Application/Core/Src/main.c` storePairedDevice (Config_AllocateMotors,
-  Link_SetAutoStatus(slot, 0)); slave handleConfigConnection.
-- Problem: pairing gives every motor the default settings (threshold 0,
-  delay 0, auto-status 0) on the remote only. CMD_CONFIG_CONNECTION sets only
-  net/node/frequency/SF on the slave, which keeps its I, D and A.
-- Effect: remote shows I=0/D=0/AUTO=0 while the slave still applies its old
-  alarm threshold, delay and auto-status period (seen: A=2 vs AUTO=0) until
-  the user saves the settings again.
-- Fix: reset I/D/A on the slave in handleConfigConnection, or have the remote
-  send CMD_SET_CONFIG once the paired device is reachable on its new node.
-
 ### KI-11: New remote with an old slave reports the link as lost
 
 - Where: `Application/Library/link_monitor.c` sendProbe (moduleIndex 0xFF);
@@ -102,8 +89,10 @@ issues under "Open" with the same fields.
 - Problem: probes for every module go unanswered by an old slave.
 - Effect: after a remote-only update the device shows "NO LINK" although it
   works. Documented in docs/STATUS_ALL.md: update the slave first.
-- Fix (optional): after a probe gets no answer, retry with moduleIndex 0 and
-  remember that the device needs single-module requests.
+- Status: won't fix (owner decision, 2026-11-26). Always update the slave
+  before the remote.
+- Fix (if ever needed): after a probe gets no answer, retry with moduleIndex 0
+  and remember that the device needs single-module requests.
 
 ### KI-12: History events do not record the motor
 
@@ -132,6 +121,16 @@ issues under "Open" with the same fields.
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
 ## Fixed
+
+### KI-10: Pairing resets motor settings on the remote but not on the slave
+
+- Fixed: 2026-11-26, commit 926d09a.
+- How: storePairedDevice marks every allocated module; CmdHandler_ConfigSyncTick
+  sends each motor's CMD_SET_CONFIG once the slave is heard on its new node
+  (after CONFIRM), without a beep, retrying a rejection or timeout up to 3
+  times. Bench: slave A=2 -> A=0 after re-pairing.
+- Limit: the pending sync is kept in RAM; a remote restart before the slave is
+  heard drops it (save the settings by hand then).
 
 ### KI-1: Modules other than 0 never receive status or alarms
 
