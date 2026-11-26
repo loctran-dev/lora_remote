@@ -120,5 +120,49 @@ class PowerPolicyTests(harness.FirmwareHarness):
         self.call("Power_TryStop")
         self.assertEqual(self.value(0), 0)
 
+    def stop_entries(self, charging, full):
+        """Run Power_TryStop() in an idle SLEEP with the charger outputs given; return STOP entries."""
+        dwarf = subprocess.check_output([str(harness.FROMELF), "--text", "-g", str(harness.BUILD / "USB_Application.axf")],
+                                        text=True)
+        member = lambda name: int(re.findall(r"DW_AT_name " + name + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location"
+                                             r"[^\n]*DW_OP_plus_uconst (\d+)", dwarf)[0])
+        self.cpu.mem_map(0x40000000, 0x30000)           # TIM3, EXTI, RCC, PWR registers read as 0
+        self.cpu.mem_map(0xE000E000, 0x1000)            # SysTick, SCB
+        entries = []
+        def stub(cpu, address, size, data):
+            if address == harness.symbol("HAL_PWR_EnterSTOPMode")[0] & ~1:
+                entries.append(1)
+            cpu.reg_write(UC_ARM_REG_R0, 0)
+            cpu.reg_write(UC_ARM_REG_PC, cpu.reg_read(UC_ARM_REG_LR))
+        for name in ["HAL_PWR_EnterSTOPMode", "power_sleep.o:restoreClock", "Main_SetRtcAlarmRelative",
+                     "HAL_TIM_Base_Stop", "HAL_TIM_Base_Start", "HAL_ADC_Stop_DMA", "HAL_ADC_Start_DMA",
+                     "HAL_SuspendTick", "HAL_ResumeTick", "vTaskSuspendAll", "xTaskResumeAll",
+                     "osMessageQueueGetCount", "Power_ReadRtcSecond"]:
+            address = harness.symbol(name)[0] & ~1
+            self.cpu.hook_add(UC_HOOK_CODE, stub, begin=address, end=address)
+        spi = dwarf[dwarf.index("DW_AT_name __SPI_HandleTypeDef"):]
+        spi_state = int(re.search(r"DW_AT_name State\s+[^\n]*\n[^\n]*DW_OP_plus_uconst (\d+)", spi)[1])
+        for name in ["hspi1", "hspi2"]:                  # SPI handles idle (HAL_SPI_STATE_READY = 1)
+            self.put(harness.symbol(name)[0] + spi_state, 1)
+        self.cpu.mem_write(harness.symbol("htim8")[0], struct.pack("<I", 0x40013400))  # TIM8 for the restart
+        self.put(self.system + 68, 1)                   # runMode = SLEEP
+        self.put(harness.symbol("linkProbe")[0] + 22, 255)
+        self.put(harness.symbol("link_monitor.o:syncPending")[0], 0)  # boot status sync done
+        self.put(harness.symbol("link_monitor.o:syncRequested")[0], 0)
+        self.put(self.system + member("charging"), charging)
+        self.put(self.system + member("batteryFull"), full)
+        self.call("Power_TryStop", count=200000)
+        return len(entries)
+
+    def test_battery_only_enters_stop(self):
+        self.assertEqual(self.stop_entries(charging=0, full=0), 1)
+
+    def test_external_power_never_enters_stop(self):
+        # KI-9: with USB/charger power the host may suspend the bus; STOP has no USB wake-up.
+        self.assertEqual(self.stop_entries(charging=1, full=0), 0)
+
+    def test_full_battery_on_charger_never_enters_stop(self):
+        self.assertEqual(self.stop_entries(charging=0, full=1), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

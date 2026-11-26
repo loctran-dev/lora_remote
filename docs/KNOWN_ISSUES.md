@@ -12,20 +12,6 @@ issues under "Open" with the same fields.
 
 ## Open
 
-### KI-9: USB console stops reading until the remote is woken or replugged
-
-- Where: USB CDC (`USB_DEVICE/App/usbd_cdc_if.c`) together with the power
-  policy (`power_sleep.c`); not investigated.
-- Problem: COM6 stays enumerated but every host write times out; the
-  application does not read the endpoint. Seen twice on 2026-11-26 (firmware
-  675906AE and an earlier build) with SLEEP=1, IDLE=60. Pressing a button on
-  the remote or replugging USB restores it. HISTORY_NATIVE.md already notes an
-  intermittent "remote USB hang".
-- Effect: USB updates (`usb_update.py --request`) and bench tools fail until
-  someone touches the remote.
-- Fix: unknown; first check whether STOP mode is entered while USB is attached
-  (SOF detection) and whether the CDC receive is re-armed after wake-up.
-
 ### KI-14: config_store host test has not been run since CFG3
 
 - Where: `tools/config_store_host/test_config.c` (`tools/test_config_store.py`).
@@ -37,6 +23,22 @@ issues under "Open" with the same fields.
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
 ## Fixed
+
+### KI-9: USB console stops reading until the remote is woken or replugged
+
+- Fixed: 2026-11-27, commit "fix: no STOP mode on external power (KI-9)".
+  Root cause inferred from the code; the stall could not be reproduced on
+  demand (100 s idle with COM6 closed did not trigger it). Reopen if it
+  happens again with this firmware.
+- Cause: usbActive() needs SOF within 2 s. When Windows suspends the idle USB
+  device (USB selective suspend is enabled on the bench PC), SOF stops, the
+  remote goes to SLEEP after IDLE and Power_TryStop() enters STOP. STOP wakes
+  only on LoRa DIO, buttons and the RTC (no USB wake-up line), so the host's
+  resume and writes go unanswered until a button press.
+- How: Power_TryStop() never enters STOP while the charger reports external
+  power (CHRG or STDBY active). SLEEP (backlight off, slow scans) still
+  applies; on battery STOP is unchanged. Tested in test_power_policy (same
+  idle setup: battery enters STOP, charging or full does not).
 
 ### KI-12: History events do not record the motor
 

@@ -22,6 +22,7 @@ extern SPI_HandleTypeDef hspi2;
 Power_SleepState_t powerSleep;
 
 static uint8_t usbActive(void);
+static uint8_t externalPower(void);
 static uint8_t buttonsDown(void);
 static void restoreClock(uint32_t cfgr);
 
@@ -176,6 +177,11 @@ void Power_Tick(void)
  * suspends the scheduler and SysTick, enters STOP, then restores HSE/PLL
  * and resumes everything.
  *
+ * Never entered on external power (charger reports charging or full): the
+ * host may suspend the USB bus, and STOP has no USB wake-up, so the USB
+ * console would stop answering until a button is pressed (KI-9). SLEEP (LCD
+ * off, slow scans) still applies.
+ *
  * @note    Call from systemTask with uiMutex held. RTOS ticks do not advance
  *          while stopped; use Link_Now() (RTC uptime) for time.
  * @warning Resets the MCU if HSE or the PLL fail to start after wake-up.
@@ -189,7 +195,7 @@ void Power_TryStop(void)
     uint32_t cause;
 
     if (systemInfo.runMode != eSystem_RunMode_Sleep || Link_IsBusy() || powerSleep.rxPending ||
-        powerSleep.txBusy || usbActive() || systemInfo.configSavePending ||
+        powerSleep.txBusy || usbActive() || externalPower() || systemInfo.configSavePending ||
         osMessageQueueGetCount(txMsgQueueHandle) || osMessageQueueGetCount(buzzerQueueHandle) ||
         (TIM3->CCER & TIM_CCER_CC3E) || hspi1.State != HAL_SPI_STATE_READY ||
         hspi2.State != HAL_SPI_STATE_READY || buttonsDown())
@@ -258,6 +264,12 @@ void Power_TryStop(void)
     __HAL_TIM_SET_COUNTER(&htim8, 0);
     HAL_ADC_Start_DMA(&hadc1, &systemInfo.batteryAdc, 1);
     HAL_TIM_Base_Start(&htim8);
+}
+
+/* USB or a charger supplies the remote: the charger's CHRG or STDBY output is active. */
+static uint8_t externalPower(void)
+{
+    return systemInfo.charging || systemInfo.batteryFull;
 }
 
 static uint8_t usbActive(void)
