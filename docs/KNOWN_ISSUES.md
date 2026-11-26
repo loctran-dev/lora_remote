@@ -125,7 +125,7 @@ issues under "Open" with the same fields.
 ### KI-10: Pairing resets motor settings on the remote but not on the slave
 
 - Fixed: 2026-11-27, Lora_device commit 1ef8f76 (pairing reset) and remote
-  commit 86b4048 (interim sync removed).
+  commit 41032bc (interim sync removed).
 - How: the slave sets threshold, delay and auto-status to 0 when it accepts
   CMD_CONFIG_CONNECTION, in the same flash record as the new radio settings.
   The remote already gives every motor these defaults in storePairedDevice, so
