@@ -150,7 +150,7 @@ void Link_Init(uint32_t rtcSecond)
     syncRequested = 0;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        linkDevices[id].node = storageData.DeviceConfig[id].nodeIdConfig;
+        linkDevices[id].node = storageData.DeviceConfig[id].nodeId;
     }
 }
 
@@ -267,7 +267,7 @@ void Link_RecordNodePacket(uint8_t node, uint8_t status)
 {
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig == node)
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId == node)
         {
             Link_RecordPacket(id, status);
             return;
@@ -289,7 +289,7 @@ uint8_t Link_ShouldTransmit(const LoraPackage_t *packet)
         return 1;
     }
     return linkProbe.device >= 0 && packet->transactionID == linkProbe.transaction &&
-        packet->nodeId == storageData.DeviceConfig[linkProbe.device].nodeIdConfig && packet->netId == systemInfo.netId;
+        packet->nodeId == storageData.DeviceConfig[linkProbe.device].nodeId && packet->netId == systemInfo.netId;
 }
 
 /**
@@ -336,10 +336,10 @@ void Link_Tick(void)
     /* Reset link state of devices that were re-paired or deleted. */
     for (id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (linkDevices[id].node != storageData.DeviceConfig[id].nodeIdConfig || storageData.DeviceConfig[id].deleted)
+        if (linkDevices[id].node != storageData.DeviceConfig[id].nodeId || storageData.DeviceConfig[id].deleted)
         {
             syncPending &= ~(1u << id);
-            linkDevices[id].node = storageData.DeviceConfig[id].nodeIdConfig;
+            linkDevices[id].node = storageData.DeviceConfig[id].nodeId;
             linkDevices[id].lastRx = uptimeSeconds;
             linkDevices[id].retryAt = 0;
             deviceBuff[id].linkLost = 0;
@@ -392,7 +392,7 @@ void Link_Tick(void)
     for (uint8_t offset = 0; offset < MAXIMUM_DEVICE; offset++)
     {
         id = (nextDevice + offset) % MAXIMUM_DEVICE;
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255 &&
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId && storageData.DeviceConfig[id].nodeId != 255 &&
             ((syncPending & (1u << id)) ||
              (uptimeSeconds - linkDevices[id].lastRx > Link_GetTimeoutSeconds() &&
               (!linkDevices[id].retryAt || (int32_t)(uptimeSeconds - linkDevices[id].retryAt) >= 0))))
@@ -433,7 +433,7 @@ static void beginStatusSync(void)
     syncReply = 0;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255)
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeId && storageData.DeviceConfig[id].nodeId != 255)
         {
             syncPending |= 1u << id;
         }
@@ -474,7 +474,7 @@ static void sendProbe(void)
     payload.moduleIndex = 0;
     /* Never overwrite a slave's valid clock with the default January 2000 RTC. */
     payload.syncTime = systemInfo.currentTime >= 1704067200u ? systemInfo.currentTime : 0;
-    packet = Comm_CreateReqGetStatus(systemInfo.netId, storageData.DeviceConfig[id].nodeIdConfig, payload);
+    packet = Comm_CreateReqGetStatus(systemInfo.netId, storageData.DeviceConfig[id].nodeId, payload);
     /* Publish before queueing: the higher-priority sender can run immediately. */
     linkProbe.transaction = packet.transactionID;
     linkProbe.state = 1;

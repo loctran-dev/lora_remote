@@ -179,7 +179,7 @@ typedef struct
 #pragma pack(1)
 typedef struct DeviceStorageData_t
 {
-    uint8_t nodeIdConfig;      ///< LoRa node id.
+    uint8_t nodeId;            ///< LoRa node id.
     FactoryInfo_t factoryInfo; ///< Identity from pairing; numberOfModule motors are allocated.
     uint8_t deleted;           ///< Slot is free.
 } DeviceStorageData_t;

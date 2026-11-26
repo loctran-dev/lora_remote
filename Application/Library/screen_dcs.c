@@ -776,7 +776,7 @@ static void formatRemaining(uint32_t seconds, char *text)
 /* Timer summary: pending/failed command, "Not set", or deadline and countdown. */
 static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->index].nodeIdConfig);
+    Schedule_State_e state = Schedule_GetStateForNode(storageData.DeviceConfig[device->index].nodeId);
     uint8_t present;
     char text[16];
     uint32_t remaining;

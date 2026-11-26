@@ -47,7 +47,7 @@ void RemoteHistory_Init(void)
  */
 uint16_t RemoteHistory_Owner(uint8_t id)
 {
-    return ((uint16_t)systemInfo.netId << 8) | storageData.DeviceConfig[id].nodeIdConfig;
+    return ((uint16_t)systemInfo.netId << 8) | storageData.DeviceConfig[id].nodeId;
 }
 
 /**
@@ -86,7 +86,7 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     /* Accept it only from the paired device with the same serial. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (storageData.DeviceConfig[id].deleted || storageData.DeviceConfig[id].nodeIdConfig != packet.nodeId ||
+        if (storageData.DeviceConfig[id].deleted || storageData.DeviceConfig[id].nodeId != packet.nodeId ||
             storageData.DeviceConfig[id].factoryInfo.serial != event.serial)
         {
             continue;

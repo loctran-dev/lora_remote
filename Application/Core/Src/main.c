@@ -959,8 +959,8 @@ void Main_SetMotorPower(uint8_t motorPower)
 
   if (storageData.DeviceConfig[systemInfo.curDevice].deleted == FALSE)
   {
-    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig);
-    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig,
+    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.curDevice].nodeId);
+    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeId,
       systemInfo.curModule, motorPower);
     osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
   }
@@ -1001,7 +1001,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
     payload.scheduleTime = systemInfo.currentTime + time;
   }
 
-  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig, payload);
+  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeId, payload);
   Schedule_Track(&packageOut, &payload);
   if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
   {
@@ -1091,7 +1091,7 @@ uint8_t Main_ConnectToDevice(void)
   systemInfo.connectResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
   systemInfo.pairNodeId = findPairedSlot(systemInfo.foundDevice.serial) == slot ?
-    storageData.DeviceConfig[slot].nodeIdConfig : getNotUsedNodeId();
+    storageData.DeviceConfig[slot].nodeId : getNotUsedNodeId();
 
   payload.serial = systemInfo.foundDevice.serial;
   payload.netId = storageData.netIdConfig;
@@ -1206,7 +1206,7 @@ static uint8_t getNotUsedNodeId(void)
     }
     for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-      if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].nodeIdConfig == nodeId)
+      if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].nodeId == nodeId)
       {
         wasNodeIdUsed = TRUE;
         break;
@@ -1304,7 +1304,7 @@ static int8_t storePairedDevice(void)
 
   memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
   storageData.DeviceConfig[slot].factoryInfo = systemInfo.foundDevice;
-  storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.pairNodeId;
+  storageData.DeviceConfig[slot].nodeId = systemInfo.pairNodeId;
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
   systemInfo.configSavePending = TRUE;
   return slot;

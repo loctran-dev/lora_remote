@@ -114,7 +114,7 @@ static void render(void)
     UG_TextboxSetText(&window_1, 5, text);
     snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.DeviceConfig[id].factoryInfo.serial);
     UG_TextboxSetText(&window_1, 7, text);
-    snprintf(text, sizeof(text), "0x%02X", storageData.DeviceConfig[id].nodeIdConfig);
+    snprintf(text, sizeof(text), "0x%02X", storageData.DeviceConfig[id].nodeId);
     UG_TextboxSetText(&window_1, 9, text);
     snprintf(text, sizeof(text), "%c", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar);
     UG_TextboxSetText(&window_1, 11, text);
