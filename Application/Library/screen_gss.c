@@ -12,7 +12,7 @@
 #define DATE_TIME_ITEM     8
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 uint8_t indexOfGeneralSettingMenu;
 

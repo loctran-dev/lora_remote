@@ -128,7 +128,7 @@ MotorStorageData_t *Config_Motor(uint8_t device, uint8_t module)
 }
 
 /**
- * @brief  Pool index of a motor; motorBuff uses the same index for its runtime state.
+ * @brief  Pool index of a motor; motorsData uses the same index for its runtime state.
  * @param  device  Index in storageData.devices.
  * @param  module  Module index on that device.
  * @return 0 .. MAXIMUM_MOTOR-1, or -1 if the motor has no slot.

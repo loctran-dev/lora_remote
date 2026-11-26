@@ -10,7 +10,7 @@
 #define EDIT_CHARACTERS_MAX 19
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 /* uGUI objects shared by every screen. */
 UG_WINDOW window_1;
@@ -79,7 +79,7 @@ void ScrnCommon_Switch(Screen_t *next)
 
 /**
  * @brief  Whether a device is paired and has at least one visible motor.
- * @param  id  Device index in deviceBuff.
+ * @param  id  Device index in devicesInfo.
  * @return 1 if visible (device lists: history picker, connection notices).
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
@@ -89,7 +89,7 @@ uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 
 /**
  * @brief  Whether a motor is paired, has a settings slot and is not hidden.
- * @param  device  Device index in deviceBuff.
+ * @param  device  Device index in devicesInfo.
  * @param  module  Module index on that device.
  */
 uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module)
@@ -176,7 +176,7 @@ MotorStorageData_t *ScrnCommon_CurrentMotor(void)
 
 /**
  * @brief  Runtime state of the selected motor (systemInfo.curDevice/curModule).
- * @return Its motorBuff entry, or a blank placeholder if the motor has no slot,
+ * @return Its motorsData entry, or a blank placeholder if the motor has no slot,
  *         so screens never dereference NULL; writes to the placeholder are discarded.
  */
 MotorData_t *ScrnCommon_CurrentMotorState(void)

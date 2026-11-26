@@ -124,7 +124,7 @@ void LCD_ProcessProbe(void)
   lcdProbeState = 2;
 }
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 /* Arg count, CMD, Args if any */
 #if defined USE_ST7735
 const uint8_t init_cmd[] = {

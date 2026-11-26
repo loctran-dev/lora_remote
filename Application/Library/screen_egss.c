@@ -27,7 +27,7 @@
 #define TXB_ID_HELP        61
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 static uint8_t indexOfEdittingValue;
 static uint8_t indexOfSelection;

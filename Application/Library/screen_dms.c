@@ -11,7 +11,7 @@
 #define INFO_ROWS 7
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 static void init(void);
 static void render(void);
@@ -103,7 +103,7 @@ static void render(void)
     }
 
     /* Title and identity. */
-    device = &deviceBuff[id];
+    device = &devicesInfo[id];
     module = systemInfo.curModule;
     if (module >= MAXIMUM_MODULE)
     {

@@ -16,7 +16,7 @@
 #define DETAIL_FIELDS 6
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 uint8_t historyScreenMode;
 
@@ -102,7 +102,7 @@ void ScrnHs_OpenHistory(void)
 
 /**
  * @brief  Open the history list of one device, skipping the picker.
- * @param  deviceId  Index in deviceBuff.
+ * @param  deviceId  Index in devicesInfo.
  * @return 1 if the list opened, 0 if the id is invalid or the device has no history.
  * @note   Going back from the list returns to device control.
  */

@@ -10,7 +10,7 @@
 #define PENDING_SLOTS 4
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 extern osMessageQueueId_t txMsgQueueHandle;
 
 /* Event waiting to be written to flash by RemoteHistory_Tick.
@@ -42,7 +42,7 @@ void RemoteHistory_Init(void)
 
 /**
  * @brief  Journal owner of a paired device.
- * @param  id  Device index in deviceBuff.
+ * @param  id  Device index in devicesInfo.
  * @return (netId << 8) | nodeId.
  */
 uint16_t RemoteHistory_Owner(uint8_t id)
@@ -100,7 +100,7 @@ void RemoteHistory_Handle(LoraPackage_t packet)
 
 /**
  * @brief  Queue a link lost/restored event for a device.
- * @param  id        Device index in deviceBuff.
+ * @param  id        Device index in devicesInfo.
  * @param  restored  1 = link restored, 0 = link lost.
  */
 void RemoteHistory_Link(uint8_t id, uint8_t restored)

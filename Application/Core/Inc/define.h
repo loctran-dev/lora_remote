@@ -2,10 +2,10 @@
  * @file    define.h
  * @brief   Shared application types: device and system state, and the flash configuration block.
  *
- * deviceBuff[] and systemInfo (defined in main.c) hold the runtime state.
+ * devicesInfo[] and systemInfo (defined in main.c) hold the runtime state.
  * storageData (config_store.c) is the only copy of the settings; general
  * settings are read and edited there directly, device settings are copied
- * from deviceBuff by the ScrnCommon_Save* functions. The layout of the packed
+ * from devicesInfo by the ScrnCommon_Save* functions. The layout of the packed
  * storage structs is the flash format: append new fields at the end only.
  *
  * @defgroup define Shared types
@@ -108,9 +108,9 @@ typedef struct
 } FactoryInfo_t;
 
 /**
- * @brief Runtime state of one motor, an entry of motorBuff.
+ * @brief Runtime state of one motor, an entry of motorsData.
  *
- * motorBuff[i] belongs to the motor that owns storageData.motors[i]
+ * motorsData[i] belongs to the motor that owns storageData.motors[i]
  * (device, module); find it with Main_MotorState().
  */
 typedef struct
@@ -128,11 +128,11 @@ typedef struct
  * @brief Runtime state of one device slot.
  *
  * Identity lives in storageData.devices[] at the same index; each motor
- * has its settings in storageData.motors and its state in motorBuff.
+ * has its settings in storageData.motors and its state in motorsData.
  */
 typedef struct
 {
-    uint8_t index;    ///< Own index in deviceBuff.
+    uint8_t index;    ///< Own index in devicesInfo.
     uint32_t devTime; ///< Device Unix time from the last status (device clock).
     int rssi;         ///< RSSI of the last packet from the device [dBm].
 
@@ -167,7 +167,7 @@ typedef struct
     uint8_t pairNodeId;             ///< Node id offered to the device being paired.
     FactoryInfo_t foundDevice;      ///< Identity of the device found by the search.
 
-    uint8_t curDevice; ///< Selected device (index in deviceBuff).
+    uint8_t curDevice; ///< Selected device (index in devicesInfo).
     uint8_t curModule; ///< Selected module on that device.
 
     uint8_t configSavePending; ///< storageData changed; systemTask writes it to flash.

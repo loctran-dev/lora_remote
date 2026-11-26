@@ -48,15 +48,15 @@ and applies the new periods. `Config_Load()` corrects out-of-range values
 
 Device identity (node id, factory info, deleted flag) exists only in
 `storageData.devices[]`, motor settings only in the motor pool below.
-Runtime state mirrors that split: `deviceBuff[]` (`DeviceInfo_t`: link, RSSI,
-device time) is indexed like `devices`, and `motorBuff[]` (`MotorData_t`:
+Runtime state mirrors that split: `devicesInfo[]` (`DeviceInfo_t`: link, RSSI,
+device time) is indexed like `devices`, and `motorsData[]` (`MotorData_t`:
 power, currents, timer, alarm) like `motors`, so a motor's settings and
 state share its pool index. `Main_MotorState(device, module)` finds the state;
 screens use `ScrnCommon_CurrentMotorState()`, which never returns NULL.
 Pairing clears the state of the pool slots it hands out. Editors write
 `storageData` directly and `ScrnCommon_SaveDeviceSettings()` only requests the
-flash write. Runtime RAM: `deviceBuff` 480 + `motorBuff` 1120 bytes (was 7920
-for `deviceBuff` alone, with six motors per device).
+flash write. Runtime RAM: `devicesInfo` 480 + `motorsData` 1120 bytes (was 7920
+for `devicesInfo` alone, with six motors per device).
 
 ## Motor settings pool ("CFG3", 2026-11-26)
 

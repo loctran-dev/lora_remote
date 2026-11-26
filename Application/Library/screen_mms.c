@@ -20,7 +20,7 @@
 #define ITEM_GAP    3
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 static uint8_t menuIndex;
 static const uint8_t itemIds[ITEM_COUNT] = {TXB_ID_6, TXB_ID_8, TXB_ID_10, TXB_ID_12, TXB_ID_14};

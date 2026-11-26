@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include "communication_lora.h"
 
-/** @brief Link state of one paired device (index as in deviceBuff). */
+/** @brief Link state of one paired device (index as in devicesInfo). */
 typedef struct
 {
     uint32_t lastRx;           ///< Link_Now() of the last packet from the device [s].
@@ -44,7 +44,7 @@ typedef struct
     uint8_t state;             ///< 0 = send next attempt, 1 = queued, 2 = sent, waiting for the reply.
 } Link_ProbeState_t;
 
-/** @brief Per-device link state, indexed like deviceBuff; shown on the device info screen. */
+/** @brief Per-device link state, indexed like devicesInfo; shown on the device info screen. */
 extern Link_DeviceState_t linkDevices[];
 /** @brief Probe state; also read by the USB console. */
 extern Link_ProbeState_t linkProbe;

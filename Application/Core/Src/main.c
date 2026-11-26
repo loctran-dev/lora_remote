@@ -137,12 +137,12 @@ Button_t centerButton = {BTN3_GPIO_Port, BTN3_Pin, eButton_State_Idle, 0, 0, 0};
 Button_t rightButton = {BTN4_GPIO_Port, BTN4_Pin, eButton_State_Idle, 0, 0, 0};  ///< RIGHT (PC8), wakes from STOP.
 Button_t onButton = {BTN2_GPIO_Port, BTN2_Pin, eButton_State_Idle, 0, 0, 0};     ///< ON (PA8).
 Button_t offButton = {BTN5_GPIO_Port, BTN5_Pin, eButton_State_Idle, 0, 0, 0};    ///< OFF (PC7), wakes from STOP.
-SystemInfo_t systemInfo;                 ///< Runtime state of the remote.
-DeviceInfo_t deviceBuff[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
-MotorData_t motorBuff[MAXIMUM_MOTOR];    ///< Motor runtime state, indexed like storageData.motors.
-LoRa sLoRaCtrl;                          ///< LoRa radio driver state.
-uint16_t errorCode = 0;                  ///< Result of LoRa_init() at start-up.
-uint8_t rxBuffer[256];                   ///< Receive buffer of loraReceiveTask.
+SystemInfo_t systemInfo;                  ///< Runtime state of the remote.
+DeviceInfo_t devicesInfo[MAXIMUM_DEVICE]; ///< Paired devices, indexed by device id.
+MotorData_t motorsData[MAXIMUM_MOTOR];    ///< Motor runtime state, indexed like storageData.motors.
+LoRa sLoRaCtrl;                           ///< LoRa radio driver state.
+uint16_t errorCode = 0;                   ///< Result of LoRa_init() at start-up.
+uint8_t rxBuffer[256];                    ///< Receive buffer of loraReceiveTask.
 
 extern Screen_t deviceControlScreen;
 Screen_t *currentScreen = &deviceControlScreen;
@@ -277,12 +277,12 @@ int main(void)
   systemInfo.netId = storageData.netId;
   systemInfo.runMode = eSystem_RunMode_Normal;
 
-  /* Device list: runtime state in deviceBuff; Config_Load() has already checked the settings. */
+  /* Device list: runtime state in devicesInfo; Config_Load() has already checked the settings. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
     storageData.devices[devNo].factoryInfo.typeChar =
       deviceTypeChar(storageData.devices[devNo].factoryInfo.type);
-    deviceBuff[devNo].index = devNo;
+    devicesInfo[devNo].index = devNo;
   }
 
   /* Select the first paired device. */
@@ -293,7 +293,7 @@ int main(void)
   {
     if (storageData.devices[devNo].deleted == FALSE)
     {
-      deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
+      devicesInfo[devNo].lastRxTime = systemInfo.currentTime;
       systemInfo.curDevice = devNo;
       systemInfo.curModule = 0;
       break;
@@ -1036,15 +1036,15 @@ void Main_ScanNewDevice(void)
 
 /**
  * @brief  Runtime state of a motor (status, currents, timer, alarm).
- * @param  device  Index in deviceBuff.
+ * @param  device  Index in devicesInfo.
  * @param  module  Module index on that device.
- * @return Its motorBuff entry, or NULL if the motor has no storageData.motors slot.
+ * @return Its motorsData entry, or NULL if the motor has no storageData.motors slot.
  */
 MotorData_t *Main_MotorState(uint8_t device, uint8_t module)
 {
   int8_t slot = Config_MotorSlot(device, module);
 
-  return slot < 0 ? NULL : &motorBuff[slot];
+  return slot < 0 ? NULL : &motorsData[slot];
 }
 
 /**
@@ -1237,7 +1237,7 @@ static char deviceTypeChar(uint8_t deviceType)
   }
 }
 
-/* Slot in deviceBuff already paired with this serial, or -1 if there is none. */
+/* Slot in devicesInfo already paired with this serial, or -1 if there is none. */
 static int8_t findPairedSlot(uint32_t serial)
 {
   for (int8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
@@ -1289,9 +1289,9 @@ static int8_t storePairedDevice(void)
     return -1;
   }
 
-  memset(&deviceBuff[slot], 0, sizeof(deviceBuff[slot]));
-  deviceBuff[slot].index = slot;
-  deviceBuff[slot].lastRxTime = systemInfo.currentTime;
+  memset(&devicesInfo[slot], 0, sizeof(devicesInfo[slot]));
+  devicesInfo[slot].index = slot;
+  devicesInfo[slot].lastRxTime = systemInfo.currentTime;
   for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
   {
     MotorData_t *motor = Main_MotorState(slot, module);

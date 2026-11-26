@@ -18,7 +18,7 @@
 #define CONNECTION_NOTICE_MS 6000u
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 
 /* Timer selection state. */
 static uint8_t inScheduleSelection = 0;
@@ -91,7 +91,7 @@ Screen_t deviceControlScreen = {
 
 /**
  * @brief  Report a lost connection: wake the display, beep three times and show the device.
- * @param  id  Device index in deviceBuff.
+ * @param  id  Device index in devicesInfo.
  * @note   Switches to device control unless an editor, the history or a
  *         schedule selection is open; the notice is shown on that screen.
  */
@@ -187,7 +187,7 @@ static void init(void)
     createLabel(&textbox_5, TXB_ID_4, 92, 144, 127, 159, "Next ", C_RED, C_WHITE, ALIGN_CENTER_RIGHT);
 
     /* Title, RSSI and the three phase currents. */
-    device = deviceBuff[systemInfo.curDevice];
+    device = devicesInfo[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.devices[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
@@ -238,7 +238,7 @@ static void render(void)
     }
 
     /* Title (or lock notice) and phase currents. */
-    device = deviceBuff[systemInfo.curDevice];
+    device = devicesInfo[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.devices[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
@@ -279,7 +279,7 @@ static void render(void)
     /* Apply after the RSSI update so the notification remains visible. */
     if (connectionNotice >= 0)
     {
-        if (!deviceBuff[connectionNotice].linkLost ||
+        if (!devicesInfo[connectionNotice].linkLost ||
             (uint32_t)(HAL_GetTick() - connectionNoticeTick) >= CONNECTION_NOTICE_MS)
         {
             connectionNotice = -1;
@@ -693,7 +693,7 @@ static void createTimerScreen(void)
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
-    device = &deviceBuff[systemInfo.curDevice];
+    device = &devicesInfo[systemInfo.curDevice];
     type = storageData.devices[device->index].factoryInfo.typeChar;
     if (type < 32 || type > 126)
     {

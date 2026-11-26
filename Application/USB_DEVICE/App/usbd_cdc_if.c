@@ -37,7 +37,7 @@
 #include "cmsis_os.h"
 #include "task.h"
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 #include "lora.h"
 extern LoRa sLoRaCtrl;
 
@@ -538,7 +538,7 @@ void CDC_ProcessEcho_FS(void)
       else echoLength = sprintf((char*)UserRxBufferFS,
         "LINK DEV=%u NOW=%lu RX_AGE=%lu STATUS_AGE=%lu ERROR=%u PROBE=%d TRY=%u STATE=%u DEADLINE=%lu REQUESTS=%lu OK=%lu FAIL=%lu STATUS=%lu MODE=%u STOP=%lu RTC=%lu RF=%lu KEY=%lu RX_PENDING=%u\n",
         id + 1, (unsigned long)Link_Now(), (unsigned long)(Link_Now() - linkDevices[id].lastRx),
-        (unsigned long)(Link_Now() - linkDevices[id].lastStatus), deviceBuff[id].linkLost,
+        (unsigned long)(Link_Now() - linkDevices[id].lastStatus), devicesInfo[id].linkLost,
         linkProbe.device + 1, linkProbe.attempts, linkProbe.state, (unsigned long)linkProbe.deadline,
         (unsigned long)linkProbe.requests, (unsigned long)linkProbe.confirmations,
         (unsigned long)linkProbe.failures, (unsigned long)linkProbe.receivedStatus, systemInfo.runMode,

@@ -13,7 +13,7 @@
 #define LINK_REPLY_TIMEOUT_SECONDS 10
 
 extern SystemInfo_t systemInfo;
-extern DeviceInfo_t deviceBuff[MAXIMUM_DEVICE];
+extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 extern osMessageQueueId_t txMsgQueueHandle;
 
 Link_DeviceState_t linkDevices[MAXIMUM_DEVICE];
@@ -55,7 +55,7 @@ uint16_t Link_GetTimeoutSeconds(void)
 
 /**
  * @brief  Auto-status period of a device, sent to it in SET_CONFIG.
- * @param  id  Device index in deviceBuff.
+ * @param  id  Device index in devicesInfo.
  * @return 0 .. 9999 [s], or 0 for an invalid id.
  */
 uint16_t Link_GetAutoStatus(uint8_t id)
@@ -65,7 +65,7 @@ uint16_t Link_GetAutoStatus(uint8_t id)
 
 /**
  * @brief  Set the auto-status period of a device and mark the settings for saving.
- * @param  id       Device index in deviceBuff; ignored if out of range.
+ * @param  id       Device index in devicesInfo; ignored if out of range.
  * @param  seconds  0 .. 9999 [s]; larger values are ignored.
  */
 void Link_SetAutoStatus(uint8_t id, uint16_t seconds)
@@ -110,7 +110,7 @@ void Link_SetTimeoutSeconds(uint16_t seconds)
  * the magic, checksum or a value is invalid, and starts the uptime at 0.
  *
  * @param  rtcSecond  Current RTC value, from Power_ReadRtcSecond().
- * @note   Call once from main() after deviceBuff is loaded.
+ * @note   Call once from main() after devicesInfo is loaded.
  */
 void Link_Init(uint32_t rtcSecond)
 {
@@ -220,7 +220,7 @@ void Link_RequestStatusSync(void)
 
 /**
  * @brief  Mark the status sync reply of the device being probed as received.
- * @param  id           Device index in deviceBuff.
+ * @param  id           Device index in devicesInfo.
  * @param  transaction  Transaction id of the reply; must match the probe.
  */
 void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
@@ -233,7 +233,7 @@ void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
 
 /**
  * @brief  Record a packet from a device and clear its connection error.
- * @param  id      Device index in deviceBuff; deleted devices are ignored.
+ * @param  id      Device index in devicesInfo; deleted devices are ignored.
  * @param  status  1 if the packet carried device status, 0 otherwise.
  * @note   Requests a scan so other silent devices are checked too.
  */
@@ -246,13 +246,13 @@ void Link_RecordPacket(uint8_t id, uint8_t status)
     linkDevices[id].lastRx = uptimeSeconds;
     if (status)
     {
-        if (deviceBuff[id].linkLost)
+        if (devicesInfo[id].linkLost)
         {
             RemoteHistory_Link(id, 1);
         }
         linkDevices[id].lastStatus = uptimeSeconds;
         linkDevices[id].statusGeneration++;
-        deviceBuff[id].linkLost = 0;
+        devicesInfo[id].linkLost = 0;
         linkProbe.receivedStatus++;
     }
     scanRequested = 1; /* Check OTHER devices too, including hidden ones. */
@@ -342,7 +342,7 @@ void Link_Tick(void)
             linkDevices[id].node = storageData.devices[id].nodeId;
             linkDevices[id].lastRx = uptimeSeconds;
             linkDevices[id].retryAt = 0;
-            deviceBuff[id].linkLost = 0;
+            devicesInfo[id].linkLost = 0;
             if (linkProbe.device == id)
             {
                 linkProbe.device = -1;
@@ -450,11 +450,11 @@ static void endProbe(uint8_t failed)
     scanRequested = 1;
     if (failed)
     {
-        if (!deviceBuff[id].linkLost)
+        if (!devicesInfo[id].linkLost)
         {
             RemoteHistory_Link(id, 0);
         }
-        deviceBuff[id].linkLost = 1;
+        devicesInfo[id].linkLost = 1;
         linkDevices[id].retryAt = uptimeSeconds + Link_GetTimeoutSeconds();
         linkProbe.failures++;
         ScrnDcs_ShowConnectionError(id);

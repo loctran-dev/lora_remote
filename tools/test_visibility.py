@@ -39,7 +39,7 @@ def symbol(name):
 DEVICE_STRIDE = 24        # sizeof(DeviceInfo_t)
 DEV_CONNECTION_ERROR = 20
 DEV_RSSI = 8
-# MotorData_t: runtime state of a motor, motorBuff[i] belongs to motors[i].
+# MotorData_t: runtime state of a motor, motorsData[i] belongs to motors[i].
 MODULE_STRIDE = 28        # sizeof(MotorData_t)
 # DeviceStorageData_t (packed), storageData.devices[] at storage + 15: device identity.
 CFG_BASE, CFG_STRIDE = 15, 10
@@ -65,9 +65,9 @@ class FirmwareHarness(unittest.TestCase):
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")
-        cls.device, size = symbol("deviceBuff")
+        cls.device, size = symbol("devicesInfo")
         assert size == 20 * DEVICE_STRIDE
-        cls.motor_state, size = symbol("motorBuff")
+        cls.motor_state, size = symbol("motorsData")
         assert size == MOTOR_SLOTS * MODULE_STRIDE
         cls.system = symbol("systemInfo")[0]
         cls.storage = symbol("storageData")[0]
@@ -94,7 +94,7 @@ class FirmwareHarness(unittest.TestCase):
         return self.cpu.mem_read(address, 1)[0]
 
     def dev(self, index, offset=0):
-        """Address in deviceBuff[index] (runtime state)."""
+        """Address in devicesInfo[index] (runtime state)."""
         return self.device + index * DEVICE_STRIDE + offset
 
     def cfg(self, index, offset=0):
@@ -106,7 +106,7 @@ class FirmwareHarness(unittest.TestCase):
         return self.storage + MOTOR_BASE + slot * MOTOR_STRIDE + offset
 
     def state_of(self, slot, offset=0):
-        """Address in motorBuff[slot], the runtime state of the motor in storageData.motors[slot]."""
+        """Address in motorsData[slot], the runtime state of the motor in storageData.motors[slot]."""
         return self.motor_state + slot * MODULE_STRIDE + offset
 
     def add(self, index, hidden=False):

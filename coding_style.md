@@ -206,7 +206,7 @@ static uint8_t isValidPacket(const LoraPackage_t *packet)
 /* screen_hs.c */
 /**
  * @brief  Open the history list of one device, skipping the picker.
- * @param  deviceId  Index in deviceBuff (0 .. MAXIMUM_DEVICE-1).
+ * @param  deviceId  Index in devicesInfo (0 .. MAXIMUM_DEVICE-1).
  * @return 1 if the list opened, 0 if the id is invalid or has no history.
  */
 uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId)
