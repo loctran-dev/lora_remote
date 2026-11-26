@@ -124,13 +124,15 @@ issues under "Open" with the same fields.
 
 ### KI-10: Pairing resets motor settings on the remote but not on the slave
 
-- Fixed: 2026-11-26, commit 926d09a.
-- How: storePairedDevice marks every allocated module; CmdHandler_ConfigSyncTick
-  sends each motor's CMD_SET_CONFIG once the slave is heard on its new node
-  (after CONFIRM), without a beep, retrying a rejection or timeout up to 3
-  times. Bench: slave A=2 -> A=0 after re-pairing.
-- Limit: the pending sync is kept in RAM; a remote restart before the slave is
-  heard drops it (save the settings by hand then).
+- Fixed: 2026-11-27, Lora_device commit 1ef8f76 (pairing reset) and remote
+  commit 86b4048 (interim sync removed).
+- How: the slave sets threshold, delay and auto-status to 0 when it accepts
+  CMD_CONFIG_CONNECTION, in the same flash record as the new radio settings.
+  The remote already gives every motor these defaults in storePairedDevice, so
+  no CMD_SET_CONFIG is needed. Bench: slave A=2 -> A=0 at CONFIRM, remote AUTO=0.
+- History: 926d09a first fixed it on the remote by sending CMD_SET_CONFIG once
+  the slave was heard on its new node; replaced because that sync was lost on a
+  remote restart, needed retries (motor ON) and extra radio traffic.
 
 ### KI-1: Modules other than 0 never receive status or alarms
 

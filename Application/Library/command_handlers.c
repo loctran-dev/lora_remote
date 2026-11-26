@@ -17,23 +17,8 @@ extern SystemInfo_t systemInfo;
 extern DeviceInfo_t devicesInfo[MAXIMUM_DEVICE];
 extern LoRa sLoRaCtrl;
 
-#define CONFIG_SYNC_TIMEOUT_MS 5000u  /* wait for the slave's CMD_SET_CONFIG reply */
-#define CONFIG_SYNC_RETRY_MS   10000u /* pause after a rejected or unanswered sync */
-#define CONFIG_SYNC_TRIES      3      /* attempts per device before giving up */
-
 static uint16_t configTransaction;
 static uint8_t configNode;
-static uint8_t configBackground; /* the pending CMD_SET_CONFIG is a settings sync: no beep */
-
-/* Settings sync after pairing (KI-10): bit m of syncPending[d] = module m of
-   device d still has to be sent. Runtime only; lost if the remote restarts. */
-static uint8_t syncPending[MAXIMUM_DEVICE];
-static uint8_t syncTries[MAXIMUM_DEVICE];
-static uint8_t syncInFlight;
-static uint8_t syncDevice;
-static uint8_t syncModule;
-static uint32_t syncDeadline;
-static uint32_t syncNextTick;
 
 /* Private handlers are dispatched only through cmdTable. */
 static void handleHistory(LoraPackage_t packet);
@@ -48,7 +33,6 @@ static void handleAlarmMessage(LoraPackage_t packet);
 static void applyMotorStatus(uint8_t devNo, const LoraPackage_t *packet, const PayloadStatusRecord_t *record,
     uint32_t localTime);
 static uint8_t sendModuleConfig(uint8_t devNo, uint8_t module);
-static void finishSync(uint8_t accepted, uint32_t now);
 
 /* Command dispatch table. Keep this order aligned with implementations below. */
 const CmdMapping_t cmdTable[] = {
@@ -76,96 +60,7 @@ const CmdMapping_t cmdTable[] = {
  */
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
-    configBackground = 0;
     return sendModuleConfig(systemInfo.curDevice, systemInfo.curModule);
-}
-
-/**
- * @brief  Mark every motor of a newly paired device for a settings sync (KI-10).
- *
- * Pairing gives the motors the default settings on the remote only;
- * CmdHandler_ConfigSyncTick() sends them to the slave once it is heard on its
- * new node.
- *
- * @param  devNo  Index in devicesInfo.
- */
-void CmdHandler_RequestConfigSync(uint8_t devNo)
-{
-    if (devNo >= MAXIMUM_DEVICE)
-    {
-        return;
-    }
-    syncPending[devNo] = 0;
-    for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
-    {
-        if (Config_Motor(devNo, module))
-        {
-            syncPending[devNo] |= 1u << module;
-        }
-    }
-    syncTries[devNo] = 0;
-    if (syncInFlight && syncDevice == devNo)
-    {
-        syncInFlight = 0; /* its reply would belong to the old pairing */
-    }
-}
-
-/**
- * @brief  Send pending settings syncs, one CMD_SET_CONFIG at a time.
- *
- * A device is synced only after a packet from it has been received since it
- * was paired (it uses its new node id then) and while its link is up. A
- * rejected (e.g. motor ON) or unanswered request is retried after
- * CONFIG_SYNC_RETRY_MS, at most CONFIG_SYNC_TRIES times per device.
- *
- * @param  now  HAL_GetTick() [ms].
- * @note   Called by systemTask.
- */
-void CmdHandler_ConfigSyncTick(uint32_t now)
-{
-    if (syncInFlight)
-    {
-        if ((int32_t)(now - syncDeadline) < 0)
-        {
-            return;
-        }
-        finishSync(FALSE, now);
-    }
-    if ((int32_t)(now - syncNextTick) < 0)
-    {
-        return;
-    }
-    for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
-    {
-        uint8_t module = 0;
-
-        if (!syncPending[devNo])
-        {
-            continue;
-        }
-        if (storageData.devices[devNo].deleted)
-        {
-            syncPending[devNo] = 0;
-            continue;
-        }
-        if (devicesInfo[devNo].lastRxTick == 0 || devicesInfo[devNo].linkLost)
-        {
-            continue;
-        }
-        while (!(syncPending[devNo] & (1u << module)))
-        {
-            module++;
-        }
-        configBackground = 1;
-        if (sendModuleConfig(devNo, module))
-        {
-            syncInFlight = 1;
-            syncDevice = devNo;
-            syncModule = module;
-            syncDeadline = now + CONFIG_SYNC_TIMEOUT_MS;
-        }
-        return;
-    }
 }
 
 /* Queue CMD_SET_CONFIG with the stored settings of one motor; its reply is matched by transaction. */
@@ -191,24 +86,6 @@ static uint8_t sendModuleConfig(uint8_t devNo, uint8_t module)
     return osMessageQueuePut(txMsgQueueHandle, &packet, 0, 0) == osOK;
 }
 
-/* Outcome of the sync in flight: accepted clears that module, otherwise count a try. */
-static void finishSync(uint8_t accepted, uint32_t now)
-{
-    syncInFlight = 0;
-    if (accepted)
-    {
-        syncPending[syncDevice] &= (uint8_t)~(1u << syncModule);
-        syncTries[syncDevice] = 0;
-        syncNextTick = now;
-        return;
-    }
-    if (++syncTries[syncDevice] >= CONFIG_SYNC_TRIES)
-    {
-        syncPending[syncDevice] = 0; /* give up; the user can still save the settings by hand */
-    }
-    syncNextTick = now + CONFIG_SYNC_RETRY_MS;
-}
-
 static void handleHistory(LoraPackage_t packet)
 {
     if (packet.code != CMD_HISTORY)
@@ -231,14 +108,6 @@ static void handleSetConfig(LoraPackage_t packet)
     memcpy(&reply, &packet.rawData[LORA_PACKAGE_HEADER_SIZE], sizeof(reply));
     configTransaction = 0;
     Link_RecordNodePacket(packet.nodeId, 0);
-    if (configBackground)
-    {
-        if (syncInFlight)
-        {
-            finishSync(reply.result == TRUE, HAL_GetTick());
-        }
-        return;
-    }
     Main_SetBuzzerMode(reply.result ? eBuzzer_Mode_2ShortBeep : eBuzzer_Mode_LongBeep);
 }
 
