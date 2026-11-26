@@ -1441,8 +1441,6 @@ void StartSystemTask(void *argument)
     handlePairingSearch();
     handlePairingConnection();
 
-    /* Connection state is owned by Link_Tick(), including sleep-aware retries. */
-
     /* Persist configuration. */
     if (systemInfo.configSavePending == TRUE)
     {
@@ -1455,6 +1453,8 @@ void StartSystemTask(void *argument)
 
     RemoteHistory_Tick();
     Schedule_Tick();
+    /* Link monitor: probes silent devices and sets devicesInfo[].linkLost.
+       Skipped while a received LoRa packet is still waiting to be handled. */
     if (!powerSleep.rxPending)
     {
       Link_Tick();
