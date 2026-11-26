@@ -119,7 +119,7 @@ static void init(void)
         createButtons(" Inc", "Next", "Dec ");
         createCaption(indexOfSettingMenu == ITEM_AUTO_STATUS ? "Auto status interval" : "Alarm delay");
         sprintf(secondsText, "%04d s", indexOfSettingMenu == ITEM_AUTO_STATUS ?
-            Link_GetAutoStatus(systemInfo.curDevice) : module.alarmDelayTime);
+            Link_GetAutoStatus(systemInfo.curDevice) : module.alarmDelay);
         createLabel(&textbox_8, TXB_ID_7, 15, 57, 120, 67, secondsText, C_BLACK, ALIGN_CENTER);
         indexOfEdittingValue = 0;
     }
@@ -295,7 +295,7 @@ static void centerPressed(void)
             }
             else
             {
-                currentConfig()->alarmDelayTime = value;
+                currentConfig()->alarmDelay = value;
             }
         }
         free(valueText);

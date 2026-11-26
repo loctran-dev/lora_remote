@@ -198,7 +198,7 @@ typedef struct MotorStorageData_t
     uint8_t module;          ///< Module index on that device, 0 .. MAXIMUM_MODULE-1.
     char name[20];           ///< Display name.
     float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
-    uint32_t alarmDelayTime; ///< Time below the threshold before the alarm [s].
+    uint32_t alarmDelay;     ///< Time below the threshold before the alarm [s].
     uint8_t locked;          ///< Power commands are refused.
     uint8_t hidden;          ///< Hidden from device control.
 } MotorStorageData_t;

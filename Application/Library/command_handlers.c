@@ -62,13 +62,13 @@ uint8_t CmdHandler_SendCurrentModuleConfig(void)
     PayloadRequestSetConfig_t config;
     LoraPackage_t packet;
     if (device->deleted || motor == NULL ||
-        !(motor->alarmThreshold >= 0 && motor->alarmThreshold <= 99.99f) || motor->alarmDelayTime > 9999)
+        !(motor->alarmThreshold >= 0 && motor->alarmThreshold <= 99.99f) || motor->alarmDelay > 9999)
     {
         return FALSE;
     }
     config.moduleIndex = systemInfo.curModule;
     config.alarmThresholdCentiAmp = (uint16_t)(motor->alarmThreshold * 100.0f + 0.5f);
-    config.alarmDelaySeconds = motor->alarmDelayTime;
+    config.alarmDelaySeconds = motor->alarmDelay;
     config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.curDevice);
     packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeId, CMD_SET_CONFIG,
                                    LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);

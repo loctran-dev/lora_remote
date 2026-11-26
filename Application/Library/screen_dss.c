@@ -78,7 +78,7 @@ static void render(void)
                 sprintf(value, "%.2f A", module->alarmThreshold);
                 break;
             case 1:
-                sprintf(value, "%lu s", (unsigned long)module->alarmDelayTime);
+                sprintf(value, "%lu s", (unsigned long)module->alarmDelay);
                 break;
             case 2:
                 strcpy(value, module->locked ? "Yes" : "No");
