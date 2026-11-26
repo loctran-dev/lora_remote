@@ -1,6 +1,6 @@
 # Remote control lock
 
-The existing per-module `isLock` setting now gates `Main_SetMotorPower()`.
+The existing per-module `locked` setting now gates `Main_SetMotorPower()`.
 When locked, neither ON nor OFF is queued for LoRa transmission. A long beep
 indicates the rejected action. The control-screen header also displays
 `ON BLOCKED` / `OFF BLOCKED` and `LOCKED` on a red background for 3 seconds.

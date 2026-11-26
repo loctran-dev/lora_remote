@@ -40,6 +40,10 @@ static uint16_t generateTransactionID(void);
 - Tên hàm dùng `lowerCamelCase` sau tiền tố module; kiểu dữ liệu, macro và enum giữ theo quy ước hiện có của project.
 - Kiểu `struct` dùng mẫu `<Module>_<Name>_t`, ví dụ `Link_ProbeState_t`, `Schedule_RequestState_t`. Nếu struct đại diện cho chính module thì có thể dùng `<Module>_t`, ví dụ `Button_t`.
 - Kiểu `enum` phải có tiền tố module và hậu tố `_e`; giá trị enum bắt đầu bằng `e` và lặp lại tên kiểu.
+- Biến/trường kiểu cờ (TRUE/FALSE) đặt tên bằng tính từ hoặc quá khứ phân từ, không dùng tiền tố `is`/`has`/`b`, và luôn ở dạng khẳng định.
+  - Đúng: `locked`, `hidden`, `deleted`, `charging`, `linkLost`, `configSavePending`, `clicked`.
+  - Sai: `isLock`, `isHide`, `isDelete`, `isNeedSaveConfig`, `notLocked`.
+  - Đọc thành câu trong `if`: `if (motor->locked)`.
 
 ```c
 typedef enum CmdHandler_TimerState_e

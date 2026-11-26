@@ -39,12 +39,12 @@ void Button_UpdateState(Button_t *btn)
         case eButton_State_Pressed:
             if (!reading) /* Released: short press */
             {
-                btn->isPressed = 1;
+                btn->clicked = 1;
                 btn->state = eButton_State_Idle;
             }
             else if (HAL_GetTick() - btn->timer >= 1000) /* Long press > 1 s */
             {
-                btn->isLongPressed = 1;
+                btn->longPressed = 1;
                 btn->state = eButton_State_WaitRelease;
             }
             break;

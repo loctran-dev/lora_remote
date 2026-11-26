@@ -239,20 +239,20 @@ void Link_RecordStatusReply(uint8_t id, uint16_t transaction)
  */
 void Link_RecordPacket(uint8_t id, uint8_t status)
 {
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].isDelete)
+    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
     {
         return;
     }
     linkDevices[id].lastRx = uptimeSeconds;
     if (status)
     {
-        if (deviceBuff[id].isConnectionError)
+        if (deviceBuff[id].linkLost)
         {
             RemoteHistory_Link(id, 1);
         }
         linkDevices[id].lastStatus = uptimeSeconds;
         linkDevices[id].statusGeneration++;
-        deviceBuff[id].isConnectionError = 0;
+        deviceBuff[id].linkLost = 0;
         linkProbe.receivedStatus++;
     }
     scanRequested = 1; /* Check OTHER devices too, including hidden ones. */
@@ -267,7 +267,7 @@ void Link_RecordNodePacket(uint8_t node, uint8_t status)
 {
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].isDelete && storageData.DeviceConfig[id].nodeIdConfig == node)
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig == node)
         {
             Link_RecordPacket(id, status);
             return;
@@ -336,13 +336,13 @@ void Link_Tick(void)
     /* Reset link state of devices that were re-paired or deleted. */
     for (id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (linkDevices[id].node != storageData.DeviceConfig[id].nodeIdConfig || storageData.DeviceConfig[id].isDelete)
+        if (linkDevices[id].node != storageData.DeviceConfig[id].nodeIdConfig || storageData.DeviceConfig[id].deleted)
         {
             syncPending &= ~(1u << id);
             linkDevices[id].node = storageData.DeviceConfig[id].nodeIdConfig;
             linkDevices[id].lastRx = uptimeSeconds;
             linkDevices[id].retryAt = 0;
-            deviceBuff[id].isConnectionError = 0;
+            deviceBuff[id].linkLost = 0;
             if (linkProbe.device == id)
             {
                 linkProbe.device = -1;
@@ -392,7 +392,7 @@ void Link_Tick(void)
     for (uint8_t offset = 0; offset < MAXIMUM_DEVICE; offset++)
     {
         id = (nextDevice + offset) % MAXIMUM_DEVICE;
-        if (!storageData.DeviceConfig[id].isDelete && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255 &&
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255 &&
             ((syncPending & (1u << id)) ||
              (uptimeSeconds - linkDevices[id].lastRx > Link_GetTimeoutSeconds() &&
               (!linkDevices[id].retryAt || (int32_t)(uptimeSeconds - linkDevices[id].retryAt) >= 0))))
@@ -419,7 +419,7 @@ static void saveSettings(void)
 {
     storageData.linkSettingsMagic = LINK_MAGIC;
     storageData.linkSettingsChecksum = extensionChecksum();
-    systemInfo.isNeedSaveConfig = 1;
+    systemInfo.configSavePending = 1;
 }
 
 static void beginStatusSync(void)
@@ -433,7 +433,7 @@ static void beginStatusSync(void)
     syncReply = 0;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].isDelete && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255)
+        if (!storageData.DeviceConfig[id].deleted && storageData.DeviceConfig[id].nodeIdConfig && storageData.DeviceConfig[id].nodeIdConfig != 255)
         {
             syncPending |= 1u << id;
         }
@@ -450,11 +450,11 @@ static void endProbe(uint8_t failed)
     scanRequested = 1;
     if (failed)
     {
-        if (!deviceBuff[id].isConnectionError)
+        if (!deviceBuff[id].linkLost)
         {
             RemoteHistory_Link(id, 0);
         }
-        deviceBuff[id].isConnectionError = 1;
+        deviceBuff[id].linkLost = 1;
         linkDevices[id].retryAt = uptimeSeconds + Link_GetTimeoutSeconds();
         linkProbe.failures++;
         ScrnDcs_ShowConnectionError(id);

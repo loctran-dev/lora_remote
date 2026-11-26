@@ -81,13 +81,13 @@ static void render(void)
                 sprintf(value, "%lu s", (unsigned long)module->alarmDelayTime);
                 break;
             case 2:
-                strcpy(value, module->isLock ? "Yes" : "No");
+                strcpy(value, module->locked ? "Yes" : "No");
                 break;
             case 3:
-                strcpy(value, module->isHide ? "Yes" : "No");
+                strcpy(value, module->hidden ? "Yes" : "No");
                 break;
             case 4:
-                strcpy(value, storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete ? "Yes" : "No");
+                strcpy(value, storageData.DeviceConfig[systemInfo.currentDeviceId].deleted ? "Yes" : "No");
                 break;
             case 5:
                 snprintf(value, sizeof(value), "%.19s", module->name);

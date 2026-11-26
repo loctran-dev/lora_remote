@@ -45,7 +45,7 @@ int main(void)
     /* 1. Blank flash: defaults, saved to slot A. */
     erase_all(); boot();
     CHECK(storageData.netIdConfig == 1 && storageData.frequencyConfig == 433 && storageData.sfConfig == 7, "defaults");
-    CHECK(storageData.tUpdate == 5 && storageData.tSleepUpdate == 300 && storageData.DeviceConfig[3].isDelete == 1, "defaults 2");
+    CHECK(storageData.tUpdate == 5 && storageData.tSleepUpdate == 300 && storageData.DeviceConfig[3].deleted == 1, "defaults 2");
     CHECK(seq(0) == 1, "defaults saved to A with sequence 1");
 
     /* 2. Alternating saves; reload picks the newest. */
@@ -74,7 +74,7 @@ int main(void)
     /* 4. Older formats (a raw 885-byte block with lastWriteSuccess set) are not read: defaults. */
     erase_all();
     memset(flash, 0, 885); flash[0] = 9; flash[835] = 1;
-    boot(); CHECK(storageData.netIdConfig == 1 && storageData.DeviceConfig[2].isDelete == 1, "old format ignored");
+    boot(); CHECK(storageData.netIdConfig == 1 && storageData.DeviceConfig[2].deleted == 1, "old format ignored");
     CHECK(seq(0) == 1, "defaults saved over the old block in A");
     storageData.tUpdate = 10; CHECK(Config_Save() == 0, "save to B"); CHECK(seq(1) == 2, "B sequence 2");
     boot(); CHECK(storageData.tUpdate == 10, "reload 10");

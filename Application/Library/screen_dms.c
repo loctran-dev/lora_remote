@@ -91,7 +91,7 @@ static void render(void)
     uint32_t seconds;
 
     ScrnCommon_StatusBarUpdate();
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].isDelete)
+    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
     {
         UG_TextboxSetText(&window_1, 5, "No paired device");
         for (uint8_t row = 0; row < INFO_ROWS; row++)

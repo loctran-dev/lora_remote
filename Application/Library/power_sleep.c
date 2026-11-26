@@ -156,7 +156,7 @@ void Power_Tick(void)
         currentScreen == &editDeviceSettingScreen || currentScreen == &editGeneralSettingScreen ||
         currentScreen == &dateTimeScreen ||
         ScrnDcs_IsScheduleEditing() || Schedule_IsWaiting() || RemoteHistory_Busy() ||
-        currentScreen == &devicePairingScreen || systemInfo.isNeedSaveConfig || buttonsDown())
+        currentScreen == &devicePairingScreen || systemInfo.configSavePending || buttonsDown())
     {
         return;
     }
@@ -189,7 +189,7 @@ void Power_TryStop(void)
     uint32_t cause;
 
     if (systemInfo.runMode != eSystem_RunMode_Sleep || Link_IsBusy() || powerSleep.rxPending ||
-        powerSleep.txBusy || usbActive() || systemInfo.isNeedSaveConfig ||
+        powerSleep.txBusy || usbActive() || systemInfo.configSavePending ||
         osMessageQueueGetCount(txMsgQueueHandle) || osMessageQueueGetCount(buzzerQueueHandle) ||
         (TIM3->CCER & TIM_CCER_CC3E) || hspi1.State != HAL_SPI_STATE_READY ||
         hspi2.State != HAL_SPI_STATE_READY || buttonsDown())

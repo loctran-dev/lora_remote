@@ -115,9 +115,9 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t isAlarmOccurred; ///< An alarm was reported.
-    Alarm_Name_e alarm;      ///< Last alarm code.
-    uint32_t alarmTime;      ///< Device Unix time of the last alarm.
+    uint8_t alarmReported; ///< An alarm was reported.
+    Alarm_Name_e alarm;    ///< Last alarm code.
+    uint32_t alarmTime;    ///< Device Unix time of the last alarm.
 
     Motor_PowerState_e pwrState; ///< Last reported power state.
     float phaseCurrent[3];       ///< Last reported phase currents [A].
@@ -136,9 +136,9 @@ typedef struct
     uint32_t localTime;  ///< Device Unix time from the last status.
     int rssi;            ///< RSSI of the last packet from the device.
 
-    uint32_t lastCommTick;     ///< RTOS tick of the last packet [ms].
-    uint32_t lastCommTime;     ///< Remote Unix time of the last packet.
-    uint8_t isConnectionError; ///< Set by the link monitor when probes fail.
+    uint32_t lastCommTick; ///< RTOS tick of the last packet [ms].
+    uint32_t lastCommTime; ///< Remote Unix time of the last packet.
+    uint8_t linkLost;      ///< Set by the link monitor when probes fail.
 } DeviceInfo_t;
 
 /** @brief Runtime state of the remote. */
@@ -154,8 +154,8 @@ typedef struct
     RTC_TimeTypeDef time;    ///< RTC time, read every systemTask loop.
     RTC_DateTypeDef date;    ///< RTC date, read every systemTask loop.
     uint32_t currentTime;    ///< Unix time of time/date.
-    uint8_t isChanging;      ///< Charger reports charging.
-    uint8_t isFullBattery;   ///< Charger reports full (standby).
+    uint8_t charging;        ///< Charger reports charging.
+    uint8_t batteryFull;     ///< Charger reports full (standby).
 
     /* New connection process */
     Process_Step_e findDeviceStep;       ///< Device search step.
@@ -170,9 +170,9 @@ typedef struct
     uint8_t currentDeviceId; ///< Selected device (index in deviceBuff).
     uint8_t currentModuleId; ///< Selected module on that device.
 
-    uint8_t isNeedSaveConfig;    ///< storageData changed; systemTask writes it to flash.
-    uint32_t lastActionTick;     ///< RTOS tick of the last user action [ms].
-    System_RunMode_e runMode;    ///< Power mode.
+    uint8_t configSavePending; ///< storageData changed; systemTask writes it to flash.
+    uint32_t lastActionTick;   ///< RTOS tick of the last user action [ms].
+    System_RunMode_e runMode;  ///< Power mode.
 } SystemInfo_t;
 
 /** @brief Stored identity of one device slot (flash format); its motors are in MotorConfig. */
@@ -181,7 +181,7 @@ typedef struct DeviceStorageData_t
 {
     uint8_t nodeIdConfig;      ///< LoRa node id.
     FactoryInfo_t factoryInfo; ///< Identity from pairing; numberOfModule motors are allocated.
-    uint8_t isDelete;          ///< Slot is free.
+    uint8_t deleted;           ///< Slot is free.
 } DeviceStorageData_t;
 #pragma pack()
 
@@ -199,8 +199,8 @@ typedef struct MotorStorageData_t
     char name[20];           ///< Display name.
     float alarmThreshold;    ///< Low-current alarm threshold [A], 0 .. 99.99.
     uint32_t alarmDelayTime; ///< Time below the threshold before the alarm [s].
-    uint8_t isLock;          ///< Power commands are refused.
-    uint8_t isHide;          ///< Hidden from device control.
+    uint8_t locked;          ///< Power commands are refused.
+    uint8_t hidden;          ///< Hidden from device control.
 } MotorStorageData_t;
 #pragma pack()
 

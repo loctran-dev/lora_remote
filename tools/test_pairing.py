@@ -89,7 +89,7 @@ class PairingTests(h.FirmwareHarness):
             self.assertEqual(bytes(self.cpu.mem_read(self.mot(slot, MOT_THRESHOLD), MOTOR_STRIDE - MOT_THRESHOLD)),
                              bytes(MOTOR_STRIDE - MOT_THRESHOLD))             # alarm, lock, hide
         self.assertEqual(bytes(self.cpu.mem_read(self.storage + AUTO_STATUS + device * 2, 2)), bytes(2))
-        self.assertEqual(self.get(self.system + 62), 1)                       # isNeedSaveConfig
+        self.assertEqual(self.get(self.system + 62), 1)                       # configSavePending
 
     def test_leaving_pairing_restores_stored_radio_settings(self):
         self.put(self.storage, 1)

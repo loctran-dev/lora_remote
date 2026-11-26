@@ -246,7 +246,7 @@ static void render(void)
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
-    if (lockNoticeActive && (!ScrnCommon_CurrentMotor()->isLock || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
+    if (lockNoticeActive && (!ScrnCommon_CurrentMotor()->locked || (uint32_t)(HAL_GetTick() - lockNoticeTick) >= LOCK_NOTICE_MS))
     {
         lockNoticeActive = 0;
     }
@@ -259,7 +259,7 @@ static void render(void)
     countdownUpdate(&device, &module);
 
     /* RSSI, coloured by signal level. */
-    if (device.isConnectionError == TRUE)
+    if (device.linkLost == TRUE)
     {
         sprintf(rssiText, "!Error  ");
         rssiColor = C_RED;
@@ -279,7 +279,7 @@ static void render(void)
     /* Apply after the RSSI update so the notification remains visible. */
     if (connectionNotice >= 0)
     {
-        if (!deviceBuff[connectionNotice].isConnectionError ||
+        if (!deviceBuff[connectionNotice].linkLost ||
             (uint32_t)(HAL_GetTick() - connectionNoticeTick) >= CONNECTION_NOTICE_MS)
         {
             connectionNotice = -1;
@@ -523,15 +523,15 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
 {
     UG_COLOR color = C_ORANGE;
     char *status = "UNKNOWN";
-    uint8_t known = !storageData.DeviceConfig[device->deviceIndex].isDelete && !device->isConnectionError &&
+    uint8_t known = !storageData.DeviceConfig[device->deviceIndex].deleted && !device->linkLost &&
         (module->pwrState == eMotor_PowerState_On || module->pwrState == eMotor_PowerState_Off);
 
     /* Status text and colour. */
-    if (storageData.DeviceConfig[device->deviceIndex].isDelete || device->isConnectionError)
+    if (storageData.DeviceConfig[device->deviceIndex].deleted || device->linkLost)
     {
         status = "NO LINK";
     }
-    else if (module->isAlarmOccurred)
+    else if (module->alarmReported)
     {
         status = "ALARM";
         color = C_RED;
@@ -546,7 +546,7 @@ static void drawStatusIcons(const DeviceInfo_t *device, const MotorData_t *modul
     UG_FillFrame(9, 44, 69, 88, C_BLACK);
     UG_FillRoundFrame(10, 45, 68, 87, 6, ICON_BACKGROUND);
     UG_DrawRoundFrame(10, 45, 68, 87, 6, color);
-    if (known && !module->isAlarmOccurred)
+    if (known && !module->alarmReported)
     {
         UG_DrawCircle(39, 60, 10, color);
         UG_DrawCircle(39, 60, 9, color);
@@ -582,9 +582,9 @@ static void statusIconsUpdate(UG_WINDOW *window, UG_OBJECT *object)
 /* Request a redraw only when one of the drawn inputs changed. */
 static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module)
 {
-    uint32_t key = (storageData.DeviceConfig[device->deviceIndex].isDelete ? 1u : 0u) |
-        (device->isConnectionError ? 2u : 0u) |
-        (module->isAlarmOccurred ? 4u : 0u) |
+    uint32_t key = (storageData.DeviceConfig[device->deviceIndex].deleted ? 1u : 0u) |
+        (device->linkLost ? 2u : 0u) |
+        (module->alarmReported ? 4u : 0u) |
         ((uint32_t)module->pwrState << 8) |
         (module->scheduleTime > 0 ? 0x10000u : 0u);
 
@@ -799,7 +799,7 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
 
     UG_TextboxSetForeColor(&window_1, 12, C_WHITE);
     present = module->pwrState == eMotor_PowerState_On && module->scheduleTime != 0;
-    UG_TextboxSetText(&window_1, 11, device->isConnectionError && present ? "Last timer" : "Auto stop");
+    UG_TextboxSetText(&window_1, 11, device->linkLost && present ? "Last timer" : "Auto stop");
     if (!present)
     {
         UG_TextboxSetText(&window_1, 12, "Not set");
@@ -813,10 +813,10 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
     remaining = module->scheduleTime > systemInfo.currentTime ? module->scheduleTime - systemInfo.currentTime : 0;
     Util_ConvertTimestampToRTC(module->scheduleTime, &time, &date);
     snprintf(text, sizeof(text), "At %02u:%02u", time.Hours, time.Minutes);
-    UG_TextboxSetText(&window_1, 12, device->isConnectionError ? "Offline" : text);
+    UG_TextboxSetText(&window_1, 12, device->linkLost ? "Offline" : text);
     formatRemaining(remaining, text);
     UG_TextboxSetText(&window_1, TXB_ID_8, text);
-    UG_TextboxSetForeColor(&window_1, TXB_ID_8, device->isConnectionError || !remaining ? C_ORANGE : C_CYAN);
+    UG_TextboxSetForeColor(&window_1, TXB_ID_8, device->linkLost || !remaining ? C_ORANGE : C_CYAN);
     if (!UG_TextboxCheckVisible(&window_1, TXB_ID_8))
     {
         UG_TextboxShow(&window_1, TXB_ID_8);

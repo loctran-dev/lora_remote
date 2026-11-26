@@ -86,7 +86,7 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     /* Accept it only from the paired device with the same serial. */
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (storageData.DeviceConfig[id].isDelete || storageData.DeviceConfig[id].nodeIdConfig != packet.nodeId ||
+        if (storageData.DeviceConfig[id].deleted || storageData.DeviceConfig[id].nodeIdConfig != packet.nodeId ||
             storageData.DeviceConfig[id].factoryInfo.serial != event.serial)
         {
             continue;
@@ -107,7 +107,7 @@ void RemoteHistory_Link(uint8_t id, uint8_t restored)
 {
     HistoryEvent event = {0};
 
-    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].isDelete)
+    if (id >= MAXIMUM_DEVICE || storageData.DeviceConfig[id].deleted)
     {
         return;
     }

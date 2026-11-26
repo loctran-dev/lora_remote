@@ -61,7 +61,7 @@ uint8_t CmdHandler_SendCurrentModuleConfig(void)
     MotorStorageData_t *motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
     PayloadRequestSetConfig_t config;
     LoraPackage_t packet;
-    if (device->isDelete || motor == NULL ||
+    if (device->deleted || motor == NULL ||
         !(motor->alarmThreshold >= 0 && motor->alarmThreshold <= 99.99f) || motor->alarmDelayTime > 9999)
     {
         return FALSE;
@@ -127,7 +127,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             MotorData_t *motor = Main_MotorState(devNo, 0);
 
@@ -169,7 +169,7 @@ static void handleControlPower(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -206,7 +206,7 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             /* ACK confirms this exact deadline; STATUS remains authoritative afterwards. */
             if (accepted && Main_MotorState(devNo, payloadResponse.moduleIndex))
@@ -240,7 +240,7 @@ static void handleSyncTime(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -338,14 +338,14 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
 
     for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-        if (storageData.DeviceConfig[devNo].isDelete == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
+        if (storageData.DeviceConfig[devNo].deleted == 0 && storageData.DeviceConfig[devNo].nodeIdConfig == fwPackage.nodeId)
         {
             MotorData_t *motor = Main_MotorState(devNo, 0);
 
             Power_WakeForError();
             if (motor)
             {
-                motor->isAlarmOccurred = TRUE;
+                motor->alarmReported = TRUE;
                 motor->alarm = (Alarm_Name_e)payloadRequest.alarmCode;
                 motor->alarmTime = payloadRequest.alarmTime;
             }

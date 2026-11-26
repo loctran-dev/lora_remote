@@ -62,7 +62,7 @@ static void init(void)
     managerPage = 0xFF;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].isDelete)
+        if (!storageData.DeviceConfig[id].deleted)
         {
             managerIds[managerCount++] = id;
         }

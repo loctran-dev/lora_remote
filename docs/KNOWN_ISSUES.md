@@ -55,7 +55,7 @@ issues under "Open" with the same fields.
 
 - Where: `Application/Library/screen_edss.c:1615`; ScrnCommon_CurrentMotor().
 - Problem: when Config_Motor() returns NULL, a static placeholder (re-zeroed on
-  each call) is edited; the screen still sets isNeedSaveConfig.
+  each call) is edited; the screen still sets configSavePending.
 - Effect: e.g. Lock=Yes is not stored, flash is rewritten, motor stays unlocked.
 - Fix: refuse to open/commit the editor when Config_Motor() is NULL (long beep).
 
@@ -65,7 +65,7 @@ issues under "Open" with the same fields.
 - Problem: Config_DeviceHidden() returns TRUE for a device with no motor slots,
   and deleting a device frees all its slots (Config_FreeMotors).
 - Effect: picker shows "M31 [Hidden]" / "Removed device" instead of "M31".
-- Fix: test isDelete before Config_DeviceHidden, or make Config_DeviceHidden
+- Fix: test deleted before Config_DeviceHidden, or make Config_DeviceHidden
   return FALSE for deleted devices.
 
 ### KI-6: Labels hard-code module 1
@@ -81,10 +81,10 @@ issues under "Open" with the same fields.
 ### KI-7: Lock/Hide confirm always rewrites flash
 
 - Where: `Application/Library/screen_edss.c:1603` (ScrnCommon_SaveDeviceSettings).
-- Problem: isNeedSaveConfig is set on every confirm; the old
+- Problem: configSavePending is set on every confirm; the old
   ScrnCommon_SaveDeviceFlags only set it when flags changed.
 - Effect: unnecessary 2 KiB page erase/program cycles.
-- Fix: set isNeedSaveConfig only when the value changed.
+- Fix: set configSavePending only when the value changed.
 
 ### KI-8: Pairing screen redraws twice when the motor pool is full
 

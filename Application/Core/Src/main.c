@@ -173,7 +173,7 @@ static char deviceTypeChar(uint8_t deviceType);
 static int8_t findPairedSlot(uint32_t serial);
 static int8_t pairingSlot(void);
 static int8_t storePairedDevice(void);
-static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void));
+static void handleButton(Button_t *button, void (*onClick)(void), void (*onLongPress)(void));
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -291,7 +291,7 @@ int main(void)
   systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (storageData.DeviceConfig[devNo].isDelete == FALSE)
+    if (storageData.DeviceConfig[devNo].deleted == FALSE)
     {
       deviceBuff[devNo].lastCommTime = systemInfo.currentTime;
       systemInfo.currentDeviceId = devNo;
@@ -950,14 +950,14 @@ void Main_SetMotorPower(uint8_t motorPower)
   {
     return;
   }
-  if (motor->isLock)
+  if (motor->locked)
   {
     ScrnDcs_ShowMotorLocked(motorPower);
     Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
     return;
   }
 
-  if (storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete == FALSE)
+  if (storageData.DeviceConfig[systemInfo.currentDeviceId].deleted == FALSE)
   {
     Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig);
     LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig,
@@ -1185,7 +1185,7 @@ static void updateBattery(void)
   {
     percent = 100;
   }
-  if (systemInfo.isFullBattery && !systemInfo.isChanging && filtered >= 4.05f)
+  if (systemInfo.batteryFull && !systemInfo.charging && filtered >= 4.05f)
   {
     percent = 100;
   }
@@ -1206,7 +1206,7 @@ static uint8_t getNotUsedNodeId(void)
     }
     for (uint8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
     {
-      if (!storageData.DeviceConfig[devNo].isDelete && storageData.DeviceConfig[devNo].nodeIdConfig == nodeId)
+      if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].nodeIdConfig == nodeId)
       {
         wasNodeIdUsed = TRUE;
         break;
@@ -1242,7 +1242,7 @@ static int8_t findPairedSlot(uint32_t serial)
 {
   for (int8_t devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (!storageData.DeviceConfig[devNo].isDelete && storageData.DeviceConfig[devNo].factoryInfo.serial == serial)
+    if (!storageData.DeviceConfig[devNo].deleted && storageData.DeviceConfig[devNo].factoryInfo.serial == serial)
     {
       return devNo;
     }
@@ -1261,7 +1261,7 @@ static int8_t pairingSlot(void)
 
   for (int8_t devNo = 0; slot < 0 && devNo < MAXIMUM_DEVICE; devNo++)
   {
-    if (storageData.DeviceConfig[devNo].isDelete)
+    if (storageData.DeviceConfig[devNo].deleted)
     {
       slot = devNo;
     }
@@ -1306,22 +1306,22 @@ static int8_t storePairedDevice(void)
   storageData.DeviceConfig[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
   storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.nextNodeId;
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
-  systemInfo.isNeedSaveConfig = TRUE;
+  systemInfo.configSavePending = TRUE;
   return slot;
 }
 
 /* Run the screen handler for a click or long press and clear its flag. */
-static void handleButton(Button_t *button, void (*clicked)(void), void (*longPressed)(void))
+static void handleButton(Button_t *button, void (*onClick)(void), void (*onLongPress)(void))
 {
-  if (button->isPressed)
+  if (button->clicked)
   {
-    button->isPressed = 0;
-    clicked();
+    button->clicked = 0;
+    onClick();
   }
-  else if (button->isLongPressed)
+  else if (button->longPressed)
   {
-    button->isLongPressed = 0;
-    longPressed();
+    button->longPressed = 0;
+    onLongPress();
   }
 }
 /* USER CODE END 4 */
@@ -1356,9 +1356,9 @@ void StartSystemTask(void *argument)
     updateBattery();
 
     /* Buttons. */
-    if (leftButton.isPressed || leftButton.isLongPressed || rightButton.isPressed ||
-      rightButton.isLongPressed || centerButton.isPressed || centerButton.isLongPressed ||
-      onButton.isPressed || onButton.isLongPressed || offButton.isPressed || offButton.isLongPressed)
+    if (leftButton.clicked || leftButton.longPressed || rightButton.clicked ||
+      rightButton.longPressed || centerButton.clicked || centerButton.longPressed ||
+      onButton.clicked || onButton.longPressed || offButton.clicked || offButton.longPressed)
     {
       Power_UserActivity();
     }
@@ -1433,9 +1433,9 @@ void StartSystemTask(void *argument)
     /* Connection state is owned by Link_Tick(), including sleep-aware retries. */
 
     /* Persist configuration. */
-    if (systemInfo.isNeedSaveConfig == TRUE)
+    if (systemInfo.configSavePending == TRUE)
     {
-      systemInfo.isNeedSaveConfig = FALSE;
+      systemInfo.configSavePending = FALSE;
       if (Config_Save())
       {
         Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
@@ -1475,8 +1475,8 @@ void StartSensorTask(void *argument)
     Button_UpdateState(&offButton);
 
     /* Read battery charger status. */
-    systemInfo.isChanging = HAL_GPIO_ReadPin(BAT_CHARGING_GPIO_Port, BAT_CHARGING_Pin) == GPIO_PIN_RESET ? 1 : 0;
-    systemInfo.isFullBattery = HAL_GPIO_ReadPin(BAT_STDBY_GPIO_Port, BAT_STDBY_Pin) == GPIO_PIN_RESET ? 1 : 0;
+    systemInfo.charging = HAL_GPIO_ReadPin(BAT_CHARGING_GPIO_Port, BAT_CHARGING_Pin) == GPIO_PIN_RESET ? 1 : 0;
+    systemInfo.batteryFull = HAL_GPIO_ReadPin(BAT_STDBY_GPIO_Port, BAT_STDBY_Pin) == GPIO_PIN_RESET ? 1 : 0;
     osDelay(1);
   }
   /* USER CODE END StartSensorTask */

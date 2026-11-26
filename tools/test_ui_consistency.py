@@ -13,7 +13,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         super().setUpClass()
         dwarf=subprocess.check_output([str(h.FROMELF),'--text','-g',str(h.BUILD/'USB_Application.axf')],text=True)
         cls.members={}
-        for name in ['batteryUsage','batteryVoltage','isChanging','time','date','currentTime','findDevicefactoryInfo']:
+        for name in ['batteryUsage','batteryVoltage','charging','time','date','currentTime','findDevicefactoryInfo']:
             cls.members[name]=max(map(int,re.findall(r'DW_AT_name '+name+r'\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)',dwarf)))
     def setUp(self):
         super().setUp()

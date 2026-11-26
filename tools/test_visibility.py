@@ -56,12 +56,12 @@ class FirmwareHarness(unittest.TestCase):
     def setUpClass(cls):
         dwarf = subprocess.check_output([str(FROMELF), "--text", "-g", str(BUILD / "USB_Application.axf")], text=True)
         # autoStatusSeconds also sits at offset 5 of PayloadRequestSetConfig_t.
-        for field, offsets in {"isHide": {MOT_HIDE}, "isLock": {MOT_LOCK},
-                               "isDelete": {CFG_DELETE},
+        for field, offsets in {"hidden": {MOT_HIDE}, "locked": {MOT_LOCK},
+                               "deleted": {CFG_DELETE},
                                "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, AUTO_STATUS},
-                               "isConnectionError": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
+                               "linkLost": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
                                "currentDeviceId": {60}, "currentModuleId": {61},
-                               "isNeedSaveConfig": {62}, "DeviceConfig": {15}}.items():
+                               "configSavePending": {62}, "DeviceConfig": {15}}.items():
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:
                 raise AssertionError(f"Changed layout {field}: {actual} != {offsets}")

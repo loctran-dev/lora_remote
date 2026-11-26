@@ -377,7 +377,7 @@ static void CDC_ButtonCommand(void)
       echoLength = sprintf((char*)UserRxBufferFS,
         "OK BTN %s %s SCREEN=DEVICE_MANAGER DEV=%u HIDE=%u LOCK=%u\n",
         button, action, id + 1, Config_DeviceHidden(id),
-        Config_Motor(id, 0) != NULL && Config_Motor(id, 0)->isLock);
+        Config_Motor(id, 0) != NULL && Config_Motor(id, 0)->locked);
       return;
     }
   }
@@ -452,7 +452,7 @@ void CDC_ProcessEcho_FS(void)
         "BATTERY ADC=%lu VBAT_MV=%lu PCT=%u CHARGING=%u FULL=%u VALID=%u\n",
         (unsigned long)systemInfo.batteryAdc,
         (unsigned long)(systemInfo.batteryVoltage * 1000.0f + 0.5f),
-        systemInfo.batteryUsage, systemInfo.isChanging, systemInfo.isFullBattery,
+        systemInfo.batteryUsage, systemInfo.charging, systemInfo.batteryFull,
         systemInfo.batteryVoltage > 0);
       responsePrepared = 1;
     }
@@ -538,7 +538,7 @@ void CDC_ProcessEcho_FS(void)
       else echoLength = sprintf((char*)UserRxBufferFS,
         "LINK DEV=%u NOW=%lu RX_AGE=%lu STATUS_AGE=%lu ERROR=%u PROBE=%d TRY=%u STATE=%u DEADLINE=%lu REQUESTS=%lu OK=%lu FAIL=%lu STATUS=%lu MODE=%u STOP=%lu RTC=%lu RF=%lu KEY=%lu RX_PENDING=%u\n",
         id + 1, (unsigned long)Link_Now(), (unsigned long)(Link_Now() - linkDevices[id].lastRx),
-        (unsigned long)(Link_Now() - linkDevices[id].lastStatus), deviceBuff[id].isConnectionError,
+        (unsigned long)(Link_Now() - linkDevices[id].lastStatus), deviceBuff[id].linkLost,
         linkProbe.device + 1, linkProbe.attempts, linkProbe.state, (unsigned long)linkProbe.deadline,
         (unsigned long)linkProbe.requests, (unsigned long)linkProbe.confirmations,
         (unsigned long)linkProbe.failures, (unsigned long)linkProbe.receivedStatus, systemInfo.runMode,

@@ -70,7 +70,7 @@ void Config_Load(void)
  * @brief  Write storageData to the slot that does not hold the current copy.
  * @return 0 on success, a HAL flash error code, or CONFIG_ERROR_VERIFY. On
  *         failure the previous copy is still the one loaded at start-up.
- * @note   Called by systemTask when isNeedSaveConfig is set; takes tens of ms.
+ * @note   Called by systemTask when configSavePending is set; takes tens of ms.
  */
 uint32_t Config_Save(void)
 {
@@ -187,7 +187,7 @@ uint8_t Config_CanAllocateMotors(uint8_t device, uint8_t count)
  * @param  device  Index in DeviceConfig.
  * @param  count   Motors, 1 .. MAXIMUM_MODULE.
  * @return TRUE on success, FALSE if the pool is too full.
- * @note   Flash is written later by systemTask (isNeedSaveConfig); the caller sets it.
+ * @note   Flash is written later by systemTask (configSavePending); the caller sets it.
  */
 uint8_t Config_AllocateMotors(uint8_t device, uint8_t count)
 {
@@ -226,7 +226,7 @@ uint8_t Config_DeviceHidden(uint8_t device)
 {
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
-        if (storageData.MotorConfig[slot].device == device && !storageData.MotorConfig[slot].isHide)
+        if (storageData.MotorConfig[slot].device == device && !storageData.MotorConfig[slot].hidden)
         {
             return FALSE;
         }
@@ -245,7 +245,7 @@ void Config_SetDeviceHidden(uint8_t device, uint8_t hidden)
     {
         if (storageData.MotorConfig[slot].device == device)
         {
-            storageData.MotorConfig[slot].isHide = hidden != FALSE;
+            storageData.MotorConfig[slot].hidden = hidden != FALSE;
         }
     }
 }
@@ -289,7 +289,7 @@ static void loadDefaults(void)
     storageData.lastWriteSuccess = TRUE;
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        storageData.DeviceConfig[id].isDelete = TRUE;
+        storageData.DeviceConfig[id].deleted = TRUE;
     }
     for (uint8_t slot = 0; slot < MAXIMUM_MOTOR; slot++)
     {
@@ -347,7 +347,7 @@ static void sanitize(void)
     }
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        storageData.DeviceConfig[id].isDelete = storageData.DeviceConfig[id].isDelete != FALSE;
+        storageData.DeviceConfig[id].deleted = storageData.DeviceConfig[id].deleted != FALSE;
     }
     sanitizeMotors();
 }
@@ -367,14 +367,14 @@ static void sanitizeMotors(void)
         {
             continue;
         }
-        if (motor->device >= MAXIMUM_DEVICE || storageData.DeviceConfig[motor->device].isDelete ||
+        if (motor->device >= MAXIMUM_DEVICE || storageData.DeviceConfig[motor->device].deleted ||
             motor->module >= MAXIMUM_MODULE || Config_Motor(motor->device, motor->module) != motor)
         {
             freeMotorSlot(motor);
             continue;
         }
-        motor->isLock = motor->isLock == TRUE;
-        motor->isHide = motor->isHide == TRUE;
+        motor->locked = motor->locked == TRUE;
+        motor->hidden = motor->hidden == TRUE;
         motor->name[sizeof(motor->name) - 1] = '\0';
         if (motor->name[0] == '\0')
         {
@@ -383,7 +383,7 @@ static void sanitizeMotors(void)
     }
     for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)
     {
-        if (!storageData.DeviceConfig[id].isDelete && Config_Motor(id, 0) == NULL)
+        if (!storageData.DeviceConfig[id].deleted && Config_Motor(id, 0) == NULL)
         {
             takeMotorSlot(id, 0);
         }

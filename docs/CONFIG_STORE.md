@@ -16,7 +16,7 @@ Header: `sequence` (uint32), `length` (uint16), `reserved` (uint16, 0xFFFF),
 
 ## Save
 
-`Config_Save()` (systemTask, when `isNeedSaveConfig` is set) writes to the slot
+`Config_Save()` (systemTask, when `configSavePending` is set) writes to the slot
 that does not hold the current copy: erase the page, program the payload,
 program sequence/length/crc, and program the magic word last. It then reads the
 slot back. A failure gives a long beep, as before.
@@ -69,7 +69,7 @@ unused slot.
 | Part | Bytes |
 | --- | --- |
 | General settings | 15 |
-| `DeviceConfig[20]`: node 1, factoryInfo 8, isDelete 1 | 200 |
+| `DeviceConfig[20]`: node 1, factoryInfo 8, deleted 1 | 200 |
 | `MotorConfig[40]`: device 1, module 1, name 20, threshold 4, delay 4, lock 1, hide 1 | 1280 |
 | `lastWriteSuccess` | 1 |
 | Link settings (magic, idle, timeout, autoStatus[20], checksum) | 49 |

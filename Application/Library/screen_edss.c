@@ -126,12 +126,12 @@ static void init(void)
     else if (indexOfSettingMenu == ITEM_LOCK)
     {
         createButtons("Up", "Select", "Down ");
-        createYesNo("Lock", module.isLock == 1);
+        createYesNo("Lock", module.locked == 1);
     }
     else if (indexOfSettingMenu == ITEM_HIDE)
     {
         createButtons(" Up", "Select", "Down ");
-        createYesNo("Hide", module.isHide == 1);
+        createYesNo("Hide", module.hidden == 1);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
@@ -253,7 +253,7 @@ static void centerClicked(void)
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
         ScrnCommon_SaveDeviceSettings();
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->hidden ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
@@ -339,7 +339,7 @@ static void centerPressed(void)
     /* A hidden or deleted device leaves the settings menu. */
     if (indexOfSettingMenu != ITEM_DELETE)
     {
-        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->isHide ?
+        ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->hidden ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else
@@ -575,16 +575,16 @@ static void applySelection(void)
 {
     if (indexOfSettingMenu == ITEM_LOCK)
     {
-        currentConfig()->isLock = (indexOfSelection + 1) % 2;
+        currentConfig()->locked = (indexOfSelection + 1) % 2;
     }
     else if (indexOfSettingMenu == ITEM_HIDE)
     {
-        currentConfig()->isHide = (indexOfSelection + 1) % 2;
+        currentConfig()->hidden = (indexOfSelection + 1) % 2;
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete = (indexOfSelection + 1) % 2;
-        if (storageData.DeviceConfig[systemInfo.currentDeviceId].isDelete)
+        storageData.DeviceConfig[systemInfo.currentDeviceId].deleted = (indexOfSelection + 1) % 2;
+        if (storageData.DeviceConfig[systemInfo.currentDeviceId].deleted)
         {
             Config_FreeMotors(systemInfo.currentDeviceId);
         }

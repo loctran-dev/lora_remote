@@ -84,7 +84,7 @@ void ScrnCommon_Switch(Screen_t *next)
  */
 uint8_t ScrnCommon_DeviceVisible(uint8_t id)
 {
-    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].isDelete && !Config_DeviceHidden(id);
+    return id < MAXIMUM_DEVICE && !storageData.DeviceConfig[id].deleted && !Config_DeviceHidden(id);
 }
 
 /**
@@ -96,12 +96,12 @@ uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module)
 {
     const MotorStorageData_t *motor;
 
-    if (device >= MAXIMUM_DEVICE || storageData.DeviceConfig[device].isDelete)
+    if (device >= MAXIMUM_DEVICE || storageData.DeviceConfig[device].deleted)
     {
         return 0;
     }
     motor = Config_Motor(device, module);
-    return motor != NULL && !motor->isHide;
+    return motor != NULL && !motor->hidden;
 }
 
 /** @brief Whether the selected motor (currentDeviceId/currentModuleId) is visible. */
@@ -205,20 +205,20 @@ const char *ScrnCommon_MotorName(uint8_t device, uint8_t module)
 
 /**
  * @brief  Commit device or motor settings edited in storageData.
- * @note   Flash is written later by systemTask (isNeedSaveConfig).
+ * @note   Flash is written later by systemTask (configSavePending).
  */
 void ScrnCommon_SaveDeviceSettings(void)
 {
-    systemInfo.isNeedSaveConfig = 1;
+    systemInfo.configSavePending = 1;
 }
 
 /**
  * @brief  Commit the general settings edited in storageData: save them and apply the new periods.
- * @note   Flash is written later by systemTask (isNeedSaveConfig).
+ * @note   Flash is written later by systemTask (configSavePending).
  */
 void ScrnCommon_SaveGeneralSettings(void)
 {
-    systemInfo.isNeedSaveConfig = 1;
+    systemInfo.configSavePending = 1;
     Main_UpdateStatusPeriod();
 }
 
@@ -273,7 +273,7 @@ void ScrnCommon_UpdateBattery(void)
     frame = !valid ? 0 : systemInfo.batteryUsage <= 5 ? 0 :
         systemInfo.batteryUsage <= 25 ? 1 : systemInfo.batteryUsage <= 50 ? 2 :
         systemInfo.batteryUsage <= 75 ? 3 : 4;
-    if (systemInfo.isChanging && valid)
+    if (systemInfo.charging && valid)
     {
         frame = (HAL_GetTick() / 500) % 5;
     }
@@ -567,7 +567,7 @@ static int nearestVisible(int position, int8_t direction)
         const MotorStorageData_t *motor = &storageData.MotorConfig[slot];
 
         if (motor->device >= MAXIMUM_DEVICE || motor->module >= MAXIMUM_MODULE ||
-            storageData.DeviceConfig[motor->device].isDelete || motor->isHide)
+            storageData.DeviceConfig[motor->device].deleted || motor->hidden)
         {
             continue;
         }
