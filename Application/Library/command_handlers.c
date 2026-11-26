@@ -273,8 +273,8 @@ static void handleGetFactoryInfo(LoraPackage_t fwPackage)
         {
             systemInfo.searchResult = eProcess_Result_Passed;
             systemInfo.foundDevice.serial = payloadResponse.serial;
-            systemInfo.foundDevice.deviceType = payloadResponse.deviceType;
-            systemInfo.foundDevice.numberOfModule = payloadResponse.numberOfModule;
+            systemInfo.foundDevice.type = payloadResponse.deviceType;
+            systemInfo.foundDevice.moduleCount = payloadResponse.numberOfModule;
         }
         else
         {

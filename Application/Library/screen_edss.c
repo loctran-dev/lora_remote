@@ -103,7 +103,7 @@ static void init(void)
     ScrnCommon_StatusBarCreate();
     module = *ScrnCommon_CurrentMotor();
     snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.",
-        storageData.DeviceConfig[systemInfo.curDevice].factoryInfo.deviceTypeChar, systemInfo.curDevice + 1,
+        storageData.DeviceConfig[systemInfo.curDevice].factoryInfo.typeChar, systemInfo.curDevice + 1,
         systemInfo.curModule + 1, module.name);
     createLabel(&textbox_6, TXB_ID_5, 0, 20, 127, 37, title, C_DARK_SLATE_BLUE, ALIGN_CENTER_LEFT);
 

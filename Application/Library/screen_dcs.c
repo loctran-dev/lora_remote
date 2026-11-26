@@ -189,7 +189,7 @@ static void init(void)
     /* Title, RSSI and the three phase currents. */
     device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
         ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
@@ -240,7 +240,7 @@ static void render(void)
     /* Title (or lock notice) and phase currents. */
     device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
-    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
+    snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.typeChar,
         device.index + 1, systemInfo.curModule + 1,
         ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
@@ -694,7 +694,7 @@ static void createTimerScreen(void)
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
     device = &deviceBuff[systemInfo.curDevice];
-    type = storageData.DeviceConfig[device->index].factoryInfo.deviceTypeChar;
+    type = storageData.DeviceConfig[device->index].factoryInfo.typeChar;
     if (type < 32 || type > 126)
     {
         type = 'M';

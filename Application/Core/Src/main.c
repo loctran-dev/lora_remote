@@ -280,8 +280,8 @@ int main(void)
   /* Device list: runtime state in deviceBuff; Config_Load() has already checked the settings. */
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
-    storageData.DeviceConfig[devNo].factoryInfo.deviceTypeChar =
-      deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.deviceType);
+    storageData.DeviceConfig[devNo].factoryInfo.typeChar =
+      deviceTypeChar(storageData.DeviceConfig[devNo].factoryInfo.type);
     deviceBuff[devNo].index = devNo;
   }
 
@@ -1267,7 +1267,7 @@ static int8_t pairingSlot(void)
     }
   }
   if (slot < 0 ||
-    !Config_CanAllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.numberOfModule)))
+    !Config_CanAllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.moduleCount)))
   {
     return -1;
   }
@@ -1284,7 +1284,7 @@ static int8_t storePairedDevice(void)
   int8_t slot = pairingSlot();
 
   if (slot < 0 ||
-    !Config_AllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.numberOfModule)))
+    !Config_AllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.moduleCount)))
   {
     return -1;
   }
@@ -1374,7 +1374,7 @@ void StartSystemTask(void *argument)
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
         systemInfo.searchResult == eProcess_Result_Passed)
       {
-        systemInfo.foundDevice.deviceTypeChar = deviceTypeChar(systemInfo.foundDevice.deviceType);
+        systemInfo.foundDevice.typeChar = deviceTypeChar(systemInfo.foundDevice.type);
         pairingUI_Step = PAIRING_STATE_FOUND;
         currentScreen = &devicePairingScreen;
         currentScreen->init();

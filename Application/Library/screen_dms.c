@@ -109,16 +109,16 @@ static void render(void)
     {
         module = 0;
     }
-    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar,
+    snprintf(text, sizeof(text), "%c%u%u Info: %.19s", storageData.DeviceConfig[id].factoryInfo.typeChar,
         device->index + 1, module + 1, ScrnCommon_MotorName(id, module));
     UG_TextboxSetText(&window_1, 5, text);
     snprintf(text, sizeof(text), "0x%08lX", (unsigned long)storageData.DeviceConfig[id].factoryInfo.serial);
     UG_TextboxSetText(&window_1, 7, text);
     snprintf(text, sizeof(text), "0x%02X", storageData.DeviceConfig[id].nodeId);
     UG_TextboxSetText(&window_1, 9, text);
-    snprintf(text, sizeof(text), "%c", storageData.DeviceConfig[id].factoryInfo.deviceTypeChar);
+    snprintf(text, sizeof(text), "%c", storageData.DeviceConfig[id].factoryInfo.typeChar);
     UG_TextboxSetText(&window_1, 11, text);
-    snprintf(text, sizeof(text), "%u", storageData.DeviceConfig[id].factoryInfo.numberOfModule);
+    snprintf(text, sizeof(text), "%u", storageData.DeviceConfig[id].factoryInfo.moduleCount);
     UG_TextboxSetText(&window_1, 13, text);
     snprintf(text, sizeof(text), "%u", module + 1);
     UG_TextboxSetText(&window_1, 15, text);

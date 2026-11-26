@@ -233,8 +233,8 @@ static void createDeviceInfo(uint8_t withLoraId)
     char loraIdText[20];
 
     snprintf(snText, sizeof(snText), "0x%08lX", (unsigned long)systemInfo.foundDevice.serial);
-    sprintf(typeText, "%c", systemInfo.foundDevice.deviceTypeChar);
-    sprintf(moduleCountText, "%02d", systemInfo.foundDevice.numberOfModule);
+    sprintf(typeText, "%c", systemInfo.foundDevice.typeChar);
+    sprintf(moduleCountText, "%02d", systemInfo.foundDevice.moduleCount);
     createInfoRow(0, "SN", snText);
     createInfoRow(1, "Type", typeText);
     createInfoRow(2, "Modules", moduleCountText);

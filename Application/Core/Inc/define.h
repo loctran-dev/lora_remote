@@ -101,10 +101,10 @@ typedef enum System_RunMode_e
 /** @brief Identity of a device, read with CMD_GET_FACTORY_INFO. */
 typedef struct
 {
-    uint32_t serial;        ///< Serial number.
-    uint8_t deviceType;     ///< A Device_Type_e value.
-    char deviceTypeChar;    ///< Letter shown in device names ('M', 'P', 'E', 'x').
-    uint8_t numberOfModule; ///< Motor modules on the device.
+    uint32_t serial;     ///< Serial number.
+    uint8_t type;        ///< A Device_Type_e value.
+    char typeChar;       ///< Letter shown in device names ('M', 'P', 'E', 'x').
+    uint8_t moduleCount; ///< Motor modules on the device.
 } FactoryInfo_t;
 
 /**
@@ -180,7 +180,7 @@ typedef struct
 typedef struct DeviceStorageData_t
 {
     uint8_t nodeId;            ///< LoRa node id.
-    FactoryInfo_t factoryInfo; ///< Identity from pairing; numberOfModule motors are allocated.
+    FactoryInfo_t factoryInfo; ///< Identity from pairing; moduleCount motors are allocated.
     uint8_t deleted;           ///< Slot is free.
 } DeviceStorageData_t;
 #pragma pack()

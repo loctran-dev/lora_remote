@@ -118,7 +118,7 @@ static void render(void)
         }
         device = &storageData.DeviceConfig[managerIds[item]];
         snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
-            device->factoryInfo.deviceTypeChar, managerIds[item] + 1,
+            device->factoryInfo.typeChar, managerIds[item] + 1,
             Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible",
             ScrnCommon_MotorName(managerIds[item], 0));
         UG_TextboxSetText(&window_1, id, text);
