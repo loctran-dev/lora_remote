@@ -13,7 +13,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         super().setUpClass()
         dwarf=subprocess.check_output([str(h.FROMELF),'--text','-g',str(h.BUILD/'USB_Application.axf')],text=True)
         cls.members={}
-        for name in ['batteryUsage','batteryVoltage','charging','time','date','currentTime','findDevicefactoryInfo']:
+        for name in ['batteryPercent','batteryVoltage','charging','rtcTime','rtcDate','currentTime','foundDevice']:
             cls.members[name]=max(map(int,re.findall(r'DW_AT_name '+name+r'\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)',dwarf)))
     def setUp(self):
         super().setUp()
@@ -27,11 +27,11 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.cpu.mem_write(self.cfg(0,h.CFG_SERIAL),struct.pack('<IBBB',0xabcdef01,1,ord('M'),1))
         self.cpu.mem_write(self.dev(0,h.DEV_RSSI),struct.pack('<i',-120))
         self.cpu.mem_write(self.mot(0,h.MOT_NAME),b'Pump very long name\0')
-        self.cpu.mem_write(self.system+self.members['time'],bytes([23,58,59]))
-        self.cpu.mem_write(self.system+self.members['date'],bytes([4,11,19,26]))
+        self.cpu.mem_write(self.system+self.members['rtcTime'],bytes([23,58,59]))
+        self.cpu.mem_write(self.system+self.members['rtcDate'],bytes([4,11,19,26]))
         self.cpu.mem_write(self.system+self.members['currentTime'],struct.pack('<I',1795132739))
         self.cpu.mem_write(self.system+self.members['batteryVoltage'],struct.pack('<f',4.1))
-        self.put(self.system+self.members['batteryUsage'],100)
+        self.put(self.system+self.members['batteryPercent'],100)
         self.tick=0;self.rect={};self.text={};self.scroll={};self.align={};self.color={};self.created=[];self.frames=[]
         files=list((h.ROOT/'Application/Library').glob('screen_*.c'))+[h.ROOT/'Application/Library/screens.c']
         names=set(re.findall(r'\b(_?UG_\w+)\s*\(',''.join(f.read_text() for f in files)))
@@ -94,9 +94,9 @@ class UiConsistencyTests(h.FirmwareHarness):
     def test_main_menu_and_pairing_clock_advances_without_reentering_screen(self):
         for init,render in [('screen_mms.o:init','screen_mms.o:render'),('screen_dps.o:init','screen_dps.o:render')]:
             self.call(init)
-            self.cpu.mem_write(self.system+self.members['time'],bytes([0,1,0]))
+            self.cpu.mem_write(self.system+self.members['rtcTime'],bytes([0,1,0]))
             self.call(render);self.assertEqual(self.text[0],'00:01')
-            self.cpu.mem_write(self.system+self.members['time'],bytes([23,58,59]))
+            self.cpu.mem_write(self.system+self.members['rtcTime'],bytes([23,58,59]))
     def test_all_general_editors_share_header_and_help_fits_without_scrolling(self):
         for item in range(8):
             with self.subTest(item=item):
@@ -124,7 +124,7 @@ class UiConsistencyTests(h.FirmwareHarness):
         for state in range(6):
             with self.subTest(state=state):
                 self.put(h.symbol('pairingUI_Step')[0],state)
-                self.cpu.mem_write(self.system+self.members['findDevicefactoryInfo'],struct.pack('<IBBB',0xabcdef01,1,ord('M'),1))
+                self.cpu.mem_write(self.system+self.members['foundDevice'],struct.pack('<IBBB',0xabcdef01,1,ord('M'),1))
                 self.call('screen_dps.o:init');self.call('screen_dps.o:render');self.header();self.layout()
                 if state in [1,3,4,5]:
                     self.assertEqual(self.text[8],'0xABCDEF01')
@@ -168,7 +168,7 @@ class UiConsistencyTests(h.FirmwareHarness):
     def test_empty_battery_uses_frame_zero_and_unknown_voltage_is_not_100_percent(self):
         self.call('ScrnCommon_StatusBarCreate')
         self.assertEqual(self.frames[-1],h.symbol('bmp_battery_4')[0])
-        self.put(self.system+self.members['batteryUsage'],0);self.call('ScrnCommon_StatusBarUpdate')
+        self.put(self.system+self.members['batteryPercent'],0);self.call('ScrnCommon_StatusBarUpdate')
         self.assertEqual(self.frames[-1],h.symbol('bmp_battery_0')[0])
         self.assertEqual(self.text[1],'0%')
         self.cpu.mem_write(self.system+self.members['batteryVoltage'],struct.pack('<f',0))

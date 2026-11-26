@@ -104,10 +104,10 @@ uint8_t ScrnCommon_MotorVisible(uint8_t device, uint8_t module)
     return motor != NULL && !motor->hidden;
 }
 
-/** @brief Whether the selected motor (currentDeviceId/currentModuleId) is visible. */
+/** @brief Whether the selected motor (curDevice/curModule) is visible. */
 uint8_t ScrnCommon_SelectionVisible(void)
 {
-    return ScrnCommon_MotorVisible(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+    return ScrnCommon_MotorVisible(systemInfo.curDevice, systemInfo.curModule);
 }
 
 /**
@@ -134,8 +134,8 @@ uint8_t ScrnCommon_EnsureVisibleDevice(void)
     }
 
     /* Keep indices in range even when the control screen has no selection. */
-    systemInfo.currentDeviceId = 0;
-    systemInfo.currentModuleId = 0;
+    systemInfo.curDevice = 0;
+    systemInfo.curModule = 0;
     return 0;
 }
 
@@ -155,14 +155,14 @@ void ScrnCommon_SelectAdjacentVisible(int8_t direction)
 }
 
 /**
- * @brief  Settings of the selected motor (systemInfo.currentDeviceId/currentModuleId).
+ * @brief  Settings of the selected motor (systemInfo.curDevice/curModule).
  * @return Its MotorConfig slot, or a blank placeholder if it has none, so screens
  *         never dereference NULL; writes to the placeholder are discarded.
  */
 MotorStorageData_t *ScrnCommon_CurrentMotor(void)
 {
     static MotorStorageData_t noMotor;
-    MotorStorageData_t *motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+    MotorStorageData_t *motor = Config_Motor(systemInfo.curDevice, systemInfo.curModule);
 
     if (motor)
     {
@@ -175,14 +175,14 @@ MotorStorageData_t *ScrnCommon_CurrentMotor(void)
 }
 
 /**
- * @brief  Runtime state of the selected motor (systemInfo.currentDeviceId/currentModuleId).
+ * @brief  Runtime state of the selected motor (systemInfo.curDevice/curModule).
  * @return Its motorBuff entry, or a blank placeholder if the motor has no slot,
  *         so screens never dereference NULL; writes to the placeholder are discarded.
  */
 MotorData_t *ScrnCommon_CurrentMotorState(void)
 {
     static MotorData_t noMotor;
-    MotorData_t *motor = Main_MotorState(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+    MotorData_t *motor = Main_MotorState(systemInfo.curDevice, systemInfo.curModule);
 
     if (motor)
     {
@@ -243,7 +243,7 @@ void ScrnCommon_StatusBarUpdate(void)
 {
     char time[8];
 
-    sprintf(time, "%02u:%02u", systemInfo.time.Hours, systemInfo.time.Minutes);
+    sprintf(time, "%02u:%02u", systemInfo.rtcTime.Hours, systemInfo.rtcTime.Minutes);
     UG_TextboxSetText(&window_1, 0, time);
     ScrnCommon_UpdateBattery();
 }
@@ -258,7 +258,7 @@ void ScrnCommon_UpdateBattery(void)
     /* Percentage text. */
     if (valid)
     {
-        sprintf(text, "%u%%", systemInfo.batteryUsage);
+        sprintf(text, "%u%%", systemInfo.batteryPercent);
     }
     else
     {
@@ -267,12 +267,12 @@ void ScrnCommon_UpdateBattery(void)
     UG_TextboxSetText(&window_1, TXB_ID_1, text);
     UG_TextboxSetScrollEnabled(&window_1, TXB_ID_1, 0);
     UG_TextboxSetForeColor(&window_1, TXB_ID_1,
-        valid && systemInfo.batteryUsage <= 10 ? C_RED : C_WHITE);
+        valid && systemInfo.batteryPercent <= 10 ? C_RED : C_WHITE);
 
     /* Battery icon; animated while charging. */
-    frame = !valid ? 0 : systemInfo.batteryUsage <= 5 ? 0 :
-        systemInfo.batteryUsage <= 25 ? 1 : systemInfo.batteryUsage <= 50 ? 2 :
-        systemInfo.batteryUsage <= 75 ? 3 : 4;
+    frame = !valid ? 0 : systemInfo.batteryPercent <= 5 ? 0 :
+        systemInfo.batteryPercent <= 25 ? 1 : systemInfo.batteryPercent <= 50 ? 2 :
+        systemInfo.batteryPercent <= 75 ? 3 : 4;
     if (systemInfo.charging && valid)
     {
         frame = (HAL_GetTick() / 500) % 5;
@@ -533,11 +533,11 @@ static void createSettingsMenu(char *title, uint8_t stacked)
 /* Flat position of the selection: device * MAXIMUM_MODULE + module. */
 static int selectionPosition(void)
 {
-    if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE || systemInfo.currentModuleId >= MAXIMUM_MODULE)
+    if (systemInfo.curDevice >= MAXIMUM_DEVICE || systemInfo.curModule >= MAXIMUM_MODULE)
     {
         return -1;
     }
-    return systemInfo.currentDeviceId * MAXIMUM_MODULE + systemInfo.currentModuleId;
+    return systemInfo.curDevice * MAXIMUM_MODULE + systemInfo.curModule;
 }
 
 /* Select the motor at a flat position; FALSE (nothing changed) for a negative position. */
@@ -547,8 +547,8 @@ static uint8_t selectPosition(int position)
     {
         return 0;
     }
-    systemInfo.currentDeviceId = position / MAXIMUM_MODULE;
-    systemInfo.currentModuleId = position % MAXIMUM_MODULE;
+    systemInfo.curDevice = position / MAXIMUM_MODULE;
+    systemInfo.curModule = position % MAXIMUM_MODULE;
     return 1;
 }
 

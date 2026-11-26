@@ -286,16 +286,16 @@ int main(void)
   }
 
   /* Select the first paired device. */
-  HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-  systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
+  HAL_RTC_GetTime(&hrtc, &systemInfo.rtcTime, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &systemInfo.rtcDate, RTC_FORMAT_BIN);
+  systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.rtcTime, &systemInfo.rtcDate);
   for (int devNo = 0; devNo < MAXIMUM_DEVICE; devNo++)
   {
     if (storageData.DeviceConfig[devNo].deleted == FALSE)
     {
       deviceBuff[devNo].lastRxTime = systemInfo.currentTime;
-      systemInfo.currentDeviceId = devNo;
-      systemInfo.currentModuleId = 0;
+      systemInfo.curDevice = devNo;
+      systemInfo.curModule = 0;
       break;
     }
   }
@@ -937,7 +937,7 @@ void Main_SetMotorPower(uint8_t motorPower)
   MotorStorageData_t *motor;
 
   /* Guard the common send path for both physical and USB-injected buttons. */
-  if (systemInfo.currentDeviceId >= MAXIMUM_DEVICE || systemInfo.currentModuleId >= MAXIMUM_MODULE)
+  if (systemInfo.curDevice >= MAXIMUM_DEVICE || systemInfo.curModule >= MAXIMUM_MODULE)
   {
     return;
   }
@@ -945,7 +945,7 @@ void Main_SetMotorPower(uint8_t motorPower)
   {
     return;
   }
-  motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+  motor = Config_Motor(systemInfo.curDevice, systemInfo.curModule);
   if (motor == NULL)
   {
     return;
@@ -957,11 +957,11 @@ void Main_SetMotorPower(uint8_t motorPower)
     return;
   }
 
-  if (storageData.DeviceConfig[systemInfo.currentDeviceId].deleted == FALSE)
+  if (storageData.DeviceConfig[systemInfo.curDevice].deleted == FALSE)
   {
-    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig);
-    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig,
-      systemInfo.currentModuleId, motorPower);
+    Schedule_CancelForNode(storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig);
+    LoraPackage_t packageOut = Comm_CreateReqControlPower(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig,
+      systemInfo.curModule, motorPower);
     osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100));
   }
 }
@@ -990,7 +990,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
     return;
   }
 
-  payload.moduleIndex = systemInfo.currentModuleId;
+  payload.moduleIndex = systemInfo.curModule;
   payload.syncTime = systemInfo.currentTime;
   if (time < 0)
   {
@@ -1001,7 +1001,7 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
     payload.scheduleTime = systemInfo.currentTime + time;
   }
 
-  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.currentDeviceId].nodeIdConfig, payload);
+  LoraPackage_t packageOut = Comm_CreateReqSetSchedule(systemInfo.netId, storageData.DeviceConfig[systemInfo.curDevice].nodeIdConfig, payload);
   Schedule_Track(&packageOut, &payload);
   if (osMessageQueuePut(txMsgQueueHandle, &packageOut, 0, pdMS_TO_TICKS(100)) != osOK)
   {
@@ -1019,10 +1019,10 @@ void Main_SetScheduleTimeToCurrentModule(int32_t time)
 void Main_ScanNewDevice(void)
 {
   osMutexAcquire(radioMutex, osWaitForever);
-  systemInfo.findDeviceTick = xTaskGetTickCount();
-  systemInfo.findDeviceStep = eProcess_Step_Processing;
-  systemInfo.findDeviceResult = eProcess_Result_Failed;
-  memset(&systemInfo.findDevicefactoryInfo, 0, sizeof(systemInfo.findDevicefactoryInfo));
+  systemInfo.searchTick = xTaskGetTickCount();
+  systemInfo.searchStep = eProcess_Step_Processing;
+  systemInfo.searchResult = eProcess_Result_Failed;
+  memset(&systemInfo.foundDevice, 0, sizeof(systemInfo.foundDevice));
   systemInfo.netId = LORA_NET_ID_DEFAULT;
   sLoRaCtrl.frequency = 433;
   sLoRaCtrl.spredingFactor = SF_7;
@@ -1056,8 +1056,8 @@ MotorData_t *Main_MotorState(uint8_t device, uint8_t module)
 void Main_RestoreRadio(void)
 {
   osMutexAcquire(radioMutex, osWaitForever);
-  systemInfo.findDeviceStep = eProcess_Step_None;
-  systemInfo.configDeviceStep = eProcess_Step_None;
+  systemInfo.searchStep = eProcess_Step_None;
+  systemInfo.connectStep = eProcess_Step_None;
   systemInfo.netId = storageData.netIdConfig;
   sLoRaCtrl.frequency = storageData.frequencyConfig;
   sLoRaCtrl.spredingFactor = storageData.sfConfig;
@@ -1086,16 +1086,16 @@ uint8_t Main_ConnectToDevice(void)
   {
     return FALSE;
   }
-  systemInfo.configDeviceTick = xTaskGetTickCount();
-  systemInfo.configDeviceStep = eProcess_Step_Processing;
-  systemInfo.configDeviceResult = eProcess_Result_Failed;
+  systemInfo.connectTick = xTaskGetTickCount();
+  systemInfo.connectStep = eProcess_Step_Processing;
+  systemInfo.connectResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
-  systemInfo.nextNodeId = findPairedSlot(systemInfo.findDevicefactoryInfo.serial) == slot ?
+  systemInfo.pairNodeId = findPairedSlot(systemInfo.foundDevice.serial) == slot ?
     storageData.DeviceConfig[slot].nodeIdConfig : getNotUsedNodeId();
 
-  payload.serial = systemInfo.findDevicefactoryInfo.serial;
+  payload.serial = systemInfo.foundDevice.serial;
   payload.netId = storageData.netIdConfig;
-  payload.nodeId = systemInfo.nextNodeId;
+  payload.nodeId = systemInfo.pairNodeId;
   payload.frequency = storageData.frequencyConfig;
   payload.sf = storageData.sfConfig;
 
@@ -1154,7 +1154,7 @@ static void updateBattery(void)
   {
     filtered = 0;
     systemInfo.batteryVoltage = 0;
-    systemInfo.batteryUsage = 0;
+    systemInfo.batteryPercent = 0;
     return;
   }
   filtered = filtered == 0 ? measured : filtered + 0.1f * (measured - filtered);
@@ -1189,7 +1189,7 @@ static void updateBattery(void)
   {
     percent = 100;
   }
-  systemInfo.batteryUsage = (uint8_t)(percent + 0.5f);
+  systemInfo.batteryPercent = (uint8_t)(percent + 0.5f);
 }
 
 static uint8_t getNotUsedNodeId(void)
@@ -1257,7 +1257,7 @@ static int8_t findPairedSlot(uint32_t serial)
  */
 static int8_t pairingSlot(void)
 {
-  int8_t slot = findPairedSlot(systemInfo.findDevicefactoryInfo.serial);
+  int8_t slot = findPairedSlot(systemInfo.foundDevice.serial);
 
   for (int8_t devNo = 0; slot < 0 && devNo < MAXIMUM_DEVICE; devNo++)
   {
@@ -1267,7 +1267,7 @@ static int8_t pairingSlot(void)
     }
   }
   if (slot < 0 ||
-    !Config_CanAllocateMotors(slot, Config_ModuleCount(systemInfo.findDevicefactoryInfo.numberOfModule)))
+    !Config_CanAllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.numberOfModule)))
   {
     return -1;
   }
@@ -1284,7 +1284,7 @@ static int8_t storePairedDevice(void)
   int8_t slot = pairingSlot();
 
   if (slot < 0 ||
-    !Config_AllocateMotors(slot, Config_ModuleCount(systemInfo.findDevicefactoryInfo.numberOfModule)))
+    !Config_AllocateMotors(slot, Config_ModuleCount(systemInfo.foundDevice.numberOfModule)))
   {
     return -1;
   }
@@ -1303,8 +1303,8 @@ static int8_t storePairedDevice(void)
   }
 
   memset(&storageData.DeviceConfig[slot], 0, sizeof(storageData.DeviceConfig[slot]));
-  storageData.DeviceConfig[slot].factoryInfo = systemInfo.findDevicefactoryInfo;
-  storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.nextNodeId;
+  storageData.DeviceConfig[slot].factoryInfo = systemInfo.foundDevice;
+  storageData.DeviceConfig[slot].nodeIdConfig = systemInfo.pairNodeId;
   Link_SetAutoStatus(slot, 0); /* Also refreshes the link-settings checksum. */
   systemInfo.configSavePending = TRUE;
   return slot;
@@ -1349,9 +1349,9 @@ void StartSystemTask(void *argument)
     CDC_ProcessEcho_FS();
 
     /* Read the date time value. */
-    HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
-    HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-    systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
+    HAL_RTC_GetTime(&hrtc, &systemInfo.rtcTime, RTC_FORMAT_BIN);
+    HAL_RTC_GetDate(&hrtc, &systemInfo.rtcDate, RTC_FORMAT_BIN);
+    systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.rtcTime, &systemInfo.rtcDate);
     Rtc_SaveDate();
     updateBattery();
 
@@ -1369,21 +1369,21 @@ void StartSystemTask(void *argument)
     handleButton(&offButton, currentScreen->brightButtonClickedCallback, currentScreen->brightButtonPressedCallback);
 
     /* Device search. */
-    if (systemInfo.findDeviceStep == eProcess_Step_Done)
+    if (systemInfo.searchStep == eProcess_Step_Done)
     {
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING &&
-        systemInfo.findDeviceResult == eProcess_Result_Passed)
+        systemInfo.searchResult == eProcess_Result_Passed)
       {
-        systemInfo.findDevicefactoryInfo.deviceTypeChar = deviceTypeChar(systemInfo.findDevicefactoryInfo.deviceType);
+        systemInfo.foundDevice.deviceTypeChar = deviceTypeChar(systemInfo.foundDevice.deviceType);
         pairingUI_Step = PAIRING_STATE_FOUND;
         currentScreen = &devicePairingScreen;
         currentScreen->init();
       }
-      systemInfo.findDeviceStep = eProcess_Step_None;
+      systemInfo.searchStep = eProcess_Step_None;
     }
-    else if (systemInfo.findDeviceStep == eProcess_Step_Processing)
+    else if (systemInfo.searchStep == eProcess_Step_Processing)
     {
-      if (xTaskGetTickCount() - systemInfo.findDeviceTick > pdMS_TO_TICKS(5000))
+      if (xTaskGetTickCount() - systemInfo.searchTick > pdMS_TO_TICKS(5000))
       {
         if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_SEARCHING)
         {
@@ -1391,15 +1391,15 @@ void StartSystemTask(void *argument)
           currentScreen = &devicePairingScreen;
           currentScreen->init();
         }
-        systemInfo.findDeviceStep = eProcess_Step_None;
+        systemInfo.searchStep = eProcess_Step_None;
       }
     }
 
     /* Device connection. */
-    if (systemInfo.configDeviceStep == eProcess_Step_Done)
+    if (systemInfo.connectStep == eProcess_Step_Done)
     {
       if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING &&
-        systemInfo.configDeviceResult == eProcess_Result_Passed)
+        systemInfo.connectResult == eProcess_Result_Passed)
       {
         if (storePairedDevice() >= 0)
         {
@@ -1414,11 +1414,11 @@ void StartSystemTask(void *argument)
           currentScreen->init();
         }
       }
-      systemInfo.configDeviceStep = eProcess_Step_None;
+      systemInfo.connectStep = eProcess_Step_None;
     }
-    else if (systemInfo.configDeviceStep == eProcess_Step_Processing)
+    else if (systemInfo.connectStep == eProcess_Step_Processing)
     {
-      if (xTaskGetTickCount() - systemInfo.configDeviceTick > pdMS_TO_TICKS(5000))
+      if (xTaskGetTickCount() - systemInfo.connectTick > pdMS_TO_TICKS(5000))
       {
         if (currentScreen == &devicePairingScreen && pairingUI_Step == PAIRING_STATE_CONNECTING)
         {
@@ -1426,7 +1426,7 @@ void StartSystemTask(void *argument)
           currentScreen = &devicePairingScreen;
           currentScreen->init();
         }
-        systemInfo.configDeviceStep = eProcess_Step_None;
+        systemInfo.connectStep = eProcess_Step_None;
       }
     }
 

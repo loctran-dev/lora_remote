@@ -105,8 +105,8 @@ void ScrnDcs_ShowConnectionError(uint8_t id)
     {
         UG_WindowHide(&window_1);
         UG_WindowDelete(&window_1);
-        systemInfo.currentDeviceId = id;
-        systemInfo.currentModuleId = 0;
+        systemInfo.curDevice = id;
+        systemInfo.curModule = 0;
         ScrnCommon_EnsureVisibleDevice(); /* first visible motor of the device */
         currentScreen = &deviceControlScreen;
         currentScreen->init();
@@ -187,11 +187,11 @@ static void init(void)
     createLabel(&textbox_5, TXB_ID_4, 92, 144, 127, 159, "Next ", C_RED, C_WHITE, ALIGN_CENTER_RIGHT);
 
     /* Title, RSSI and the three phase currents. */
-    device = deviceBuff[systemInfo.currentDeviceId];
+    device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
-        device.index + 1, systemInfo.currentModuleId + 1,
-        ScrnCommon_MotorName(device.index, systemInfo.currentModuleId));
+        device.index + 1, systemInfo.curModule + 1,
+        ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -238,11 +238,11 @@ static void render(void)
     }
 
     /* Title (or lock notice) and phase currents. */
-    device = deviceBuff[systemInfo.currentDeviceId];
+    device = deviceBuff[systemInfo.curDevice];
     module = *ScrnCommon_CurrentMotorState();
     snprintf(title, sizeof(title), " %c%u%u.%.19s", storageData.DeviceConfig[device.index].factoryInfo.deviceTypeChar,
-        device.index + 1, systemInfo.currentModuleId + 1,
-        ScrnCommon_MotorName(device.index, systemInfo.currentModuleId));
+        device.index + 1, systemInfo.curModule + 1,
+        ScrnCommon_MotorName(device.index, systemInfo.curModule));
     sprintf(currentAText, "%5.2f A", module.phaseCurrent[0]);
     sprintf(currentBText, "%5.2f A", module.phaseCurrent[1]);
     sprintf(currentCText, "%5.2f A", module.phaseCurrent[2]);
@@ -693,13 +693,13 @@ static void createTimerScreen(void)
     UG_WindowSetXEnd(&window_1, 127);
     UG_WindowSetYEnd(&window_1, 159);
     ScrnCommon_StatusBarCreate();
-    device = &deviceBuff[systemInfo.currentDeviceId];
+    device = &deviceBuff[systemInfo.curDevice];
     type = storageData.DeviceConfig[device->index].factoryInfo.deviceTypeChar;
     if (type < 32 || type > 126)
     {
         type = 'M';
     }
-    snprintf(title, sizeof(title), "%c%u%u Timer", type, device->index + 1, systemInfo.currentModuleId + 1);
+    snprintf(title, sizeof(title), "%c%u%u Timer", type, device->index + 1, systemInfo.curModule + 1);
     createText(&textbox_10, 9, 0, 20, 80, 37, title, DEFAULT_FONT, C_DARK_SLATE_BLUE);
     createText(&textbox_11, 10, 81, 20, 127, 37, adjustingScheduleValue ? "HH:MM" : "", DEFAULT_FONT,
         C_DARK_SLATE_BLUE);

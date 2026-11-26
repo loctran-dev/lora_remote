@@ -87,13 +87,13 @@ static void render(void)
                 strcpy(value, module->hidden ? "Yes" : "No");
                 break;
             case 4:
-                strcpy(value, storageData.DeviceConfig[systemInfo.currentDeviceId].deleted ? "Yes" : "No");
+                strcpy(value, storageData.DeviceConfig[systemInfo.curDevice].deleted ? "Yes" : "No");
                 break;
             case 5:
                 snprintf(value, sizeof(value), "%.19s", module->name);
                 break;
             case 6:
-                sprintf(value, "%u s", Link_GetAutoStatus(systemInfo.currentDeviceId));
+                sprintf(value, "%u s", Link_GetAutoStatus(systemInfo.curDevice));
                 break;
             default:
                 break;

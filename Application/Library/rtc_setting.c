@@ -16,13 +16,13 @@ extern MotorData_t motorBuff[MAXIMUM_MOTOR];
 /* F1 HAL keeps its calendar in RAM. Preserve it in free BKP DR2..DR4;
    DR1 is the existing RTC-init marker, DR10 belongs to the bootloader. */
 /**
- * @brief  Save systemInfo.date to the backup registers if it changed.
+ * @brief  Save systemInfo.rtcDate to the backup registers if it changed.
  * @note   Called every systemTask loop; DR1 is the RTC-init marker and DR10
  *         belongs to the bootloader, so only DR2..DR4 are used.
  */
 void Rtc_SaveDate(void)
 {
-    RTC_DateTypeDef *d = &systemInfo.date;
+    RTC_DateTypeDef *d = &systemInfo.rtcDate;
     uint16_t packed;
 
     if (d->Year > 99 || !d->Month || d->Month > 12 || !d->Date || d->Date > 31)
@@ -102,9 +102,9 @@ void Rtc_RestoreDate(void)
  */
 uint32_t Rtc_Read(void)
 {
-    HAL_RTC_GetTime(&hrtc, &systemInfo.time, RTC_FORMAT_BIN);
-    HAL_RTC_GetDate(&hrtc, &systemInfo.date, RTC_FORMAT_BIN);
-    systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.time, &systemInfo.date);
+    HAL_RTC_GetTime(&hrtc, &systemInfo.rtcTime, RTC_FORMAT_BIN);
+    HAL_RTC_GetDate(&hrtc, &systemInfo.rtcDate, RTC_FORMAT_BIN);
+    systemInfo.currentTime = Util_GetUnixTimestamp(&systemInfo.rtcTime, &systemInfo.rtcDate);
     Rtc_SaveDate();
     return systemInfo.currentTime;
 }

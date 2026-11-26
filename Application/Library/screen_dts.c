@@ -52,8 +52,8 @@ static void init(void)
 {
     /* Start from the current RTC; an unset clock starts at the first supported year. */
     Rtc_Read();
-    editedTime = systemInfo.time;
-    editedDate = systemInfo.date;
+    editedTime = systemInfo.rtcTime;
+    editedDate = systemInfo.rtcDate;
     if (editedDate.Year < 24)
     {
         editedDate.Year = 24;

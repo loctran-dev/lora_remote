@@ -86,7 +86,7 @@ unused slot.
 - Deleting a device releases its slots.
 - A device is hidden when all its motors are hidden (`Config_DeviceHidden`);
   the device manager hides or shows all of them. Device setting edits the
-  selected motor (`systemInfo.currentModuleId`, still always 0 in the UI).
+  selected motor (`systemInfo.curModule`, still always 0 in the UI).
 - `Config_Load()` repairs the pool: slots of unknown or deleted devices, bad
   module numbers and duplicates are released, flags are normalised, empty
   names become "Default", and a paired device without a slot for module 0

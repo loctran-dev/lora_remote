@@ -82,7 +82,7 @@ Screen_t historyScreen = {
 void ScrnHs_OpenHistory(void)
 {
     /* Start on the current device, or the first one with history. */
-    chosenDevice = systemInfo.currentDeviceId < MAXIMUM_DEVICE ? systemInfo.currentDeviceId : 0;
+    chosenDevice = systemInfo.curDevice < MAXIMUM_DEVICE ? systemInfo.curDevice : 0;
     if (!available(chosenDevice))
     {
         for (uint8_t id = 0; id < MAXIMUM_DEVICE; id++)

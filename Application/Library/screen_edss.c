@@ -103,8 +103,8 @@ static void init(void)
     ScrnCommon_StatusBarCreate();
     module = *ScrnCommon_CurrentMotor();
     snprintf(title, sizeof(title), " %c%u%u.%.19s-Set.",
-        storageData.DeviceConfig[systemInfo.currentDeviceId].factoryInfo.deviceTypeChar, systemInfo.currentDeviceId + 1,
-        systemInfo.currentModuleId + 1, module.name);
+        storageData.DeviceConfig[systemInfo.curDevice].factoryInfo.deviceTypeChar, systemInfo.curDevice + 1,
+        systemInfo.curModule + 1, module.name);
     createLabel(&textbox_6, TXB_ID_5, 0, 20, 127, 37, title, C_DARK_SLATE_BLUE, ALIGN_CENTER_LEFT);
 
     /* Editor for the selected item. */
@@ -119,7 +119,7 @@ static void init(void)
         createButtons(" Inc", "Next", "Dec ");
         createCaption(indexOfSettingMenu == ITEM_AUTO_STATUS ? "Auto status interval" : "Alarm delay");
         sprintf(secondsText, "%04d s", indexOfSettingMenu == ITEM_AUTO_STATUS ?
-            Link_GetAutoStatus(systemInfo.currentDeviceId) : module.alarmDelayTime);
+            Link_GetAutoStatus(systemInfo.curDevice) : module.alarmDelayTime);
         createLabel(&textbox_8, TXB_ID_7, 15, 57, 120, 67, secondsText, C_BLACK, ALIGN_CENTER);
         indexOfEdittingValue = 0;
     }
@@ -291,7 +291,7 @@ static void centerPressed(void)
         {
             if (indexOfSettingMenu == ITEM_AUTO_STATUS)
             {
-                Link_SetAutoStatus(systemInfo.currentDeviceId, value);
+                Link_SetAutoStatus(systemInfo.curDevice, value);
             }
             else
             {
@@ -583,10 +583,10 @@ static void applySelection(void)
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        storageData.DeviceConfig[systemInfo.currentDeviceId].deleted = (indexOfSelection + 1) % 2;
-        if (storageData.DeviceConfig[systemInfo.currentDeviceId].deleted)
+        storageData.DeviceConfig[systemInfo.curDevice].deleted = (indexOfSelection + 1) % 2;
+        if (storageData.DeviceConfig[systemInfo.curDevice].deleted)
         {
-            Config_FreeMotors(systemInfo.currentDeviceId);
+            Config_FreeMotors(systemInfo.curDevice);
         }
     }
 }

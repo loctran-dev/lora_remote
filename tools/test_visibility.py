@@ -60,7 +60,7 @@ class FirmwareHarness(unittest.TestCase):
                                "deleted": {CFG_DELETE},
                                "MotorConfig": {MOTOR_BASE}, "autoStatusSeconds": {5, AUTO_STATUS},
                                "linkLost": {DEV_CONNECTION_ERROR}, "rssi": {DEV_RSSI},
-                               "currentDeviceId": {60}, "currentModuleId": {61},
+                               "curDevice": {60}, "curModule": {61},
                                "configSavePending": {62}, "DeviceConfig": {15}}.items():
             actual = {int(v) for v in re.findall(r"DW_AT_name " + field + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)}
             if actual != offsets:

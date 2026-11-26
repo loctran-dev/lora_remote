@@ -85,7 +85,7 @@ static void init(void)
 static void render(void)
 {
     char text[40];
-    uint8_t id = systemInfo.currentDeviceId;
+    uint8_t id = systemInfo.curDevice;
     DeviceInfo_t *device;
     uint8_t module;
     uint32_t seconds;
@@ -104,7 +104,7 @@ static void render(void)
 
     /* Title and identity. */
     device = &deviceBuff[id];
-    module = systemInfo.currentModuleId;
+    module = systemInfo.curModule;
     if (module >= MAXIMUM_MODULE)
     {
         module = 0;
@@ -150,7 +150,7 @@ static void render(void)
 /* Open this device's history list; long beep and stay here if it has none. */
 static void leftClicked(void)
 {
-    if (!ScrnHs_OpenDeviceHistory(systemInfo.currentDeviceId))
+    if (!ScrnHs_OpenDeviceHistory(systemInfo.curDevice))
     {
         Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         return;

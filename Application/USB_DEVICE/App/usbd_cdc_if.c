@@ -439,8 +439,8 @@ void CDC_ProcessEcho_FS(void)
         stamp=Rtc_Read();
         echoLength=snprintf((char*)UserRxBufferFS,APP_RX_DATA_SIZE,
           "TIME TS=%lu DATE=%04u-%02u-%02u CLOCK=%02u:%02u:%02u\n",(unsigned long)stamp,
-          2000u+systemInfo.date.Year,systemInfo.date.Month,systemInfo.date.Date,
-          systemInfo.time.Hours,systemInfo.time.Minutes,systemInfo.time.Seconds);
+          2000u+systemInfo.rtcDate.Year,systemInfo.rtcDate.Month,systemInfo.rtcDate.Date,
+          systemInfo.rtcTime.Hours,systemInfo.rtcTime.Minutes,systemInfo.rtcTime.Seconds);
       } else echoLength=snprintf((char*)UserRxBufferFS,APP_RX_DATA_SIZE,"ERR TIME %s\n",
           result==eRtc_SetResult_Busy?"ACTIVE_TIMER":result==eRtc_SetResult_Io?"RTC_WRITE":"SYNTAX_OR_RANGE");
       responsePrepared=1;
@@ -452,7 +452,7 @@ void CDC_ProcessEcho_FS(void)
         "BATTERY ADC=%lu VBAT_MV=%lu PCT=%u CHARGING=%u FULL=%u VALID=%u\n",
         (unsigned long)systemInfo.batteryAdc,
         (unsigned long)(systemInfo.batteryVoltage * 1000.0f + 0.5f),
-        systemInfo.batteryUsage, systemInfo.charging, systemInfo.batteryFull,
+        systemInfo.batteryPercent, systemInfo.charging, systemInfo.batteryFull,
         systemInfo.batteryVoltage > 0);
       responsePrepared = 1;
     }
@@ -465,7 +465,7 @@ void CDC_ProcessEcho_FS(void)
         storageData.sleepMode, (unsigned long)storageData.tUpdate,
         (unsigned long)storageData.tSleepUpdate, systemInfo.netId,
         sLoRaCtrl.frequency, sLoRaCtrl.spredingFactor, Link_GetIdleSeconds(),
-        Link_GetTimeoutSeconds(), Link_GetAutoStatus(systemInfo.currentDeviceId));
+        Link_GetTimeoutSeconds(), Link_GetAutoStatus(systemInfo.curDevice));
       responsePrepared = 1;
     }
     if (!responsePrepared && !probePending && echoLength == 8 && memcmp(UserRxBufferFS,"HISTORY\n",8)==0)
@@ -525,7 +525,7 @@ void CDC_ProcessEcho_FS(void)
     if (!responsePrepared && !probePending && echoLength >= 5 && echoLength <= 8 &&
         memcmp(UserRxBufferFS, "LINK", 4) == 0)
     {
-      unsigned id = systemInfo.currentDeviceId;
+      unsigned id = systemInfo.curDevice;
       if (echoLength > 5) {
         unsigned number = 0;
         for (unsigned i = 5; i < echoLength && UserRxBufferFS[i] != '\n'; i++) {

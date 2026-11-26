@@ -57,8 +57,8 @@ const CmdMapping_t cmdTable[] = {
  */
 uint8_t CmdHandler_SendCurrentModuleConfig(void)
 {
-    DeviceStorageData_t *device = &storageData.DeviceConfig[systemInfo.currentDeviceId];
-    MotorStorageData_t *motor = Config_Motor(systemInfo.currentDeviceId, systemInfo.currentModuleId);
+    DeviceStorageData_t *device = &storageData.DeviceConfig[systemInfo.curDevice];
+    MotorStorageData_t *motor = Config_Motor(systemInfo.curDevice, systemInfo.curModule);
     PayloadRequestSetConfig_t config;
     LoraPackage_t packet;
     if (device->deleted || motor == NULL ||
@@ -66,10 +66,10 @@ uint8_t CmdHandler_SendCurrentModuleConfig(void)
     {
         return FALSE;
     }
-    config.moduleIndex = systemInfo.currentModuleId;
+    config.moduleIndex = systemInfo.curModule;
     config.alarmThresholdCentiAmp = (uint16_t)(motor->alarmThreshold * 100.0f + 0.5f);
     config.alarmDelaySeconds = motor->alarmDelayTime;
-    config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.currentDeviceId);
+    config.autoStatusSeconds = Link_GetAutoStatus(systemInfo.curDevice);
     packet = Comm_CreateNewPackage(systemInfo.netId, device->nodeIdConfig, CMD_SET_CONFIG,
                                    LORA_PACKAGE_TYPE_REQUEST, (uint8_t *)&config, sizeof(config), 0);
     configTransaction = packet.transactionID;
@@ -265,20 +265,20 @@ static void handleGetFactoryInfo(LoraPackage_t fwPackage)
         return;
     }
 
-    if (systemInfo.findDeviceStep == eProcess_Step_Processing)
+    if (systemInfo.searchStep == eProcess_Step_Processing)
     {
-        systemInfo.findDeviceStep = eProcess_Step_Done;
+        systemInfo.searchStep = eProcess_Step_Done;
 
         if (payloadResponse.result)
         {
-            systemInfo.findDeviceResult = eProcess_Result_Passed;
-            systemInfo.findDevicefactoryInfo.serial = payloadResponse.serial;
-            systemInfo.findDevicefactoryInfo.deviceType = payloadResponse.deviceType;
-            systemInfo.findDevicefactoryInfo.numberOfModule = payloadResponse.numberOfModule;
+            systemInfo.searchResult = eProcess_Result_Passed;
+            systemInfo.foundDevice.serial = payloadResponse.serial;
+            systemInfo.foundDevice.deviceType = payloadResponse.deviceType;
+            systemInfo.foundDevice.numberOfModule = payloadResponse.numberOfModule;
         }
         else
         {
-            systemInfo.findDeviceResult = eProcess_Result_Failed;
+            systemInfo.searchResult = eProcess_Result_Failed;
         }
     }
 }
@@ -298,19 +298,19 @@ static void handleConfigConnection(LoraPackage_t fwPackage)
         return;
     }
 
-    if (systemInfo.configDeviceStep == eProcess_Step_Processing)
+    if (systemInfo.connectStep == eProcess_Step_Processing)
     {
-        systemInfo.configDeviceStep = eProcess_Step_Done;
-        /* A reply from another serial leaves configDeviceResult unchanged. */
-        if (payloadResponse.serial == systemInfo.findDevicefactoryInfo.serial)
+        systemInfo.connectStep = eProcess_Step_Done;
+        /* A reply from another serial leaves connectResult unchanged. */
+        if (payloadResponse.serial == systemInfo.foundDevice.serial)
         {
             if (payloadResponse.result == TRUE)
             {
-                systemInfo.configDeviceResult = eProcess_Result_Passed;
+                systemInfo.connectResult = eProcess_Result_Passed;
             }
             else
             {
-                systemInfo.configDeviceResult = eProcess_Result_Failed;
+                systemInfo.connectResult = eProcess_Result_Failed;
             }
         }
     }

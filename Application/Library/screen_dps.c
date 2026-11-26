@@ -232,15 +232,15 @@ static void createDeviceInfo(uint8_t withLoraId)
     char moduleCountText[20];
     char loraIdText[20];
 
-    snprintf(snText, sizeof(snText), "0x%08lX", (unsigned long)systemInfo.findDevicefactoryInfo.serial);
-    sprintf(typeText, "%c", systemInfo.findDevicefactoryInfo.deviceTypeChar);
-    sprintf(moduleCountText, "%02d", systemInfo.findDevicefactoryInfo.numberOfModule);
+    snprintf(snText, sizeof(snText), "0x%08lX", (unsigned long)systemInfo.foundDevice.serial);
+    sprintf(typeText, "%c", systemInfo.foundDevice.deviceTypeChar);
+    sprintf(moduleCountText, "%02d", systemInfo.foundDevice.numberOfModule);
     createInfoRow(0, "SN", snText);
     createInfoRow(1, "Type", typeText);
     createInfoRow(2, "Modules", moduleCountText);
     if (withLoraId)
     {
-        sprintf(loraIdText, "0x%02X", systemInfo.nextNodeId);
+        sprintf(loraIdText, "0x%02X", systemInfo.pairNodeId);
         createInfoRow(3, "Lora ID", loraIdText);
     }
 }

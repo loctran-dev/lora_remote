@@ -146,29 +146,29 @@ typedef struct
 {
     uint8_t netId; ///< Network id the radio uses now (the default while pairing).
 
-    uint8_t batteryUsage;    ///< Battery charge [%].
+    uint8_t batteryPercent;  ///< Battery charge [%].
     uint32_t batteryAdc;     ///< Raw ADC sample, written by DMA.
     float batteryVoltage;    ///< Filtered battery voltage [V]; 0 = no valid reading.
     float batteryVoltageMin; ///< Voltage of an empty battery [V].
     float batteryVoltageMax; ///< Voltage of a full battery [V].
-    RTC_TimeTypeDef time;    ///< RTC time, read every systemTask loop.
-    RTC_DateTypeDef date;    ///< RTC date, read every systemTask loop.
-    uint32_t currentTime;    ///< Unix time of time/date.
+    RTC_TimeTypeDef rtcTime; ///< RTC time, read every systemTask loop.
+    RTC_DateTypeDef rtcDate; ///< RTC date, read every systemTask loop.
+    uint32_t currentTime;    ///< Unix time of rtcTime/rtcDate (remote clock).
     uint8_t charging;        ///< Charger reports charging.
     uint8_t batteryFull;     ///< Charger reports full (standby).
 
-    /* New connection process */
-    Process_Step_e findDeviceStep;       ///< Device search step.
-    Process_Result_e findDeviceResult;   ///< Device search result.
-    uint32_t findDeviceTick;             ///< RTOS tick when the search started [ms].
-    Process_Step_e configDeviceStep;     ///< Connection step.
-    Process_Result_e configDeviceResult; ///< Connection result.
-    uint32_t configDeviceTick;           ///< RTOS tick when the connection started [ms].
-    uint8_t nextNodeId;                  ///< Node id offered to the device being paired.
-    FactoryInfo_t findDevicefactoryInfo; ///< Identity of the device found by the search.
+    /* Pairing: device search, then connection */
+    Process_Step_e searchStep;      ///< Device search step.
+    Process_Result_e searchResult;  ///< Device search result.
+    uint32_t searchTick;            ///< RTOS tick when the search started [ms].
+    Process_Step_e connectStep;     ///< Connection step.
+    Process_Result_e connectResult; ///< Connection result.
+    uint32_t connectTick;           ///< RTOS tick when the connection started [ms].
+    uint8_t pairNodeId;             ///< Node id offered to the device being paired.
+    FactoryInfo_t foundDevice;      ///< Identity of the device found by the search.
 
-    uint8_t currentDeviceId; ///< Selected device (index in deviceBuff).
-    uint8_t currentModuleId; ///< Selected module on that device.
+    uint8_t curDevice; ///< Selected device (index in deviceBuff).
+    uint8_t curModule; ///< Selected module on that device.
 
     uint8_t configSavePending; ///< storageData changed; systemTask writes it to flash.
     uint32_t lastActionTick;   ///< RTOS tick of the last user action [ms].

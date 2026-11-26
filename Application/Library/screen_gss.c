@@ -102,8 +102,8 @@ static void render(void)
                 sprintf(value, "%u s", Link_GetTimeoutSeconds());
                 break;
             case DATE_TIME_ITEM:
-                sprintf(value, "%02u/%02u/%04u %02u:%02u", systemInfo.date.Date, systemInfo.date.Month,
-                    2000u + systemInfo.date.Year, systemInfo.time.Hours, systemInfo.time.Minutes);
+                sprintf(value, "%02u/%02u/%04u %02u:%02u", systemInfo.rtcDate.Date, systemInfo.rtcDate.Month,
+                    2000u + systemInfo.rtcDate.Year, systemInfo.rtcTime.Hours, systemInfo.rtcTime.Minutes);
                 break;
             default:
                 break;
