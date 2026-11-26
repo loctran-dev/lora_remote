@@ -191,8 +191,8 @@ class JournalTests(unittest.TestCase):
         self.cpu.reg_write(UC_ARM_REG_SP,stack);self.cpu.reg_write(UC_ARM_REG_LR,0x0807fff1)
         self.cpu.emu_start(symbol(name)|1,0x0807fff0,count=5000000)
         self.assertEqual(self.cpu.reg_read(UC_ARM_REG_PC),0x0807fff0)
-    def event_wire(self,serial=0xabcdef01,id=1):
-        event=struct.pack("<IIIH6B",serial,id,1794967200,0,1,1,2,1,1,0)
+    def event_wire(self,serial=0xabcdef01,id=1,flags=0):
+        event=struct.pack("<IIIH6B",serial,id,1794967200,0,1,1,2,1,1,flags)
         return struct.pack("<HBBBBHB",0xff55,31,1,1,1,42,9)+event+struct.pack("<I",zlib.crc32(event))+b"\x00"
     @unittest.skipUnless(REMOTE,"remote commit-before-ACK")
     def test_remote_only_acks_after_durable_commit_and_deduplicates_retries(self):
@@ -220,6 +220,14 @@ class JournalTests(unittest.TestCase):
         wire=bytearray(self.event_wire());wire[27]=2
         self.packet_call("RemoteHistory_Handle",bytes(wire));self.call("RemoteHistory_Tick")
         self.assertEqual(self.queued,[]);self.assertEqual(len(self.records()),0)
+    @unittest.skipUnless(REMOTE,"motor of an event, KI-12")
+    def test_remote_stores_the_module_bits_and_rejects_bad_flags(self):
+        self.globals_for_sync()
+        self.packet_call("RemoteHistory_Handle",self.event_wire(id=1,flags=2*2));self.call("RemoteHistory_Tick")  # module 2
+        self.assertEqual(len(self.records()),1);self.assertEqual(self.records()[0][19],4)
+        for flags in (2*6,0x10,0x80):  # module 6, unknown bit, HIST_LOCAL from a device
+            self.packet_call("RemoteHistory_Handle",self.event_wire(id=2,flags=flags));self.call("RemoteHistory_Tick")
+        self.assertEqual(len(self.records()),1)
     @unittest.skipUnless(REMOTE,"remote endpoint validation")
     def test_remote_rejects_unpaired_serial_without_ack(self):
         self.globals_for_sync()

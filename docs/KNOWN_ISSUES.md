@@ -12,18 +12,6 @@ issues under "Open" with the same fields.
 
 ## Open
 
-### KI-3: Firmware upgrade wipes all pairings and settings
-
-- Where: `Application/Library/config_store.c:46` (Config_Load); commit 129df91
-  removed the CFG2/raw load paths.
-- Problem: only "CFG3" slots of size `sizeof(SystemStorageData_t)` are accepted;
-  anything else falls back to loadDefaults() and is saved immediately.
-- Effect: a unit on CFG2 firmware loses all paired devices and radio settings
-  after the update.
-- Status: waiting for owner decision. Is this one-time wipe intended? If not,
-  add a CFG2 -> CFG3 conversion (move each DeviceConfig's motor fields into
-  storageData.motors module 0) before the defaults fallback.
-
 ### KI-9: USB console stops reading until the remote is woken or replugged
 
 - Where: USB CDC (`USB_DEVICE/App/usbd_cdc_if.c`) together with the power
@@ -38,27 +26,6 @@ issues under "Open" with the same fields.
 - Fix: unknown; first check whether STOP mode is entered while USB is attached
   (SOF detection) and whether the CDC receive is re-armed after wake-up.
 
-### KI-11: New remote with an old slave reports the link as lost
-
-- Where: `Application/Library/link_monitor.c` sendProbe (moduleIndex 0xFF);
-  slaves older than Lora_device c52194c ignore moduleIndex != 0.
-- Problem: probes for every module go unanswered by an old slave.
-- Effect: after a remote-only update the device shows "NO LINK" although it
-  works. Documented in docs/STATUS_ALL.md: update the slave first.
-- Status: won't fix (owner decision, 2026-11-26). Always update the slave
-  before the remote.
-- Fix (if ever needed): after a probe gets no answer, retry with moduleIndex 0
-  and remember that the device needs single-module requests.
-
-### KI-12: History events do not record the motor
-
-- Where: `HistoryEvent` (history_journal.h) on both remote and slave.
-- Problem: an event has serial, action, source, before/after, but no module.
-- Effect: with several motors, "OFF" in the history cannot be attributed to
-  M11 or M12; history titles print "M%u1" (`screen_hs.c:168`, `:303`).
-- Fix: add a module field to the journal format on both firmwares, with a
-  migration for stored journals.
-
 ### KI-14: config_store host test has not been run since CFG3
 
 - Where: `tools/config_store_host/test_config.c` (`tools/test_config_store.py`).
@@ -70,6 +37,18 @@ issues under "Open" with the same fields.
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
 ## Fixed
+
+### KI-12: History events do not record the motor
+
+- Fixed: 2026-11-27, commit "fix: record the motor of each history event (KI-12)".
+- How: HistoryEvent.flags bits 1..3 (HIST_MODULE_MASK) carry the module of a
+  motor event (ON, OFF, ALARM, CLEAR). The record size, field order and CRC are
+  unchanged, and records written before have the bits clear, which reads as
+  module 0 (single-motor devices), so stored journals need no conversion. The
+  remote accepts modules 0..5 and still rejects other flag bits. The event
+  detail title names the motor ("M12 Event"); list rows add "M<d><m>" only for
+  devices with several motors. Link events stay device-level ("M1 Event").
+  The slave's header defines the same bits; SingleMotor leaves them 0.
 
 ### KI-4: Editing a motor without a storageData.motors slot is lost silently
 
@@ -139,3 +118,28 @@ issues under "Open" with the same fields.
   (node, module), and `Schedule_HandleStatus` matches the tracked module.
   Covered by tools/test_status_protocol.py.
 
+## Closed (not fixed)
+
+### KI-3: Firmware upgrade wipes all pairings and settings
+
+- Where: `Application/Library/config_store.c:46` (Config_Load); commit 129df91
+  removed the CFG2/raw load paths.
+- Problem: only "CFG3" slots of size `sizeof(SystemStorageData_t)` are accepted;
+  anything else falls back to loadDefaults() and is saved immediately.
+- Effect: a unit on CFG2 firmware loses all paired devices and radio settings
+  after the update.
+- Closed: 2026-11-27, intended (owner decision). There is only one remote and
+  it already converted to CFG3 with firmware 55588a5, so the conversion was
+  removed on purpose (129df91). Older blocks are not read.
+
+### KI-11: New remote with an old slave reports the link as lost
+
+- Where: `Application/Library/link_monitor.c` sendProbe (moduleIndex 0xFF);
+  slaves older than Lora_device c52194c ignore moduleIndex != 0.
+- Problem: probes for every module go unanswered by an old slave.
+- Effect: after a remote-only update the device shows "NO LINK" although it
+  works. Documented in docs/STATUS_ALL.md: update the slave first.
+- Closed: 2026-11-27, won't fix (owner decision). Always update the slave
+  before the remote.
+- Fix (if ever needed): after a probe gets no answer, retry with moduleIndex 0
+  and remember that the device needs single-module requests.

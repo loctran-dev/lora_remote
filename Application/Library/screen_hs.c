@@ -60,6 +60,8 @@ static void createText(uint8_t id, int x, int y, int xe, int ye, char *text, UG_
 static void show(uint8_t id, uint8_t visible);
 static void rebuild(void);
 static void move(int8_t direction);
+static uint8_t isMotorEvent(const HistoryEvent *event);
+static uint8_t motorCount(uint8_t id);
 
 /* LEFT/RIGHT move, CENTER opens; hold RIGHT to go back, hold CENTER to refresh. */
 Screen_t historyScreen = {
@@ -165,9 +167,17 @@ static void render(void)
     char text[64];
 
     ScrnCommon_StatusBarUpdate();
-    /* History is per device (events carry no module, KI-12): "M<device>". */
-    snprintf(text, sizeof(text), historyScreenMode == MODE_PICKER ? "Select device" : "M%u %s",
-        chosenDevice + 1, historyScreenMode == MODE_LIST ? "History" : "Event");
+    /* The list is per device, "M<device>"; a motor event names its motor, "M<device><module>". */
+    if (historyScreenMode == MODE_DETAIL && view(selected) && isMotorEvent(&view(selected)->event))
+    {
+        snprintf(text, sizeof(text), "M%u%u Event", chosenDevice + 1,
+            HIST_MODULE(view(selected)->event.flags) + 1);
+    }
+    else
+    {
+        snprintf(text, sizeof(text), historyScreenMode == MODE_PICKER ? "Select device" : "M%u %s",
+            chosenDevice + 1, historyScreenMode == MODE_LIST ? "History" : "Event");
+    }
     UG_TextboxSetText(&window_1, 5, text);
 
     if (historyScreenMode == MODE_PICKER)
@@ -322,6 +332,7 @@ static void renderList(char *text, uint16_t size)
     const HistoryRecord *r;
     RTC_TimeTypeDef time;
     RTC_DateTypeDef date;
+    uint8_t multiMotor = motorCount(chosenDevice) > 1;
 
     snprintf(text, size, "%u/%u", count ? selected / ROWS_PER_PAGE + 1 : 0, (count + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE);
     UG_TextboxSetText(&window_1, 6, text);
@@ -359,8 +370,17 @@ static void renderList(char *text, uint16_t size)
                 actionName(r->event.action));
         }
         UG_TextboxSetText(&window_1, a, text);
-        snprintf(text, size, "%s %s > %s", r->event.source == HIST_MONITOR ? "Remote" : sourceName(r->event.source),
-            powerName(r->event.before), powerName(r->event.after));
+        /* Name the motor only when the device has several, so one-motor devices read as before. */
+        if (multiMotor && isMotorEvent(&r->event))
+        {
+            snprintf(text, size, "M%u%u %s %s > %s", chosenDevice + 1, HIST_MODULE(r->event.flags) + 1,
+                sourceName(r->event.source), powerName(r->event.before), powerName(r->event.after));
+        }
+        else
+        {
+            snprintf(text, size, "%s %s > %s", r->event.source == HIST_MONITOR ? "Remote" : sourceName(r->event.source),
+                powerName(r->event.before), powerName(r->event.after));
+        }
         UG_TextboxSetText(&window_1, b, text);
         for (uint8_t cell = a; cell <= b; cell++)
         {
@@ -667,4 +687,22 @@ static void move(int8_t direction)
         }
     }
     render();
+}
+
+/* ON, OFF, ALARM and CLEAR concern one motor; link events concern the whole device. */
+static uint8_t isMotorEvent(const HistoryEvent *event)
+{
+    return event->action >= HIST_ON && event->action <= HIST_CLEAR;
+}
+
+/* Motors of a device that have a settings slot. */
+static uint8_t motorCount(uint8_t id)
+{
+    uint8_t motors = 0;
+
+    for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
+    {
+        motors += Config_Motor(id, module) != NULL;
+    }
+    return motors;
 }

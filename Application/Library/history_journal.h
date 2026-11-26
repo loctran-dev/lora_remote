@@ -23,7 +23,20 @@
 /** @name HistoryEvent.flags */
 /** @{ */
 #define HIST_TIME_UNKNOWN 1u   ///< The timestamp came from an unset clock.
+#define HIST_MODULE_MASK  0x0Eu ///< Bits 1..3: module of a motor event (ON, OFF, ALARM, CLEAR), 0..5.
 #define HIST_LOCAL        128u ///< Created by the remote itself (link events), not by a device.
+/** @} */
+
+/**
+ * @name Motor of an event (KI-12)
+ * Records written before the module bits existed have them clear, which reads
+ * as module 0: those devices drove one motor. Link events concern the whole
+ * device and keep them clear.
+ * @{
+ */
+#define HIST_MODULE_SHIFT 1u
+#define HIST_MODULE(flags)        ((uint8_t)(((flags) & HIST_MODULE_MASK) >> HIST_MODULE_SHIFT))
+#define HIST_FLAGS_MODULE(module) ((uint8_t)(((module) << HIST_MODULE_SHIFT) & HIST_MODULE_MASK))
 /** @} */
 
 /** @name HistoryEvent.error */
@@ -85,7 +98,7 @@ typedef struct
     uint8_t before;     ///< Motor state before, a Motor_PowerState_e value.
     uint8_t after;      ///< Motor state after, a Motor_PowerState_e value.
     uint8_t result;     ///< HIST_APPLIED ... HIST_WARNING.
-    uint8_t flags;      ///< HIST_TIME_UNKNOWN, HIST_LOCAL.
+    uint8_t flags;      ///< HIST_TIME_UNKNOWN, module (HIST_MODULE_MASK), HIST_LOCAL.
 } HistoryEvent;
 
 /** @brief Payload of a CMD_HISTORY request sent by a device. */

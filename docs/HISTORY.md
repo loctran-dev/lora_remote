@@ -105,3 +105,10 @@ devices, refresh behavior and honest unsynced-time display. Calendar tests cover
 leap dates and round-trip conversions.
 
 Native evidence and final image hashes are recorded in HISTORY_NATIVE.md.
+
+## Motor of an event (2026-11-27)
+
+HistoryEvent.flags bits 1..3 (HIST_MODULE_MASK, 0x0E) hold the module of a
+motor event (ON, OFF, ALARM, CLEAR), 0..5. Records and pushes keep their size
+and CRC; older records have the bits clear and read as module 0. Link events
+are device-level and keep them clear. See Lora_remote docs/KNOWN_ISSUES.md KI-12.

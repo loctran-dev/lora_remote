@@ -77,7 +77,8 @@ void RemoteHistory_Handle(LoraPackage_t packet)
     event = push.event;
     if (!event.id || event.id == 0xFFFFFFFFu || event.action < HIST_ON || event.action > HIST_CLEAR ||
         event.source < HIST_REMOTE || event.source > HIST_SLAVE || event.before > 2 || event.after > 2 ||
-        event.result < HIST_APPLIED || event.result > HIST_WARNING || (event.flags & ~HIST_TIME_UNKNOWN))
+        event.result < HIST_APPLIED || event.result > HIST_WARNING ||
+        (event.flags & ~(HIST_TIME_UNKNOWN | HIST_MODULE_MASK)) || HIST_MODULE(event.flags) >= MAXIMUM_MODULE)
     {
         remoteHistoryRejected++;
         return;

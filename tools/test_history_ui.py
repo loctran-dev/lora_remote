@@ -62,6 +62,21 @@ class HistoryUiTests(unittest.TestCase):
         self.assertEqual([self.fg[7],self.fg[9],self.fg[11]],[0x07E0,0xD344,0xFFFF])
     def open_list(self):
         self.call("ScrnHs_OpenHistory");self.call("screen_hs.o:centerClicked")
+    def test_one_motor_device_list_and_detail_read_as_before(self):
+        self.hw.append()
+        self.assertEqual(self.call("ScrnHs_OpenDeviceHistory",0),1)
+        self.assertFalse(self.text[8].startswith("M1"))   # no motor prefix with one motor
+        self.call("screen_hs.o:centerClicked")
+        self.assertEqual(self.text[5],"M11 Event")          # module bits clear = module 0
+    def test_motor_of_each_event_is_shown_when_the_device_has_several(self):
+        # KI-12: HistoryEvent.flags bits 1..3 carry the module.
+        motors=h.symbol("storageData")+215
+        self.cpu.mem_write(motors+20*32,b"\x00\x01Fan\x00")  # device 0 also drives module 1
+        self.hw.append(flags=2*1)                           # OFF on module 1 (newest = row 0)
+        self.assertEqual(self.call("ScrnHs_OpenDeviceHistory",0),1)
+        self.assertTrue(self.text[8].startswith("M12 "),self.text[8])
+        self.call("screen_hs.o:centerClicked")
+        self.assertEqual(self.text[5],"M12 Event")
     def test_menu_picker_list_details_and_back_preserve_selection(self):
         for i in range(3):self.hw.append()
         self.open_list()
