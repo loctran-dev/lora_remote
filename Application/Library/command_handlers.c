@@ -138,7 +138,7 @@ static void handleGetStatus(LoraPackage_t fwPackage)
             if (motor)
             {
                 motor->pwrState = (Motor_PowerState_e)payloadResponse.powerState;
-                motor->scheduleTime = payloadResponse.scheduleTime;
+                motor->autoOffTime = payloadResponse.scheduleTime;
                 motor->phaseCurrent[0] = (float)payloadResponse.phaseCurrent[0] * 0.01f;
                 motor->phaseCurrent[1] = (float)payloadResponse.phaseCurrent[1] * 0.01f;
                 motor->phaseCurrent[2] = (float)payloadResponse.phaseCurrent[2] * 0.01f;
@@ -211,7 +211,7 @@ static void handleSetSchedule(LoraPackage_t fwPackage)
             /* ACK confirms this exact deadline; STATUS remains authoritative afterwards. */
             if (accepted && Main_MotorState(devNo, payloadResponse.moduleIndex))
             {
-                Main_MotorState(devNo, payloadResponse.moduleIndex)->scheduleTime = deadline;
+                Main_MotorState(devNo, payloadResponse.moduleIndex)->autoOffTime = deadline;
             }
             Link_RecordPacket(devNo, 0);
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
@@ -346,8 +346,8 @@ static void handleAlarmMessage(LoraPackage_t fwPackage)
             if (motor)
             {
                 motor->alarmReported = TRUE;
-                motor->alarm = (Alarm_Name_e)payloadRequest.alarmCode;
-                motor->alarmTime = payloadRequest.alarmTime;
+                motor->alarmCode = (Alarm_Name_e)payloadRequest.alarmCode;
+                motor->alarmDevTime = payloadRequest.alarmTime;
             }
             deviceBuff[devNo].lastCommTick = xTaskGetTickCount();
             deviceBuff[devNo].lastCommTime = systemInfo.currentTime;

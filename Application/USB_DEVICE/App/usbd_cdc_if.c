@@ -501,7 +501,7 @@ void CDC_ProcessEcho_FS(void)
       Schedule_GetRequestState(&scheduleState);
       echoLength = snprintf((char*)UserRxBufferFS, APP_RX_DATA_SIZE,
         "TIMER NOW=%lu PWR=%u DEADLINE=%lu STATE=%u NODE=%u ID=%u TRY=%u TX_OK=%u SYNC=%lu TARGET=%lu\n",
-        (unsigned long)systemInfo.currentTime, motor->pwrState, (unsigned long)motor->scheduleTime,
+        (unsigned long)systemInfo.currentTime, motor->pwrState, (unsigned long)motor->autoOffTime,
         scheduleState.state, scheduleState.node, scheduleState.transaction, scheduleState.attempts,
         scheduleState.txOk, (unsigned long)scheduleState.syncTime, (unsigned long)scheduleState.deadline);
       responsePrepared = 1;

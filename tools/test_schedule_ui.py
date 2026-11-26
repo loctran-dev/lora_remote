@@ -16,7 +16,7 @@ class TimerUiTests(h.FirmwareHarness):
         dwarf = subprocess.check_output([str(h.FROMELF), "--text", "-g",
                                          str(h.BUILD / "USB_Application.axf")], text=True)
         cls.offset = {}
-        for name in ["currentTime", "scheduleTime", "pwrState"]:
+        for name in ["currentTime", "autoOffTime", "pwrState"]:
             cls.offset[name] = max(map(int, re.findall(
                 r"DW_AT_name " + name + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)))
 
@@ -141,7 +141,7 @@ class TimerUiTests(h.FirmwareHarness):
         self.assertLess(self.rectangles[40][3], self.rectangles[2][1])
 
     def countdown(self, deadline, now=1000, power=1, offline=False):
-        self.cpu.mem_write(self.module + self.offset["scheduleTime"], struct.pack("<I", deadline))
+        self.cpu.mem_write(self.module + self.offset["autoOffTime"], struct.pack("<I", deadline))
         self.cpu.mem_write(self.system + self.offset["currentTime"], struct.pack("<I", now))
         self.put(self.module + self.offset["pwrState"], power)
         self.put(self.dev(0, h.DEV_CONNECTION_ERROR), int(offline))

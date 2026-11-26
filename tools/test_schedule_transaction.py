@@ -16,7 +16,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         dwarf = subprocess.check_output([str(h.FROMELF), "--text", "-g",
                                          str(h.BUILD / "USB_Application.axf")], text=True)
         cls.fields_timer = {}
-        for name in ["currentTime", "scheduleTime"]:
+        for name in ["currentTime", "autoOffTime"]:
             cls.fields_timer[name] = max(map(int, re.findall(
                 r"DW_AT_name " + name + r"\s+[^\n]*\n[^\n]*DW_AT_data_member_location[^\n]*DW_OP_plus_uconst (\d+)", dwarf)))
 
@@ -90,7 +90,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.start()
         self.reply()
         self.assertEqual(self.state(), 2)
-        deadline = int.from_bytes(self.cpu.mem_read(self.state_of(0) + self.fields_timer["scheduleTime"], 4), "little")
+        deadline = int.from_bytes(self.cpu.mem_read(self.state_of(0) + self.fields_timer["autoOffTime"], 4), "little")
         self.assertEqual(deadline, 1060)
         self.tick(10000)
         self.assertEqual(len(self.packets), 1)
@@ -153,7 +153,7 @@ class TimerTransactionTests(h.FirmwareHarness):
         self.call("Schedule_CancelForNode", 1)
         self.reply()
         self.assertEqual(self.state(), 0)
-        deadline = int.from_bytes(self.cpu.mem_read(self.state_of(0) + self.fields_timer["scheduleTime"], 4), "little")
+        deadline = int.from_bytes(self.cpu.mem_read(self.state_of(0) + self.fields_timer["autoOffTime"], 4), "little")
         self.assertEqual(deadline, 0)
 
 

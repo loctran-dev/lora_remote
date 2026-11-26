@@ -586,7 +586,7 @@ static void setStatusIcons(const DeviceInfo_t *device, const MotorData_t *module
         (device->linkLost ? 2u : 0u) |
         (module->alarmReported ? 4u : 0u) |
         ((uint32_t)module->pwrState << 8) |
-        (module->scheduleTime > 0 ? 0x10000u : 0u);
+        (module->autoOffTime > 0 ? 0x10000u : 0u);
 
     if (statusIconsObject && key != statusIconsKey)
     {
@@ -798,7 +798,7 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
     }
 
     UG_TextboxSetForeColor(&window_1, 12, C_WHITE);
-    present = module->pwrState == eMotor_PowerState_On && module->scheduleTime != 0;
+    present = module->pwrState == eMotor_PowerState_On && module->autoOffTime != 0;
     UG_TextboxSetText(&window_1, 11, device->linkLost && present ? "Last timer" : "Auto stop");
     if (!present)
     {
@@ -810,8 +810,8 @@ static void countdownUpdate(const DeviceInfo_t *device, const MotorData_t *modul
         return;
     }
 
-    remaining = module->scheduleTime > systemInfo.currentTime ? module->scheduleTime - systemInfo.currentTime : 0;
-    Util_ConvertTimestampToRTC(module->scheduleTime, &time, &date);
+    remaining = module->autoOffTime > systemInfo.currentTime ? module->autoOffTime - systemInfo.currentTime : 0;
+    Util_ConvertTimestampToRTC(module->autoOffTime, &time, &date);
     snprintf(text, sizeof(text), "At %02u:%02u", time.Hours, time.Minutes);
     UG_TextboxSetText(&window_1, 12, device->linkLost ? "Offline" : text);
     formatRemaining(remaining, text);

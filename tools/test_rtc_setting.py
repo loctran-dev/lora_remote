@@ -68,7 +68,7 @@ class RtcSettingTests(h.FirmwareHarness):
         self.assertEqual(self.writes,[])
     def test_rejects_active_timer_on_any_supported_module(self):
         self.add(0)
-        # Module 5 of device 0 in pool slot 39; scheduleTime offset 24, power state offset 8.
+        # Module 5 of device 0 in pool slot 39; autoOffTime offset 24, power state offset 8.
         self.put(self.mot(39, h.MOT_DEVICE), 0)
         self.put(self.mot(39, h.MOT_MODULE), 5)
         base=self.state_of(39)

@@ -115,13 +115,13 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t alarmReported; ///< An alarm was reported.
-    Alarm_Name_e alarm;    ///< Last alarm code.
-    uint32_t alarmTime;    ///< Device Unix time of the last alarm.
+    uint8_t alarmReported;  ///< An alarm was reported.
+    Alarm_Name_e alarmCode; ///< Code of the last alarm.
+    uint32_t alarmDevTime;  ///< Device Unix time of the last alarm (device clock, not the remote's).
 
     Motor_PowerState_e pwrState; ///< Last reported power state.
     float phaseCurrent[3];       ///< Last reported phase currents [A].
-    uint32_t scheduleTime;       ///< Pending switch-off time (Unix); 0 = none.
+    uint32_t autoOffTime;        ///< Unix time the motor switches itself off; 0 = no timer.
 } MotorData_t;
 
 /**
