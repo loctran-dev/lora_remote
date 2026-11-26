@@ -54,7 +54,8 @@ static char nextNameCharacter(char c);
 static char previousNameCharacter(char c);
 static void stepNameCharacter(uint8_t up);
 static void selectYesNo(uint8_t index);
-static void applySelection(void);
+static uint8_t applySelection(void);
+static uint8_t isMotorItem(uint8_t item);
 
 /* LEFT/RIGHT: inc/dec (or Yes/No), CENTER: next digit (or select).
    Hold CENTER: save, hold RIGHT: cancel. */
@@ -232,6 +233,8 @@ static void rightClicked(void)
 /* Move the cursor; for Yes/No items apply the selection and leave. */
 static void centerClicked(void)
 {
+    uint8_t changed = 0;
+
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD || isSecondsItem())
     {
@@ -247,18 +250,31 @@ static void centerClicked(void)
     }
     else
     {
-        applySelection();
+        if (!ScrnEdss_CanEdit(indexOfSettingMenu))
+        {
+            Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
+            ScrnCommon_Switch(&deviceSettingScreen);
+            return;
+        }
+        changed = applySelection();
     }
 
+    /* Flash is rewritten only when the flag really changed (KI-7). */
     if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
     {
-        ScrnCommon_SaveDeviceSettings();
+        if (changed)
+        {
+            ScrnCommon_SaveDeviceSettings();
+        }
         ScrnCommon_Switch(indexOfSettingMenu == ITEM_HIDE && currentConfig()->hidden ?
             &deviceControlScreen : &deviceSettingScreen);
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        ScrnCommon_SaveDeviceSettings();
+        if (changed)
+        {
+            ScrnCommon_SaveDeviceSettings();
+        }
         ScrnCommon_Switch(&deviceControlScreen);
     }
 }
@@ -276,8 +292,16 @@ static void centerPressed(void)
     char *valueText;
     char nameText[20];
     int value;
+    uint8_t changed = 0;
 
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
+    /* A motor setting without a MotorConfig slot would only reach the placeholder (KI-4). */
+    if (!ScrnEdss_CanEdit(indexOfSettingMenu))
+    {
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
+        ScrnCommon_Switch(&deviceSettingScreen);
+        return;
+    }
 
     /* Copy the edited value into the device data. */
     if (indexOfSettingMenu == ITEM_ALARM_THRESHOLD)
@@ -315,7 +339,7 @@ static void centerPressed(void)
     }
     else
     {
-        applySelection();
+        changed = applySelection();
     }
 
     /* Persist; threshold and delay are also sent to the slave. */
@@ -327,11 +351,12 @@ static void centerPressed(void)
             Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
         }
     }
-    if (indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE)
+    if ((indexOfSettingMenu == ITEM_LOCK || indexOfSettingMenu == ITEM_HIDE ||
+         indexOfSettingMenu == ITEM_DELETE) && changed)
     {
         ScrnCommon_SaveDeviceSettings();
     }
-    if (indexOfSettingMenu == ITEM_DELETE || indexOfSettingMenu == ITEM_NAME)
+    if (indexOfSettingMenu == ITEM_NAME)
     {
         ScrnCommon_SaveDeviceSettings();
     }
@@ -571,22 +596,50 @@ static void selectYesNo(uint8_t index)
 }
 
 /* Store Yes/No into the lock, hide or delete flag. */
-static void applySelection(void)
+static uint8_t applySelection(void)
 {
+    uint8_t value = (indexOfSelection + 1) % 2;
+    uint8_t old;
+
     if (indexOfSettingMenu == ITEM_LOCK)
     {
-        currentConfig()->locked = (indexOfSelection + 1) % 2;
+        old = currentConfig()->locked;
+        currentConfig()->locked = value;
     }
     else if (indexOfSettingMenu == ITEM_HIDE)
     {
-        currentConfig()->hidden = (indexOfSelection + 1) % 2;
+        old = currentConfig()->hidden;
+        currentConfig()->hidden = value;
     }
     else if (indexOfSettingMenu == ITEM_DELETE)
     {
-        storageData.devices[systemInfo.curDevice].deleted = (indexOfSelection + 1) % 2;
-        if (storageData.devices[systemInfo.curDevice].deleted)
+        old = storageData.devices[systemInfo.curDevice].deleted;
+        storageData.devices[systemInfo.curDevice].deleted = value;
+        if (value)
         {
             Config_FreeMotors(systemInfo.curDevice);
         }
     }
+    else
+    {
+        return 0;
+    }
+    return old != value;
+}
+
+/* Items stored per motor (MotorConfig); delete and auto-status belong to the device. */
+static uint8_t isMotorItem(uint8_t item)
+{
+    return item != ITEM_DELETE && item != ITEM_AUTO_STATUS;
+}
+
+/**
+ * @brief  Whether a device setting item can be edited for the selected motor.
+ * @param  item  Item index (menu index of the device setting screen).
+ * @return FALSE for a motor setting of a motor without a MotorConfig slot,
+ *         which would only reach a placeholder (KI-4).
+ */
+uint8_t ScrnEdss_CanEdit(uint8_t item)
+{
+    return !isMotorItem(item) || Config_Motor(systemInfo.curDevice, systemInfo.curModule) != NULL;
 }

@@ -24,50 +24,6 @@ issues under "Open" with the same fields.
   add a CFG2 -> CFG3 conversion (move each DeviceConfig's motor fields into
   storageData.motors module 0) before the defaults fallback.
 
-### KI-4: Editing a motor without a storageData.motors slot is lost silently
-
-- Where: `Application/Library/screen_edss.c:1615`; ScrnCommon_CurrentMotor().
-- Problem: when Config_Motor() returns NULL, a static placeholder (re-zeroed on
-  each call) is edited; the screen still sets configSavePending.
-- Effect: e.g. Lock=Yes is not stored, flash is rewritten, motor stays unlocked.
-- Fix: refuse to open/commit the editor when Config_Motor() is NULL (long beep).
-
-### KI-5: History picker shows deleted devices as "[Hidden]"
-
-- Where: `Application/Library/screen_hs.c:303`.
-- Problem: Config_DeviceHidden() returns TRUE for a device with no motor slots,
-  and deleting a device frees all its slots (Config_FreeMotors).
-- Effect: picker shows "M31 [Hidden]" / "Removed device" instead of "M31".
-- Fix: test deleted before Config_DeviceHidden, or make Config_DeviceHidden
-  return FALSE for deleted devices.
-
-### KI-6: Labels hard-code module 1
-
-- Where: `Application/Library/screen_dcs.c:304` ("M%u1" in connection-lost
-  notice); `Application/Library/screen_dvm.c:1461` ("%c%u1" with
-  ScrnCommon_MotorName(id, 0)).
-- Effect: on M23 a lost link is reported as "M21"; device manager names the
-  device after module 0.
-- Fix: print the module actually shown, or drop the module digit from
-  device-level labels.
-
-### KI-7: Lock/Hide confirm always rewrites flash
-
-- Where: `Application/Library/screen_edss.c:1603` (ScrnCommon_SaveDeviceSettings).
-- Problem: configSavePending is set on every confirm; the old
-  ScrnCommon_SaveDeviceFlags only set it when flags changed.
-- Effect: unnecessary 2 KiB page erase/program cycles.
-- Fix: set configSavePending only when the value changed.
-
-### KI-8: Pairing screen redraws twice when the motor pool is full
-
-- Where: `Application/Library/screen_dps.c:1365` (connect()).
-- Problem: restart(PAIRING_STATE_CONNECTING) runs before Main_ConnectToDevice()
-  checks for room.
-- Effect: "Connecting" flashes before "Memory full".
-- Fix: call Main_ConnectToDevice() (or check pairingSlot) first, then restart()
-  once with the resulting state.
-
 ### KI-9: USB console stops reading until the remote is woken or replugged
 
 - Where: USB CDC (`USB_DEVICE/App/usbd_cdc_if.c`) together with the power
@@ -114,6 +70,41 @@ issues under "Open" with the same fields.
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
 ## Fixed
+
+### KI-4: Editing a motor without a storageData.motors slot is lost silently
+
+- Fixed: 2026-11-27, commit "fix: small screen issues KI-4..KI-8". Not reachable from the UI since b881d5f
+  (the control screen only opens Device setting for a visible motor); fixed
+  defensively.
+- How: ScrnEdss_CanEdit(item) refuses motor items (threshold, delay, lock,
+  hide, name) when the motor has no slot. Device setting gives a long beep
+  instead of opening the editor, and the editor refuses to store (long beep,
+  no flash write). Delete and auto-status stay editable (device settings).
+
+### KI-5: History picker shows deleted devices as "[Hidden]"
+
+- Fixed: 2026-11-27, commit "fix: small screen issues KI-4..KI-8".
+- How: "[Hidden]" only for a device that is not deleted.
+
+### KI-6: Labels hard-code module 1
+
+- Fixed: 2026-11-27, commit "fix: small screen issues KI-4..KI-8".
+- How: rule "M<device>" for device-level labels, "M<device><module>" for one
+  motor. The connection-lost notice, history title and picker show "M<device>";
+  device manager rows show "M<device>" with the motor's name, or "<n> motors"
+  when the device has several.
+
+### KI-7: Lock/Hide confirm always rewrites flash
+
+- Fixed: 2026-11-27, commit "fix: small screen issues KI-4..KI-8".
+- How: applySelection() returns whether Lock, Hide or Delete changed; the
+  configuration is saved only then (both the click and the long-press paths).
+
+### KI-8: Pairing screen redraws twice when the motor pool is full
+
+- Fixed: 2026-11-27, commit "fix: small screen issues KI-4..KI-8".
+- How: connect() calls Main_ConnectToDevice() first and draws the screen once
+  with CONNECTING or NO_ROOM.
 
 ### KI-13: Flash_WriteData is dead code
 

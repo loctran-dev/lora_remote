@@ -123,6 +123,11 @@ static void rightClicked(void)
 
 static void centerClicked(void)
 {
+    if (!ScrnEdss_CanEdit(menuIndex))
+    {
+        Main_SetBuzzerMode(eBuzzer_Mode_LongBeep);
+        return;
+    }
     Main_SetBuzzerMode(eBuzzer_Mode_ShortBeep);
     indexOfSettingMenu = menuIndex;
     ScrnCommon_Switch(&editDeviceSettingScreen);

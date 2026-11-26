@@ -91,6 +91,7 @@ static void render(void)
     uint8_t item;
     uint8_t id;
     const DeviceStorageData_t *device;
+    uint8_t motors;
 
     if (pageChanged)
     {
@@ -117,10 +118,23 @@ static void render(void)
             UG_TextboxShow(&window_1, id);
         }
         device = &storageData.devices[managerIds[item]];
-        snprintf(text, sizeof(text), "%c%u1 [%s] %.19s",
-            device->factoryInfo.typeChar, managerIds[item] + 1,
-            Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible",
-            ScrnCommon_MotorName(managerIds[item], 0));
+        motors = 0;
+        for (uint8_t module = 0; module < MAXIMUM_MODULE; module++)
+        {
+            motors += Config_Motor(managerIds[item], module) != NULL;
+        }
+        /* A device row: "M<device>", its motor's name, or the motor count when it has several. */
+        if (motors > 1)
+        {
+            snprintf(text, sizeof(text), "%c%u [%s] %u motors", device->factoryInfo.typeChar,
+                managerIds[item] + 1, Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible", motors);
+        }
+        else
+        {
+            snprintf(text, sizeof(text), "%c%u [%s] %.19s", device->factoryInfo.typeChar,
+                managerIds[item] + 1, Config_DeviceHidden(managerIds[item]) ? "Hidden" : "Visible",
+                ScrnCommon_MotorName(managerIds[item], 0));
+        }
         UG_TextboxSetText(&window_1, id, text);
         UG_TextboxSetBackColor(&window_1, id, item == managerSelected ? C_DIM_GRAY : C_BLACK);
         UG_TextboxSetScrollEnabled(&window_1, id, item == managerSelected);

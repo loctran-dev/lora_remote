@@ -165,6 +165,21 @@ class UiConsistencyTests(h.FirmwareHarness):
         self.put(h.symbol('managerSelected')[0],19)
         self.call('screen_dvm.o:render');self.assertIn('17-20/20',self.text[20])
         self.assertEqual(self.text[1],'100%')
+    def test_device_level_labels_have_no_module_digit(self):
+        # KI-6: "M<device>" for device rows and notices; "M<device><module>" only for a motor.
+        self.put(self.mot(20,h.MOT_DEVICE),0);self.put(self.mot(20,h.MOT_MODULE),1)   # device 0: 2 motors
+        self.add(1);self.put(self.cfg(1,h.CFG_TYPE_CHAR),ord('M'))                  # device 1: 1 motor
+        self.cpu.mem_write(self.mot(1,h.MOT_NAME),b'Pump\x00')
+        self.call('screen_dvm.o:init');self.call('screen_dvm.o:render')
+        rows=[t for t in self.text.values() if '[Visible]' in t]
+        self.assertIn('M1 [Visible] 2 motors',rows)
+        self.assertIn('M2 [Visible] Pump',rows)
+        self.put(self.dev(1,h.DEV_CONNECTION_ERROR),1)                               # device 1 lost its link
+        self.put(h.symbol('connectionNotice')[0],1)
+        self.cpu.mem_write(h.symbol('connectionNoticeTick')[0],struct.pack('<I',self.tick))
+        self.call('screen_dcs.o:init');self.call('screen_dcs.o:render')
+        self.assertIn('M2',self.text.values())
+        self.assertNotIn('M21',self.text.values())
     def test_empty_battery_uses_frame_zero_and_unknown_voltage_is_not_100_percent(self):
         self.call('ScrnCommon_StatusBarCreate')
         self.assertEqual(self.frames[-1],h.symbol('bmp_battery_4')[0])

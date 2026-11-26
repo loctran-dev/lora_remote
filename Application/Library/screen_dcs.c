@@ -286,7 +286,7 @@ static void render(void)
         }
         else
         {
-            snprintf(lost, sizeof(lost), "M%u1", connectionNotice + 1);
+            snprintf(lost, sizeof(lost), "M%u", connectionNotice + 1); /* the device lost its link */
             UG_TextboxSetBackColor(&window_1, TXB_ID_9, C_RED);
             UG_TextboxSetText(&window_1, TXB_ID_9, "NO STATUS");
             UG_TextboxSetText(&window_1, TXB_ID_10, lost);
@@ -301,7 +301,7 @@ static void render(void)
     }
     if (connectionNotice >= 0)
     {
-        snprintf(lost, sizeof(lost), "M%u1", connectionNotice + 1);
+        snprintf(lost, sizeof(lost), "M%u", connectionNotice + 1);
         UG_TextboxSetForeColor(&window_1, TXB_ID_10, C_WHITE);
         UG_TextboxSetText(&window_1, TXB_ID_10, lost);
     }

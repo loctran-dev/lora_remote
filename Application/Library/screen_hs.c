@@ -165,7 +165,8 @@ static void render(void)
     char text[64];
 
     ScrnCommon_StatusBarUpdate();
-    snprintf(text, sizeof(text), historyScreenMode == MODE_PICKER ? "Select device" : "M%u1 %s",
+    /* History is per device (events carry no module, KI-12): "M<device>". */
+    snprintf(text, sizeof(text), historyScreenMode == MODE_PICKER ? "Select device" : "M%u %s",
         chosenDevice + 1, historyScreenMode == MODE_LIST ? "History" : "Event");
     UG_TextboxSetText(&window_1, 5, text);
 
@@ -300,7 +301,8 @@ static void renderPicker(char *text, uint16_t size)
         {
             continue;
         }
-        snprintf(text, size, "M%u1%s", id + 1, Config_DeviceHidden(id) ? " [Hidden]" : "");
+        snprintf(text, size, "M%u%s", id + 1,
+            !storageData.devices[id].deleted && Config_DeviceHidden(id) ? " [Hidden]" : "");
         UG_TextboxSetText(&window_1, a, text);
         UG_TextboxSetText(&window_1, b, storageData.devices[id].deleted ? "Removed device" : (char *)ScrnCommon_MotorName(id, 0)); /* kept by uGUI; storage or literal */
         for (uint8_t cell = a; cell <= b; cell++)

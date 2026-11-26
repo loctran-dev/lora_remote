@@ -255,11 +255,9 @@ static void restart(uint8_t step)
 /* "Conn"/"Retry": connect the found device, or report that there is no room for it. */
 static void connect(void)
 {
-    restart(PAIRING_STATE_CONNECTING);
-    if (!Main_ConnectToDevice())
-    {
-        restart(PAIRING_STATE_NO_ROOM);
-    }
+    /* Check for room first so the screen is drawn once (KI-8); the reply is
+       handled later by systemTask, after this button handler returns. */
+    restart(Main_ConnectToDevice() ? PAIRING_STATE_CONNECTING : PAIRING_STATE_NO_ROOM);
 }
 
 static void openMainMenu(void)

@@ -162,6 +162,7 @@ void ScrnDcs_ShowMotorLocked(uint8_t motorPower);
 void ScrnDcs_ShowConnectionError(uint8_t id);
 uint8_t ScrnDcs_IsScheduleEditing(void);
 void ScrnDss_ResetSelection(void);
+uint8_t ScrnEdss_CanEdit(uint8_t item);
 void ScrnGss_ResetSelection(void);
 void ScrnHs_OpenHistory(void);
 uint8_t ScrnHs_OpenDeviceHistory(uint8_t deviceId);

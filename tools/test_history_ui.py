@@ -45,7 +45,7 @@ class HistoryUiTests(unittest.TestCase):
     def test_history_from_device_info_returns_to_control(self):
         self.hw.append()
         self.assertEqual(self.call("ScrnHs_OpenDeviceHistory",0),1)
-        self.assertEqual(self.text[5],"M11 History")
+        self.assertEqual(self.text[5],"M1 History")
         self.call("screen_hs.o:centerClicked");self.call("screen_hs.o:rightPressed")
         self.assertEqual(self.screen(),h.symbol("historyScreen"))  # Detail -> list stays in history.
         self.call("screen_hs.o:rightPressed")
@@ -80,6 +80,15 @@ class HistoryUiTests(unittest.TestCase):
         self.open_list();self.assertEqual(self.text[7],"No history yet")
         self.call("screen_hs.o:centerClicked")
         self.assertEqual(self.cpu.mem_read(h.symbol("historyScreenMode"),1),b"\x01")
+    def test_deleted_device_is_listed_as_removed_not_hidden(self):
+        # KI-5: deleting frees every motor slot, which made Config_DeviceHidden() TRUE.
+        self.hw.append()
+        storage=h.symbol("storageData")
+        self.cpu.mem_write(storage+15+9,b"\x01")    # devices[0].deleted
+        self.cpu.mem_write(storage+215,b"\xff")     # motors[0] freed
+        self.call("ScrnHs_OpenHistory")
+        self.assertEqual(self.text[7],"M1")
+        self.assertEqual(self.text[8],"Removed device")
     def test_hidden_device_is_still_selectable(self):
         self.cpu.mem_write(h.symbol("storageData")+215+31,b"\x01")  # motors[0].hidden (device 0)
         self.call("ScrnHs_OpenHistory")
