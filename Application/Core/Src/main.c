@@ -168,7 +168,7 @@ void GetDevStatusTimerCallback(void *argument);
 
 /* USER CODE BEGIN PFP */
 static void updateBattery(void);
-static uint8_t getNotUsedNodeId(void);
+static uint8_t findFreeNodeId(void);
 static char deviceTypeChar(uint8_t deviceType);
 static int8_t findPairedSlot(uint32_t serial);
 static int8_t pairingSlot(void);
@@ -1091,7 +1091,7 @@ uint8_t Main_ConnectToDevice(void)
   systemInfo.connectResult = eProcess_Result_Failed;
   /* A device paired before keeps its slot and node id. */
   systemInfo.pairNodeId = findPairedSlot(systemInfo.foundDevice.serial) == slot ?
-    storageData.devices[slot].nodeId : getNotUsedNodeId();
+    storageData.devices[slot].nodeId : findFreeNodeId();
 
   payload.serial = systemInfo.foundDevice.serial;
   payload.netId = storageData.netId;
@@ -1192,7 +1192,7 @@ static void updateBattery(void)
   systemInfo.batteryPercent = (uint8_t)(percent + 0.5f);
 }
 
-static uint8_t getNotUsedNodeId(void)
+static uint8_t findFreeNodeId(void)
 {
   uint8_t nodeIdValid = 0x00;
   uint16_t wasNodeIdUsed;
