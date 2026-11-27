@@ -1,0 +1,268 @@
+\documentclass[10pt]{article}
+\usepackage{fontspec}
+\setmainfont{DejaVu Sans}
+\usepackage[paperwidth=17in,paperheight=11in,margin=0in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\topskip}{0pt}
+
+\tikzset{
+  wire/.style={draw,line width=.75pt,line cap=round},
+  sym/.style={draw,line width=.85pt,line cap=round,line join=round},
+  mech/.style={draw,line width=.55pt,densely dashed},
+  frame/.style={draw,line width=.6pt},
+  divider/.style={draw=black!55,line width=.45pt},
+  title/.style={font=\fontsize{18}{21}\selectfont\bfseries},
+  sheettitle/.style={font=\fontsize{14}{17}\selectfont},
+  head/.style={font=\fontsize{10}{12}\selectfont\bfseries},
+  label/.style={font=\fontsize{9}{11}\selectfont},
+  pin/.style={font=\fontsize{8}{10}\selectfont},
+  wireid/.style={font=\fontsize{8}{9}\selectfont,inner sep=1pt},
+  note/.style={font=\fontsize{9}{13}\selectfont,align=left,text width=101mm,
+    inner sep=0pt,anchor=north west}
+}
+
+\newcommand{\sheetframe}[2]{%
+  \path[use as bounding box] (0,0) rectangle (169.9,109.9);
+  \draw[frame] (4,4) rectangle (166,106);
+  \draw[frame] (4,93)--(166,93) (4,12)--(166,12);
+  \draw[divider] (116,16)--(116,90);
+  \node[title,anchor=west] at (7,102) {SƠ ĐỒ ĐIỆN ĐỘNG CƠ 3 PHA};
+  \node[sheettitle,anchor=west] at (7,97.4) {#2};
+  \node[head,anchor=east] at (163,102) {BẢN NHÁP V0.4};
+  \node[label,anchor=east] at (163,97.4) {KHÔNG DÙNG THI CÔNG};
+  \node[label,anchor=west] at (7,8.7) {M3P-#1 \quad #2};
+  \node[pin,anchor=west] at (7,5.8) {27-11-2026 \quad\textbar\quad 17 × 11 inch};
+  \node[head,anchor=east] at (163,8) {TỜ #1 / 002};
+  \node[head,anchor=west] at (119,88.4) {GHI CHÚ THIẾT KẾ};
+  \draw[divider] (120,85.5)--(162,85.5);
+}
+\newcommand{\notegroup}[3]{%
+  \node[head,anchor=west] at (119,#1) {#2};
+  \node[note] at (120,{#1-2.2}) {#3};
+}
+\newcommand{\terminal}[2]{\draw[sym,fill=white] (#1,#2) circle[radius=.42];}
+\newcommand{\junction}[2]{\fill (#1,#2) circle[radius=.32];}
+\newcommand{\earth}[2]{%
+  \begin{scope}[shift={(#1,#2)}]
+    \draw[sym] (0,0)--(0,-1.4) (-1.6,-1.4)--(1.6,-1.4)
+      (-1.05,-2)--(1.05,-2) (-.5,-2.6)--(.5,-2.6);
+  \end{scope}
+}
+% Each contact has terminals at x = -3 and +3.
+\newcommand{\opencontact}{%
+  \draw[sym] (-2.65,.16)--(2.2,2);
+  \terminal{-3}{0}\terminal{3}{0}
+}
+\newcommand{\closedcontact}{%
+  \draw[sym] (-2.65,0)--(2.65,0) (1.1,-.9)--(2.55,.9);
+  \terminal{-3}{0}\terminal{3}{0}
+}
+\newcommand{\pushactuator}{%
+  \draw[mech] (0,2.95)--(0,1.25);
+  \draw[sym] (0,2.95)--(0,3.8) (-1.55,3.8)--(1.55,3.8);
+}
+\newcommand{\emergencyactuator}{%
+  \draw[mech] (0,2.95)--(0,.35);
+  \draw[sym] (0,2.95)--(0,3.7) (-1.8,3.7)--(1.8,3.7)
+    (-1.8,3.7) arc[start angle=180,end angle=0,x radius=1.8,y radius=.95];
+}
+\newcommand{\lamp}{%
+  \draw[sym] (0,0) circle[radius=1.7]
+    (-1.2,-1.2)--(1.2,1.2) (-1.2,1.2)--(1.2,-1.2);
+}
+\newcommand{\wirelabel}[3]{\node[wireid,anchor=south] at (#1,#2) {#3};}
+\newcommand{\netflag}[3]{%
+  \draw[sym,fill=white] (#1-.9,#2+.95)--(#1,#2)--(#1+.9,#2+.95)--cycle;
+  \node[pin,anchor=south] at (#1,#2+1.1) {#3};
+}
+
+\begin{document}
+\noindent
+\begin{tikzpicture}[x=.1in,y=.1in]
+\sheetframe{001}{MẠCH ĐỘNG LỰC 3 PHA}
+\node[head,anchor=west] at (8,88.4) {KHỞI ĐỘNG TRỰC TIẾP DOL};
+\node[label,anchor=west] at (8,84.7) {Nguồn 3 pha và PE \quad\textbar\quad Ký hiệu ở trạng thái chưa tác động};
+
+\node[head] at (31,79) {QF1};
+\node[pin] at (31,76.5) {CB 3P};
+\node[head] at (53,79) {KM1};
+\node[pin] at (53,76.5) {Contactor 3P};
+\node[head] at (73,79) {FR1};
+\node[pin] at (73,76.5) {Rơ-le nhiệt 3P};
+\node[head] at (103,79) {M1};
+
+% Phase changes are explicit, with common mechanical actuation per device.
+\foreach \x in {31,53} {
+  \draw[mech] (\x,60.15)--(\x,72.15) (\x,48.15)--(\x,60.15);
+}
+\draw[mech] (73,61.65)--(73,71.6) (73,49.65)--(73,59.6);
+\foreach \y/\ph/\inwire/\cbwire/\kmwire/\outwire/\linepin/\loadpin/\motorpin in
+  {71/L1/101/111/121/131/1L1/2T1/U1,
+   59/L2/102/112/122/132/3L2/4T2/V1,
+   47/L3/103/113/123/133/5L3/6T3/W1} {
+  \node[label,anchor=east] at (13,\y) {\ph};
+  \draw[wire] (15,\y)--(28,\y) (34,\y)--(50,\y)
+    (56,\y)--(70,\y) (76,\y)--(91,\y);
+  \terminal{15}{\y}\terminal{91}{\y}
+  \begin{scope}[shift={(31,\y)}]
+    \draw[sym] (-2.65,.16)--(2.2,2)
+      (2.35,-.65)--(3.65,.65) (2.35,.65)--(3.65,-.65);
+    \terminal{-3}{0}
+  \end{scope}
+  \begin{scope}[shift={(53,\y)}]\opencontact\end{scope}
+  \begin{scope}[shift={(73,\y)}]
+    \draw[sym] (-3,0)--(-2.2,0)--(-2.2,1.65)--(2.2,1.65)--(2.2,0)--(3,0);
+  \end{scope}
+  \wirelabel{21}{\y+.75}{\inwire}
+  \wirelabel{42}{\y+.75}{\cbwire}
+  \wirelabel{63}{\y+.75}{\kmwire}
+  \wirelabel{83}{\y+.75}{\outwire}
+  \node[pin,anchor=north] at (28,\y-.75) {\linepin};
+  \node[pin,anchor=north] at (34,\y-.75) {\loadpin};
+  \node[pin,anchor=north] at (50,\y-.75) {\linepin};
+  \node[pin,anchor=north] at (56,\y-.75) {\loadpin};
+  \node[pin,anchor=east] at (90,\y-2.3) {\motorpin};
+}
+\draw[wire] (91.42,71)--(96,71)--(96,63.2426)
+  (91.42,59)--(97,59)
+  (91.42,47)--(96,47)--(96,54.7574);
+\draw[sym] (103,59) circle[radius=6];
+% The outer phase wires end on the motor symbol.
+\draw[wire] (96,63.2426)--(98.7574,63.2426)
+  (96,54.7574)--(98.7574,54.7574);
+\node[head] at (103,60.6) {M};
+\node[label] at (103,57.2) {3\textasciitilde{}};
+\node[label,anchor=east] at (13,34) {PE};
+\draw[wire] (15,34)--(103,34)--(103,53);
+\terminal{15}{34}
+\wirelabel{21}{34.75}{104}
+\junction{103}{34}\earth{103}{34}
+\node[pin,anchor=east] at (101,38) {Vỏ động cơ};
+
+\draw[divider] (9,26)--(112,26);
+\node[label,anchor=west] at (8,22) {Tờ 002 dùng cuộn KM1 (A1, A2) và tiếp điểm phụ FR1 (95, 96).};
+\node[pin,anchor=west] at (8,18) {Tham chiếu ký hiệu IEC và sơ đồ DOL của ABB, tài liệu 1SFC133001C0201.};
+
+\notegroup{81.5}{01 \quad BẢO VỆ NGUỒN}{%
+  Chọn QF1 theo dòng làm việc, khả năng cắt và điều kiện phối hợp bảo vệ của tủ.}
+\notegroup{65}{02 \quad BẢO VỆ QUÁ TẢI}{%
+  FR1 đặt sau KM1. Chỉnh dòng theo nhãn động cơ và hướng dẫn của nhà sản xuất.}
+\notegroup{48.5}{03 \quad ĐẤU NỐI ĐỘNG CƠ}{%
+  Ba pha vào U1, V1 và W1. Dây PE số 104 đi trực tiếp đến vỏ động cơ.
+  Xác định cách đấu sao hoặc tam giác theo nhãn M1 và điện áp nguồn.}
+\notegroup{32}{04 \quad ĐÁNH SỐ DÂY}{%
+  101–103 trước QF1, 111–113 sau QF1, 121–123 sau KM1 và 131–133 đến M1.}
+\end{tikzpicture}
+\par\newpage
+\noindent
+\begin{tikzpicture}[x=.1in,y=.1in]
+\sheetframe{002}{MẠCH ĐIỀU KHIỂN 24 VDC VÀ NÚT NHẤN}
+\node[head,anchor=west] at (8,88.4) {NGUỒN ĐIỀU KHIỂN VÀ CÁC NGÕ VÀO RA};
+\node[pin,anchor=west] at (8,83.7) {230 VAC phụ trợ};
+
+% AC/DC converter and protected distribution, with repeated net references.
+\draw[wire] (15,79.5)--(29,79.5) (15,74.5)--(29,74.5);
+\node[label,anchor=east] at (14.5,79.5) {L};
+\node[label,anchor=east] at (14.5,74.5) {N};
+\draw[sym] (29,72) rectangle (43,82) (29,72)--(43,82);
+\node[head,anchor=south] at (36,82.1) {PS1};
+\node[label] at (32.5,78.5) {\textasciitilde{}};
+\draw[sym] (37.9,75.9)--(40.9,75.9);
+\draw[sym] (37.9,75)--(38.6,75) (39.05,75)--(39.75,75) (40.2,75)--(40.9,75);
+\draw[wire] (43,79.5)--(53,79.5) (59,79.5)--(77,79.5);
+\draw[sym] (53,78.25) rectangle (59,80.75) (53,79.5)--(59,79.5);
+\node[head,anchor=south] at (56,81.1) {F1};
+\draw[wire] (43,74.5)--(68,74.5);
+\node[pin,anchor=west] at (43,81.4) {+};
+\node[pin,anchor=west] at (43,72.6) {−};
+\wirelabel{48}{80.05}{201}
+\wirelabel{65}{80.05}{202}
+\wirelabel{55}{75.2}{200}
+\draw[sym,fill=white] (77,78.6)--(77.95,79.5)--(77,80.4)--cycle
+  (68,73.6)--(68.95,74.5)--(68,75.4)--cycle;
+\node[pin,anchor=west] at (78.6,79.5) {+24 VDC};
+\node[pin,anchor=west] at (69.6,74.5) {0 VDC};
+
+% Left distribution rail is net 202. Each return has its own module pin.
+\draw[wire] (15,68.7)--(15,18.7);
+\netflag{15}{68.7}{202}
+\foreach \y in {65,47,37.5,28,18.7} {\junction{15}{\y}}
+\draw[sym] (88,15.5) rectangle (112,70.5);
+\node[head] at (100,65.8) {A1 \quad DEVICE\_1M};
+\node[pin,align=center] at (100,54.1) {DO NPN kéo xuống 0 V\\DI nhận mức +24 V};
+\draw[wire] (95,70.5)--(95,74.2) (105,70.5)--(105,74.2);
+\netflag{95}{74.2}{202}
+\netflag{105}{74.2}{200}
+\node[pin,anchor=north] at (95,70.3) {V+};
+\node[pin,anchor=north] at (105,70.3) {0V/COM};
+
+% Hard-wired stop chain. D1 has cathode at coil A1 (left).
+\draw[wire] (15,65)--(25,65) (31,65)--(43,65) (49,65)--(61,65)
+  (69,65)--(80,65)--(80,60)--(88,60);
+\begin{scope}[shift={(28,65)}]\closedcontact\emergencyactuator\end{scope}
+\begin{scope}[shift={(46,65)}]\closedcontact\end{scope}
+\draw[sym] (61,63.4) rectangle (69,66.6);
+\node[head,anchor=west] at (30.1,69.5) {S0};
+\node[pin,anchor=north,align=center] at (28,63.9) {Dừng khẩn NC\\11–12*};
+\node[head] at (46,68.8) {FR1};
+\node[pin,anchor=north] at (46,63.9) {95–96 NC};
+\node[head] at (65,69.5) {KM1};
+\node[pin,anchor=north east] at (61,64.2) {A1};
+\node[pin,anchor=north west] at (69,64.2) {A2};
+\wirelabel{37}{65.7}{203}
+\wirelabel{54}{65.7}{204}
+\wirelabel{75.8}{65.7}{205}
+\draw[wire] (57,65)--(57,56.5)--(63,56.5)
+  (67.5,56.5)--(74,56.5)--(74,65);
+\junction{57}{65}\junction{74}{65}
+\draw[sym] (63,54.9)--(63,58.1)
+  (67.5,55)--(63,56.5)--(67.5,58)--cycle;
+\node[pin,anchor=north] at (65.5,54.5) {D1};
+
+% Start and Stop inputs and indicator lamps with separate NPN outputs.
+\draw[wire] (15,47)--(36,47) (42,47)--(88,47)
+  (15,37.5)--(36,37.5) (42,37.5)--(88,37.5)
+  (15,28)--(37.3,28) (40.7,28)--(88,28)
+  (15,18.7)--(37.3,18.7) (40.7,18.7)--(88,18.7);
+\begin{scope}[shift={(39,47)}]\opencontact\pushactuator\end{scope}
+\begin{scope}[shift={(39,37.5)}]\closedcontact\pushactuator\end{scope}
+\begin{scope}[shift={(39,28)}]\lamp\end{scope}
+\begin{scope}[shift={(39,18.7)}]\lamp\end{scope}
+\node[head,anchor=west] at (42.2,50.3) {S1 \enspace Khởi động};
+\node[pin,anchor=north] at (39,45.8) {13–14* \quad NO};
+\node[head,anchor=west] at (42.2,40.8) {S2 \enspace Dừng};
+\node[pin,anchor=north] at (39,36.3) {11–12* \quad NC};
+\node[pin,anchor=west] at (43.5,30.7) {H1 \quad LED nút S1};
+\node[pin,anchor=west] at (43.5,21.4) {H2 \quad LED nút S2};
+\foreach \y in {28,18.7} {
+  \node[pin,anchor=east] at (37,\y+1.4) {+};
+  \node[pin,anchor=west] at (41,\y+1.4) {−};
+}
+\foreach \y/\wid/\port in {
+    47/213/DI\_START,37.5/216/DI\_STOP,
+    28/222/DO\_LED\_START,18.7/232/DO\_LED\_STOP} {
+  \wirelabel{72}{\y+.8}{\wid}
+  \terminal{88}{\y}
+  \node[pin,anchor=west] at (88.5,\y) {\texttt{\port}};
+}
+\terminal{88}{60}
+\node[pin,anchor=west] at (88.5,60) {\texttt{DO\_KM1}};
+
+\notegroup{81.5}{01 \quad DỪNG KHẨN}{%
+  S0 (NC) và FR1 (95–96 NC) cắt trực tiếp nguồn cuộn KM1.
+  Thẩm định chức năng dừng khẩn theo mức rủi ro máy.}
+\notegroup{66}{02 \quad CUỘN KM1 VÀ DIODE D1}{%
+  Cuộn KM1 dùng 24 VDC. Cathode D1 ở A1 cuộn KM1, anode ở A2.
+  Ngõ DO\_KM1 phải chịu được dòng cuộn.}
+\notegroup{50.5}{03 \quad NÚT NHẤN VÀ ĐÈN}{%
+  S1 và S2 đưa lệnh vào phần mềm. H1 và H2 là cụm đèn LED 24 VDC.
+  * Đối chiếu chân nút theo thiết bị chọn thực tế.}
+\notegroup{35}{04 \quad NGUỒN VÀ KHỞI ĐỘNG LẠI}{%
+  Xác nhận nguồn 230 VAC phụ trợ, sơ đồ chân DEVICE\_1M và điều kiện
+  ngăn tự khởi động lại sau khi nhả S0 hoặc có điện trở lại.}
+\end{tikzpicture}
+\par
+\end{document}
