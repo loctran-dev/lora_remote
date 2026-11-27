@@ -241,6 +241,88 @@ to that commit.
   slave then accepts while the motor is ON (Lock does not block timers or
   local buttons); changing the radio settings means pairing everything again.
 
+Found 2026-11-27 analysing many slaves (and several remotes) on one channel.
+Remote line numbers refer to df34658, slave (lora_device) ones to origin/main
+fbf5aae. Airtime below: BW 125 kHz, CR 4/5, preamble 10, explicit header.
+
+| Frame | SF7 | SF12 |
+|---|---|---|
+| Status, 1 motor (29 bytes) | ~70 ms | ~1.7 s |
+| Status, 6 motors (94 bytes) | ~165 ms | ~3.8 s |
+
+### KI-25: Slaves send periodic frames in lockstep, without random delay
+
+- Where (slave): `Application/Core/Src/main.c:862` (auto status sent at boot,
+  then every autoStatusSeconds), `:800-808` (alarm repeat every 15 s),
+  `Application/Library/motor_history.c:58` (history every 10 s).
+- Problem: every periodic transmission uses a fixed period and no random
+  offset; the first auto status goes out right after boot. The LoRa driver
+  has no channel-activity check before sending, and a node cannot receive
+  while it transmits.
+- Effect: after a mains power cut all slaves boot together and send their
+  status at the same moment, then collide again every period for a long time
+  (clocks drift slowly). Alarms raised by the same event (e.g. lost input
+  power) collide every 15 s the same way. Even with random phases, 20 slaves
+  with a 60 s auto status lose about 5 % of the frames at SF7 and about two
+  thirds at SF12.
+  Also: two slaves in pairing mode answer GET_FACTORY_INFO together and
+  collide (pair one device at a time).
+- Fix (proposed): add a random delay (e.g. +/-20 %) to every periodic send
+  and a random first delay after boot, seeded from the serial number.
+
+### KI-26: Every remote uses net 1 by default; neighbouring systems control each other
+
+- Where: `Application/Library/config_store.c:286` (loadDefaults: netId 0x01,
+  433 MHz), `findFreeNodeId()` (node ids from 1 up).
+- Problem: after pairing, a command is addressed by net and node only; the
+  serial number is not checked and there is no network key.
+- Effect: two installations nearby with default settings use the same net and
+  the same node ids, so remote A switches motor 1 of installation B and gets
+  B's status and alarms. Every frame on the channel, including the
+  neighbour's, also wakes a sleeping remote (the net is filtered after the
+  wake-up), costing battery.
+- Fix (proposed): choose a random netId on first boot (from the STM32 UID);
+  later a network key.
+
+### KI-27: Deleting a device does not tell the slave; its node id can be reused
+
+- Where: `Application/Library/screen_edss.c:616-620` (delete only sets
+  `deleted` and frees the motor slots), `findFreeNodeId()`.
+- Problem: the slave keeps its net and node id and still obeys commands for
+  them. findFreeNodeId() hands the freed node id to the next paired device.
+- Effect: a deleted but powered slave and a newly paired one share an
+  address: both switch on the same command and both reply, so their replies
+  collide.
+- Fix (proposed): send an "unpair" command when deleting (slave returns to
+  the configuration network), and/or do not reuse a freed node id until the
+  pool of ids runs out.
+
+### KI-28: High spreading factors do not scale to many slaves
+
+- Where: radio settings (`Application/Library/screen_egss.c`, SF7..SF12).
+- Problem: airtime grows about 25 times from SF7 to SF12 (table above).
+- Effect: with many slaves at SF11/SF12 the channel is busy most of the
+  time, frames are lost (KI-25) and the duty-cycle limit of the 433 MHz band
+  (depends on the country) may be exceeded. With several remotes (KI-24) a
+  configuration sync of about 1.5 KB needs about 6 large frames, 30 s or more
+  of airtime at SF12, during which status and alarms are easily lost.
+- Fix (proposed): recommend SF7..SF9 when more than a few slaves are paired
+  and warn when a higher SF is chosen; sync only the changed configuration
+  parts; check the local duty-cycle rule.
+
+### KI-29: Detecting lost links is slow with many slaves
+
+- Where: `Application/Library/link_monitor.c:323-410` (Link_Tick),
+  LINK_CONFIRM_ATTEMPTS 3, LINK_REPLY_TIMEOUT_SECONDS 10.
+- Problem: devices are probed one at a time, up to 3 requests 10 s apart.
+- Effect: if 20 devices lose power together it takes about 10 minutes until
+  all are marked as lost, the last one waits longest, and the remote does not
+  enter STOP while probing (Link_IsBusy), which costs battery. With several
+  remotes each one detects the loss at its own pace.
+- Fix (proposed): skip devices heard recently, shorten the wait between
+  attempts when other devices are also silent, or probe the next device while
+  waiting for a reply.
+
 ## Fixed
 
 ### KI-9: USB console stops reading until the remote is woken or replugged
