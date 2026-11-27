@@ -116,6 +116,54 @@ to that commit.
 - Fix (proposed): report the lock of every motor (e.g. `LOCK=01` per module)
   or say "any motor locked".
 
+### KI-22: Device control should show the device name and the motor name on separate rows
+
+- Type: feature request (2026-11-27).
+- Where: `Application/Library/screen_dcs.c:191-199` (title row),
+  `Application/Core/Inc/define.h` (DeviceStorageData_t, MotorStorageData_t),
+  `Application/Library/screen_edss.c` (ITEM_NAME, captioned "Device name").
+- Now: one title row, `" %c%u%u.%.19s"`, e.g. "M12.Default": device type
+  letter, device number, module number and the motor name. Only motors have a
+  name (`MotorStorageData_t.name[20]`); the editor that changes it is captioned
+  "Device name".
+- Wanted:
+  - Top row: the device, `D<device number>. <device name>`, e.g. "D1. Tu dien 1".
+  - Row below: the motor, `M<module number>. <motor name>`, e.g.
+    "M1. Motor nuoc". The motor number restarts at 1 on every device
+    (M + module index + 1), it is not the old "M12".
+  - Both names can be edited by the user.
+- Work needed:
+  - Add a device name to the stored settings. DeviceStorageData_t is part of
+    the packed CFG3 flash layout, so the name must be appended at the end of
+    SystemStorageData_t (e.g. `char deviceNames[MAXIMUM_DEVICE][20]`) or the
+    format bumped to CFG4 with a conversion; default "Default" or empty.
+  - A device name editor (device manager or device settings), and recaption the
+    current motor name editor as "Motor name".
+  - Rework the control screen layout (128x160): status bar 0..15, title now
+    20..37, currents from 47; two rows need about 2 x 14 px, so the rows below
+    move down or the RSSI moves into a row.
+  - Switch every other screen to the same labels (decided 2026-11-27): `D<n>`
+    for a device, `M<n>` for a motor (module index + 1), the type letter
+    ('M', 'P', 'E') is dropped from labels (pairing still shows "Type"):
+
+    | Screen | Now | New |
+    |---|---|---|
+    | Device settings title, screen_edss.c:106 | ` M12.Default-Set.` | `D1 M2. Motor nuoc` (or two rows like the control screen) |
+    | Timer title, screen_dcs.c:702 | `M12 Timer` | `D1 M2 Timer` |
+    | Lost-link notice, screen_dcs.c:289/304 | `M2` (the device number) | `D2` |
+    | Monitor title, screen_dms.c:112 | `M12 Info: Default` | `D1 M2 Info: Motor nuoc` |
+    | Device manager row, screen_dvm.c:129-136 | `M1 [Visible] 3 motors` / `M1 [Visible] Default` (motor 1's name) | `D1. Tu dien 1 [Visible] 3 motors` |
+    | History picker, screen_hs.c:314-317 | `M1` / `Default` (motor 1's name) | `D1` / `Tu dien 1` |
+    | History list title, screen_hs.c:178 | `M1 Default` | `D1. Tu dien 1` |
+    | History list row, screen_hs.c:376 | `M12 ON Off > On` | `M2 ON Off > On` |
+    | History detail title, screen_hs.c:173 | `M12 Event` | `D1 M2 Event` |
+
+    Today the labels are mixed: some use the type letter, the lost-link notice
+    and history hard-code 'M', and the device manager and history show motor 1's
+    name where a device name belongs (ScrnCommon_MotorName(id, 0)).
+  - Tests that check label text (tools/test_*ui*.py, test_motor_navigation.py,
+    test_history_ui.py, test_device_menu.py).
+
 ## Fixed
 
 ### KI-9: USB console stops reading until the remote is woken or replugged
