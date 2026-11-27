@@ -228,6 +228,19 @@ to that commit.
   - Send the real module index once the slave drives several motors.
   - Update the slave before the remote.
 
+### KI-24: Only one remote per network
+
+- Type: feature request (2026-11-27). Design: docs/MULTI_REMOTE.md.
+- Problem: pairing a device with a second remote takes it away from the
+  first; transaction ids of two remotes collide; Lock is checked on the
+  remote only; two remotes with different clocks make the device clock jump.
+- Decided: one main remote and secondary remotes paired like devices (type
+  'R'); the main remote's configuration is pulled over LoRa by version;
+  secondaries can view, switch, set timers and acknowledge alarms; the slave
+  enforces Lock, set with the other settings in CMD_SET_CONFIG, which the
+  slave then accepts while the motor is ON (Lock does not block timers or
+  local buttons); changing the radio settings means pairing everything again.
+
 ## Fixed
 
 ### KI-9: USB console stops reading until the remote is woken or replugged
