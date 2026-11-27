@@ -54,7 +54,7 @@ to that commit.
 - Fix (proposed): track one request per motor (small array or queue), or
   refuse a new timer while Schedule_IsWaiting().
 
-### KI-17: An alarm on a motor that is not on screen is easy to miss
+### KI-17: Alarms are easy to miss and show no details (needs an alarm screen)
 
 - Where: `Application/Library/command_handlers.c:395-404` (handleAlarmMessage),
   `Application/Library/power_sleep.c:86` (Power_WakeForError).
@@ -64,9 +64,49 @@ to that commit.
   `alarmReported` is set TRUE and never cleared.
 - Effect: while M11 is shown, an alarm on M12 lights the display with nothing
   to say why. Once a motor reported an alarm it shows the alarm until reboot.
-- Fix (proposed): on an alarm select the alarmed motor (or show a notice like
-  the connection error); clear `alarmReported` when a status reports the
-  motor healthy or when the user acknowledges it.
+  The control screen only shows "ALARM" and a triangle: `alarmCode` and
+  `alarmDevTime` are stored (command_handlers.c:403-404) but never displayed,
+  and there is no way to acknowledge an alarm.
+- Fix (decided 2026-11-27): an alarm screen.
+  - When a motor reports an alarm, open an alarm screen over the current one
+    with the details: the motor (`D1 M2. Motor nuoc`, see KI-22), the alarm
+    (lost input power / lost motor power / phase currents differ, from
+    `alarmCode`) and when it happened (`alarmDevTime`, device clock).
+  - The buzzer sounds continuously (`eBuzzer_Mode_AlarmLong`) while the
+    screen is open.
+  - CENTER acknowledges: buzzer off, the alarm screen closes.
+  - If the remote was on device control, it comes back showing the alarmed
+    motor (curDevice/curModule set to it); otherwise it returns to the
+    screen it was on.
+  - Several alarms: queue them and show them one by one; each CENTER
+    acknowledges the one on screen and opens the next.
+  - While an editor or pairing is open the remote does not switch screens:
+    the status bar shows "ALARM" and the buzzer sounds; the queued alarm
+    screen opens by itself once the user leaves the editor/pairing.
+  - Acknowledging only silences and closes the screen. `alarmReported` (the
+    "ALARM" status on the control screen) stays until the device reports the
+    alarm cleared.
+  - A hidden motor raises nothing: no screen, no buzzer, no status-bar text.
+  - Clearing `alarmReported` (decided 2026-11-27, option A+C):
+    - C (main): the slave sends CMD_ALARM_MESSAGE with the new code
+      ALARM_CLEARED (0x80) for that module when the alarm clears; the remote
+      clears `alarmReported` on it. Code 0 (ALARM_NONE) is never treated as
+      a clear: today's slave sends 0 for real alarms (see KI-23), so a
+      remote that read 0 as "cleared" would never show their alarms.
+    - A (fallback): the slave repeats an active alarm every 15 s. If no
+      CMD_ALARM_MESSAGE for that motor arrives for 60..90 s while the link is
+      up, the remote clears `alarmReported` itself. Never while `linkLost`.
+      This timeout depends on the slave's 15 s period; keep it well above it
+      and note the coupling in both repos.
+    - An alarm that comes back soon after A cleared it (weak signal, three
+      repeats lost) only sets "ALARM" again: no alarm screen, no buzzer.
+    - Log on the USB console whether C or A cleared an alarm.
+    - Compatibility: new remote + old slave still shows alarms (code 0,
+      type unknown) and A clears them; old remote + new slave shows
+      ALARM_CLEARED as an alarm, so update the slave first (as KI-11).
+    - Open: an alarm that clears before the user acknowledged it: keep the
+      alarm screen until CENTER (marked "cleared"), or close it by itself.
+  - Slave changes needed: KI-23.
 
 ### KI-18: Motor slots are not checked against the factory module count on load
 
@@ -163,6 +203,30 @@ to that commit.
     name where a device name belongs (ScrnCommon_MotorName(id, 0)).
   - Tests that check label text (tools/test_*ui*.py, test_motor_navigation.py,
     test_history_ui.py, test_device_menu.py).
+
+### KI-23: Slave (lora_device) changes needed for alarms
+
+- Type: work in the slave repo `lora_device`, needed by KI-17. Line numbers
+  refer to lora_device origin/main fbf5aae.
+- Where: `Application/Core/Src/main.c:672-680` (Motor_SendCurrentAlarm),
+  `:790-808` (raise/clear/repeat), `Application/Core/Inc/define.h:17-20`
+  (alarm codes), `Application/Library/communicationLora.h` (alarm payload).
+- Problems found:
+  - `sysInfo.alarmCode` is never assigned, so every CMD_ALARM_MESSAGE carries
+    code 0 (ALARM_NONE). The only alarm the slave detects is low current
+    (HIST_ERROR_LOW_CURRENT), and there is no code for it.
+  - `alarmTime` is set to the current time on every 15 s repeat, so the
+    remote cannot show when the alarm started.
+  - Nothing is sent when the alarm clears; only a HIST_CLEAR history record.
+  - `moduleIndex` is always 0 (fine while the slave drives one motor).
+- Fix (decided 2026-11-27, with KI-17 option A+C):
+  - Add ALARM_LOW_CURRENT and set `alarmCode` before sending; add
+    ALARM_CLEARED = 0x80 on both sides (remote Alarm_Name_e too).
+  - Keep the alarm start time and send it in every repeat.
+  - On clear, send CMD_ALARM_MESSAGE with ALARM_CLEARED for the module,
+    three times a few seconds apart (the message has no acknowledgement).
+  - Send the real module index once the slave drives several motors.
+  - Update the slave before the remote.
 
 ## Fixed
 
