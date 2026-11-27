@@ -37,6 +37,85 @@ issues under "Open" with the same fields.
   keep the per-device view. Alternative: list motors ("M11", "M12", ...) in
   the picker instead of devices.
 
+Found 2026-11-27 reviewing multi-motor handling at f70ff46; line numbers refer
+to that commit.
+
+### KI-16: Timers on two motors in a row lose the first request
+
+- Where: `Application/Library/schedule.c` (single `scheduleRequest`,
+  Schedule_Track, Schedule_ShouldTransmit:82, Schedule_HandleResponse).
+- Problem: only one schedule request is tracked for the whole remote.
+  Schedule_Track() replaces it, and Schedule_ShouldTransmit() drops every
+  queued CMD_SET_SCHEDULE that is not the tracked one.
+- Effect: set a timer on M11, step to M12 and set one there. If M11's request
+  is still queued it is never sent; if it was sent, its reply is rejected, so
+  there is no beep and no 3 s resend, and M11 only shows the timer after its
+  next status. Rare with one motor per device, easy now on one device.
+- Fix (proposed): track one request per motor (small array or queue), or
+  refuse a new timer while Schedule_IsWaiting().
+
+### KI-17: An alarm on a motor that is not on screen is easy to miss
+
+- Where: `Application/Library/command_handlers.c:395-404` (handleAlarmMessage),
+  `Application/Library/power_sleep.c:86` (Power_WakeForError).
+- Problem: the alarm only turns the backlight on; the control screen keeps
+  the selected motor and shows no notice. A lost link has
+  ScrnDcs_ShowConnectionError(), an alarm has nothing similar.
+  `alarmReported` is set TRUE and never cleared.
+- Effect: while M11 is shown, an alarm on M12 lights the display with nothing
+  to say why. Once a motor reported an alarm it shows the alarm until reboot.
+- Fix (proposed): on an alarm select the alarmed motor (or show a notice like
+  the connection error); clear `alarmReported` when a status reports the
+  motor healthy or when the user acknowledges it.
+
+### KI-18: Motor slots are not checked against the factory module count on load
+
+- Where: `Application/Library/config_store.c:370-389` (sanitizeMotors),
+  `Config_ModuleCount()`.
+- Problem: sanitizeMotors frees only slots with `module >= MAXIMUM_MODULE`,
+  not `>= factoryInfo.moduleCount`, and recreates only module 0 of a device.
+  A device reporting more than 6 modules is silently limited to 6.
+- Effect: a corrupted or old slot can show a motor that does not exist (e.g.
+  M14 on a 2-motor device); a lost slot of module 1..n-1 removes that motor
+  without notice; pairing shows "Modules 08" but only 6 can be used.
+- Fix (proposed): free slots with `module >= Config_ModuleCount(moduleCount)`
+  and recreate the missing ones in sanitizeMotors; tell the user at pairing
+  when a device has more motors than MAXIMUM_MODULE.
+
+### KI-19: Device manager Hide/Show overwrites the per-motor Hide setting
+
+- Where: `Application/Library/screen_dvm.c:188`,
+  `Application/Library/config_store.c:225` (Config_DeviceHidden,
+  Config_SetDeviceHidden).
+- Problem: a device counts as hidden only when every motor is hidden, and the
+  toggle hides or shows every motor.
+- Effect: with only M12 hidden the manager shows the device as "Visible";
+  Hide then Show makes M12 visible again although the user hid it on purpose.
+  There is no "partly hidden" state.
+- Fix (proposed): show "Partly hidden" when some motors are hidden, and keep
+  the per-motor flags (e.g. remember them, or only hide/show the whole device
+  without touching motor flags).
+
+### KI-20: Auto status is a device setting but appears in each motor's settings
+
+- Where: `Application/Library/screen_edss.c:631-634` (isMotorItem,
+  ITEM_AUTO_STATUS).
+- Problem: the code treats ITEM_AUTO_STATUS as a device setting, but the item
+  is listed in the settings of M11, M12, ...
+- Effect: changing it on M12 also changes M11, and nothing on screen says so.
+- Fix (proposed): label it as a device setting (e.g. "Device auto status") or
+  move it to the device manager.
+
+### KI-21: USB BTN reply reports LOCK of module 0 only
+
+- Where: `Application/USB_DEVICE/App/usbd_cdc_if.c:380` (CDC_ButtonCommand,
+  device manager reply).
+- Problem: `LOCK=` is taken from Config_Motor(id, 0).
+- Effect: on a device with several motors the test/USB tools see only M11's
+  lock. No effect on the user interface.
+- Fix (proposed): report the lock of every motor (e.g. `LOCK=01` per module)
+  or say "any motor locked".
+
 ## Fixed
 
 ### KI-9: USB console stops reading until the remote is woken or replugged
