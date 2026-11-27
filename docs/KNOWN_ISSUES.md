@@ -22,6 +22,21 @@ issues under "Open" with the same fields.
   CFG3 (the ARM tests in tools/test_config_load.py cover one interrupted save).
 - Fix: run it on a Linux machine or in WSL with a distribution installed.
 
+### KI-15: History can only be viewed per device, not per motor
+
+- Where: `Application/Library/screen_hs.c` (picker, list, ScrnHs_OpenDeviceHistory).
+- Problem: the picker lists devices ("M1", "M2") and the list shows every
+  event of the chosen device, all motors mixed. Opening history from the
+  control screen while M12 is shown also opens the whole device's list.
+  Since KI-12 each event records its motor (list prefix "M12 " on devices
+  with several motors, detail title "M12 Event"), but nothing filters by it.
+- Effect: on a device with several motors the user cannot see the history of
+  one motor only.
+- Fix (proposed): when opened from the control screen, show only the events
+  of the motor on screen plus the device's link events; from the main menu
+  keep the per-device view. Alternative: list motors ("M11", "M12", ...) in
+  the picker instead of devices.
+
 ## Fixed
 
 ### KI-9: USB console stops reading until the remote is woken or replugged
